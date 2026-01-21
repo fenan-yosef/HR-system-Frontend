@@ -26,6 +26,17 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    const accessToken = window.localStorage.getItem("hrms_access_token");
+    if (accessToken) {
+      const tokenUser = buildAuthUserFromAccessToken(accessToken);
+      if (tokenUser) {
+        setUser(tokenUser);
+        persistUser(tokenUser);
+        setIsLoading(false);
+        return;
+      }
+    }
+
     const rawUser = window.localStorage.getItem(USER_STORAGE_KEY);
     if (rawUser) {
       try {
@@ -33,15 +44,6 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         setUser(parsedUser);
       } catch (error) {
         console.error("Failed to parse stored user", error);
-      }
-    } else {
-      const accessToken = window.localStorage.getItem("hrms_access_token");
-      if (accessToken) {
-        const tokenUser = buildAuthUserFromAccessToken(accessToken);
-        if (tokenUser) {
-          setUser(tokenUser);
-          persistUser(tokenUser);
-        }
       }
     }
     setIsLoading(false);

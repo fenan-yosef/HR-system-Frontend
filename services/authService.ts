@@ -14,16 +14,17 @@ export interface TokenResponse {
 const ROLE_MAP: Record<string, UserRole> = {
   ADMIN: "ADMIN",
   ADMINISTRATOR: "ADMIN",
-  HR_STAFF: "HR_STAFF",
-  HR: "HR_STAFF",
-  STAFF: "HR_STAFF",
+  HR_MANAGER: "HR_MANAGER",
+  HRMANAGER: "HR_MANAGER",
+  HR: "HR_MANAGER",
+  STAFF: "HR_MANAGER",
   EMPLOYEE: "EMPLOYEE",
   APPLICANT: "APPLICANT",
 };
 
 function mapRoleNameToUserRole(roleName?: string): UserRole {
   if (!roleName) return "UNKNOWN";
-  const normalised = roleName.replace(/\s|-/g, "_").toUpperCase();
+  const normalised = roleName.trim().replace(/\s|-/g, "_").toUpperCase();
   return ROLE_MAP[normalised] ?? "UNKNOWN";
 }
 
