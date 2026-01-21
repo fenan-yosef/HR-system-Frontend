@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { UserRole } from "@/types/auth";
 import { useAuth } from "@/hooks/useAuth";
@@ -52,9 +52,11 @@ export function useRoleGuard(options: UseRoleGuardOptions = {}) {
     return allowedRoles.includes(user.role);
   }, [allowedRoles, user]);
 
-  if (!isLoading && !isAuthenticated && normalizedPathname !== ROUTES.LOGIN) {
-    router.replace(ROUTES.LOGIN);
-  }
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated && normalizedPathname !== ROUTES.LOGIN) {
+      router.replace(ROUTES.LOGIN);
+    }
+  }, [isLoading, isAuthenticated, normalizedPathname, router]);
 
   const canAccess = isAuthenticated && isAuthorisedForRoute && isAuthorisedForRole;
 

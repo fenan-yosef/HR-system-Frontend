@@ -6,7 +6,8 @@ export default function DashboardPage() {
       <div className="space-y-1">
         <h1 className="text-xl font-semibold">Role-based dashboard</h1>
         <p className="text-sm text-muted-foreground">
-          Central workspace for HR staff, administrators, employees, and applicants.
+          Central workspace for HR staff, administrators, employees, and
+          applicants.
         </p>
       </div>
       <DashboardOverview />
