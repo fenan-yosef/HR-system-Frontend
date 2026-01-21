@@ -2,7 +2,7 @@ import type { UserRole } from "@/types/auth";
 
 export const ROLES: Record<UserRole, UserRole> = {
   ADMIN: "ADMIN",
-  HR_STAFF: "HR_STAFF",
+  HR_MANAGER: "HR_MANAGER",
   EMPLOYEE: "EMPLOYEE",
   APPLICANT: "APPLICANT",
   UNKNOWN: "UNKNOWN",
@@ -10,7 +10,7 @@ export const ROLES: Record<UserRole, UserRole> = {
 
 export const ROLE_LABELS: Record<UserRole, string> = {
   ADMIN: "Administrator",
-  HR_STAFF: "HR Staff",
+  HR_MANAGER: "HR Staff",
   EMPLOYEE: "Employee",
   APPLICANT: "Applicant",
   UNKNOWN: "Unknown",

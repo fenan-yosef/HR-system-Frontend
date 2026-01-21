@@ -17,6 +17,12 @@ export function useRoleGuard(options: UseRoleGuardOptions = {}) {
   const pathname = usePathname();
   const router = useRouter();
 
+  const normalizedPathname = useMemo(() => {
+    if (!pathname) return "";
+    if (pathname === "/") return "/";
+    return pathname.replace(/\/+$/, "");
+  }, [pathname]);
+
   const isAuthorisedForRoute = useMemo(() => {
     if (!user || !isAuthenticated) return false;
 
@@ -30,8 +36,8 @@ export function useRoleGuard(options: UseRoleGuardOptions = {}) {
     }
 
     const allowedRoutes = ROLE_ALLOWED_ROUTES[user.role];
-    return allowedRoutes.includes(pathname ?? "");
-  }, [isAuthenticated, pathname, user]);
+    return allowedRoutes.includes(normalizedPathname);
+  }, [isAuthenticated, normalizedPathname, user]);
 
   const isAuthorisedForRole = useMemo(() => {
     if (!user || !allowedRoles || allowedRoles.length === 0) return true;
@@ -46,7 +52,7 @@ export function useRoleGuard(options: UseRoleGuardOptions = {}) {
     return allowedRoles.includes(user.role);
   }, [allowedRoles, user]);
 
-  if (!isLoading && !isAuthenticated && pathname !== ROUTES.LOGIN) {
+  if (!isLoading && !isAuthenticated && normalizedPathname !== ROUTES.LOGIN) {
     router.replace(ROUTES.LOGIN);
   }
 
