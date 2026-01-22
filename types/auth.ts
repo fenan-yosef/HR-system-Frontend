@@ -52,6 +52,7 @@ export interface AuthContextState {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (username: string, password: string) => Promise<void>;
+  // login returns the authenticated user when successful, or null on failure
+  login: (username: string, password: string) => Promise<AuthUser | null>;
   logout: () => void;
 }

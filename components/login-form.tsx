@@ -14,13 +14,14 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/constants/routes";
+import { ROLE_DASHBOARD_ROUTE } from "@/constants/permissions";
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"form">) {
   const router = useRouter();
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, user } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +30,16 @@ export function LoginForm({
     event.preventDefault();
     setError(null);
     try {
-      await login(username, password);
-      router.replace(ROUTES.DASHBOARD);
+      const authenticatedUser = await login(username, password);
+
+      // Redirect based on role: Admin to /dashboard, HR to /hr/dashboard
+      const role = authenticatedUser?.role ?? user?.role ?? "UNKNOWN";
+      const target = role === "ADMIN"
+        ? ROUTES.DASHBOARD
+        : role === "HR_MANAGER"
+          ? ROUTES.HR_DASHBOARD
+          : ROLE_DASHBOARD_ROUTE[role] ?? ROUTES.DASHBOARD;
+      router.replace(target);
     } catch (err) {
       console.error(err);
       setError("Unable to sign in. Please check your credentials.");

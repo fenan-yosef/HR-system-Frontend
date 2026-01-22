@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import ActionButton from "@/components/ui/action-button";
 
 type JobStatus = "Open" | "Closed";
 
@@ -75,191 +76,139 @@ export default function RecruitmentPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="flex min-h-screen">
-        {/* Sidebar */}
-        <aside className="w-64 shrink-0 bg-blue-700 text-white">
-          <div className="px-6 py-5 text-xl font-semibold tracking-tight">HRMS</div>
-          <nav className="px-3 py-2">
-            <SidebarItem label="Dashboard" active={false} />
-            <SidebarItem label="Employee List" active={false} />
-            <SidebarItem label="Recruitment" active />
-            <SidebarItem label="Attendance" active={false} />
-            <SidebarItem label="Leave Management" active={false} />
-            <SidebarItem label="Reports" active={false} />
-          </nav>
-        </aside>
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h1 className="text-xl font-semibold text-slate-900">Recruitment Management</h1>
+        <p className="text-sm text-slate-600">HR / Recruitment Management</p>
+      </div>
 
-        {/* Main */}
-        <main className="flex-1">
-          {/* Top bar */}
-          <header className="flex items-center justify-between border-b bg-white px-6 py-4">
+      {/* Filters */}
+      <div className="rounded-xl border bg-white p-4 shadow">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Select
+              label="Department"
+              value={department}
+              onChange={(v) => setDepartment(v as any)}
+              options={DEPARTMENTS as unknown as string[]}
+            />
+            <Select
+              label="Status"
+              value={status}
+              onChange={(v) => setStatus(v as any)}
+              options={STATUSES as unknown as string[]}
+            />
+            <Select
+              label="Location"
+              value={location}
+              onChange={(v) => setLocation(v as any)}
+              options={LOCATIONS as unknown as string[]}
+            />
             <div>
-              <h1 className="text-lg font-semibold text-slate-900">Recruitment Management</h1>
-              <p className="text-sm text-slate-500">HR / Recruitment Management</p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="h-9 w-9 rounded-full bg-slate-200" />
-              <div className="text-sm">
-                <div className="font-medium text-slate-900">Admin</div>
-                <div className="text-slate-500">HR Officer</div>
+              <label className="mb-1 block text-xs font-medium text-slate-600">Search</label>
+              <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Search job title, dept, location..."
+                  className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
+                />
+                <span className="text-slate-400">⌕</span>
               </div>
             </div>
-          </header>
+          </div>
 
-          {/* Content */}
-          <section className="px-6 py-6">
-            {/* Filters */}
-            <div className="rounded-xl border bg-white p-4 shadow-sm">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  <Select
-                    label="Department"
-                    value={department}
-                    onChange={(v) => setDepartment(v as any)}
-                    options={DEPARTMENTS as unknown as string[]}
-                  />
-                  <Select
-                    label="Status"
-                    value={status}
-                    onChange={(v) => setStatus(v as any)}
-                    options={STATUSES as unknown as string[]}
-                  />
-                  <Select
-                    label="Location"
-                    value={location}
-                    onChange={(v) => setLocation(v as any)}
-                    options={LOCATIONS as unknown as string[]}
-                  />
-                  <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-600">Search</label>
-                    <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
-                      <input
-                        value={q}
-                        onChange={(e) => setQ(e.target.value)}
-                        placeholder="Search job title, dept, location..."
-                        className="w-full bg-transparent text-sm outline-none placeholder:text-slate-400"
-                      />
-                      <span className="text-slate-400">⌕</span>
-                    </div>
-                  </div>
-                </div>
+          <ActionButton role="HR" onClick={onAddJob} className="px-4 py-2 text-sm">
+            Add Job Posting
+          </ActionButton>
+        </div>
+      </div>
 
-                <button
-                  onClick={onAddJob}
-                  className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-                >
-                  Add Job Posting
-                </button>
-              </div>
-            </div>
+      {/* Table */}
+      <div className="rounded-xl border bg-white shadow">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-50 text-slate-600">
+              <tr>
+                <th className="px-5 py-3 font-semibold">Job Title</th>
+                <th className="px-5 py-3 font-semibold">Department</th>
+                <th className="px-5 py-3 font-semibold">Applicants</th>
+                <th className="px-5 py-3 font-semibold">Status</th>
+                <th className="px-5 py-3 font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {rows.length === 0 ? (
+                <tr>
+                  <td className="px-5 py-6 text-slate-500" colSpan={5}>
+                    No job postings match the filters.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((job) => (
+                  <tr key={job.id} className="hover:bg-slate-50">
+                    <td className="px-5 py-4 font-medium text-slate-900">{job.title}</td>
+                    <td className="px-5 py-4 text-slate-700">{job.department}</td>
+                    <td className="px-5 py-4 text-slate-700">{job.applicants} Applicants</td>
+                    <td className="px-5 py-4">
+                      <StatusPill status={job.status} />
+                    </td>
+                    <td className="px-5 py-4">
+                      <div className="flex flex-wrap gap-2">
+                        <ActionButton role="HR" onClick={() => onView(job.id)} className="px-3 py-1.5 text-xs">
+                          View
+                        </ActionButton>
+                        <button
+                          onClick={() => onEdit(job.id)}
+                          className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-            {/* Table */}
-            <div className="mt-5 rounded-xl border bg-white shadow-sm">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-slate-50 text-slate-600">
-                    <tr>
-                      <th className="px-5 py-3 font-semibold">Job Title</th>
-                      <th className="px-5 py-3 font-semibold">Department</th>
-                      <th className="px-5 py-3 font-semibold">Applicants</th>
-                      <th className="px-5 py-3 font-semibold">Status</th>
-                      <th className="px-5 py-3 font-semibold">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {rows.length === 0 ? (
-                      <tr>
-                        <td className="px-5 py-6 text-slate-500" colSpan={5}>
-                          No job postings match the filters.
-                        </td>
-                      </tr>
-                    ) : (
-                      rows.map((job) => (
-                        <tr key={job.id} className="hover:bg-slate-50">
-                          <td className="px-5 py-4 font-medium text-slate-900">{job.title}</td>
-                          <td className="px-5 py-4 text-slate-700">{job.department}</td>
-                          <td className="px-5 py-4 text-slate-700">{job.applicants} Applicants</td>
-                          <td className="px-5 py-4">
-                            <StatusPill status={job.status} />
-                          </td>
-                          <td className="px-5 py-4">
-                            <div className="flex flex-wrap gap-2">
-                              <button
-                                onClick={() => onView(job.id)}
-                                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700"
-                              >
-                                View
-                              </button>
-                              <button
-                                onClick={() => onEdit(job.id)}
-                                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-                              >
-                                Edit
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+        {/* Footer / Pagination */}
+        <div className="flex flex-col gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-sm text-slate-600">
+            Showing{" "}
+            <span className="font-medium text-slate-900">
+              {filtered.length === 0 ? 0 : (page - 1) * pageSize + 1}
+            </span>{" "}
+            to{" "}
+            <span className="font-medium text-slate-900">
+              {Math.min(page * pageSize, filtered.length)}
+            </span>{" "}
+            of <span className="font-medium text-slate-900">{filtered.length}</span> entries
+          </div>
 
-              {/* Footer / Pagination */}
-              <div className="flex flex-col gap-3 border-t px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="text-sm text-slate-600">
-                  Showing{" "}
-                  <span className="font-medium text-slate-900">
-                    {filtered.length === 0 ? 0 : (page - 1) * pageSize + 1}
-                  </span>{" "}
-                  to{" "}
-                  <span className="font-medium text-slate-900">
-                    {Math.min(page * pageSize, filtered.length)}
-                  </span>{" "}
-                  of <span className="font-medium text-slate-900">{filtered.length}</span> entries
-                </div>
+          <div className="flex items-center gap-2">
+            <button
+              className="rounded-lg border bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Prev
+            </button>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    className="rounded-lg border bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page === 1}
-                  >
-                    Prev
-                  </button>
+            <PageButtons page={page} totalPages={totalPages} onPick={setPage} />
 
-                  <PageButtons page={page} totalPages={totalPages} onPick={setPage} />
-
-                  <button
-                    className="rounded-lg border bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page === totalPages}
-                  >
-                    Next
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-        </main>
+            <button
+              className="rounded-lg border bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page === totalPages}
+            >
+              Next
+            </button>
+          </div>
+        </div>
       </div>
     </div>
-  );
-}
-
-function SidebarItem({ label, active }: { label: string; active: boolean }) {
-  return (
-    <button
-      className={[
-        "w-full rounded-lg px-4 py-2 text-left text-sm font-medium transition",
-        active ? "bg-white/15" : "hover:bg-white/10",
-      ].join(" ")}
-      type="button"
-    >
-      {label}
-    </button>
   );
 }
 
