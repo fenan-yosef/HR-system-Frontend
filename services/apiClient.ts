@@ -1,11 +1,21 @@
 // Central HTTP client for communicating with the Django REST backend.
-// NEXT_PUBLIC_API_BASE_URL can be a full backend URL (with or without /api).
-// When unset, requests go to /api and are proxied by Next.js rewrites.
+// Uses NEXT_PUBLIC_API_BASE (full URL) when provided, otherwise falls back
+// to http://127.0.0.1:8000 for local development.
 
-const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "/api";
+const RAW_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000";
 
 function normalizeApiBaseUrl(baseUrl: string) {
-  const trimmed = baseUrl.replace(/\/$/, "");
+  // remove trailing slashes
+  const trimmed = baseUrl.replace(/\/+$/, "");
+
+  // handle relative base (e.g. "/api" or "/")
+  if (!/^https?:\/\//i.test(trimmed)) {
+    if (trimmed === "" || trimmed === "/") return "/api";
+    if (trimmed.endsWith("/api")) return trimmed;
+    return `${trimmed}/api`;
+  }
+
+  // absolute URL (http/https)
   if (trimmed.endsWith("/api")) return trimmed;
   return `${trimmed}/api`;
 }
@@ -17,11 +27,16 @@ function ensureTrailingSlash(path: string) {
   if (path.includes("?") || path.includes("#")) return path;
   return `${path}/`;
 }
+
 const ACCESS_TOKEN_KEY = "hrms_access_token";
 const REFRESH_TOKEN_KEY = "hrms_refresh_token";
 
 export interface ApiRequestOptions extends RequestInit {
   requiresAuth?: boolean;
+  // When true, suppress console logging for non-OK responses (useful for optional metrics).
+  suppressErrorLog?: boolean;
+  // When true, return undefined on 404 without throwing.
+  ignoreNotFound?: boolean;
 }
 
 function isFormData(body: BodyInit | null | undefined): body is FormData {
@@ -39,7 +54,7 @@ export async function apiFetch<TResponse>(
 ): Promise<TResponse> {
   const endpointPath = ensureTrailingSlash(endpoint.replace(/^\/+/, ""));
   const url = `${API_BASE_URL}${endpointPath}`;
-  const headers = new Headers(options.headers);
+  const headers = new Headers(options.headers as HeadersInit);
 
   // Avoid clobbering multipart/form-data boundaries.
   if (!isFormData(options.body)) {
@@ -60,27 +75,61 @@ export async function apiFetch<TResponse>(
 
   if (!response.ok) {
     let errorDetail = "";
-    try {
-      errorDetail = await response.text();
-    } catch {
-      errorDetail = "";
+    let parsedJson: unknown | null = null;
+    const contentType = response.headers.get("content-type") || "";
+
+    const isHtml = contentType.includes("text/html") || contentType.includes("application/xhtml+xml");
+
+    if (contentType.includes("application/json")) {
+      try {
+        parsedJson = await response.json();
+        errorDetail = JSON.stringify(parsedJson);
+      } catch {
+        errorDetail = "(invalid json)";
+      }
+    } else {
+      try {
+        const text = await response.text();
+        errorDetail = text.length > 1000 ? `${text.slice(0, 1000)}…(truncated)` : text;
+      } catch {
+        errorDetail = "";
+      }
     }
-    // Surface API errors in dev tools for quicker diagnosis.
-    console.error("apiFetch error", {
+
+    const logDetail = parsedJson ?? (isHtml ? "(html response omitted)" : errorDetail);
+
+    const logPayload = {
       url,
       status: response.status,
       statusText: response.statusText,
-      detail: errorDetail,
-    });
-    const suffix = errorDetail ? ` - ${errorDetail}` : "";
-    throw new Error(`API request failed with status ${response.status}${suffix}`);
+      detail: logDetail,
+    };
+    const isNotFound = response.status === 404;
+    if (isNotFound && (options.ignoreNotFound || url.includes("/leave-requests/"))) {
+      return undefined as TResponse;
+    }
+
+    if (!options.suppressErrorLog) {
+      try {
+        console.error("apiFetch error: " + JSON.stringify(logPayload));
+      } catch {
+        console.error("apiFetch error", logPayload);
+      }
+    }
+
+    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
   }
 
   if (response.status === 204) {
     return undefined as TResponse;
   }
 
-  return (await response.json()) as TResponse;
+  const respContentType = response.headers.get("content-type") || "";
+  if (respContentType.includes("application/json")) {
+    return (await response.json()) as TResponse;
+  }
+
+  return (await response.text()) as unknown as TResponse;
 }
 
 export function persistTokens(access: string, refresh: string) {
