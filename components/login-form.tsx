@@ -26,6 +26,8 @@ export function LoginForm({
 
   function getLandingPath(role?: UserRole) {
     switch (role) {
+      case "ADMIN":
+        return "/hr";
       case "HR_MANAGER":
         return "/hr";
       case "MANAGER":

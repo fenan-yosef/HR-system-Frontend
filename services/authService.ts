@@ -92,10 +92,57 @@ export function buildAuthUserFromAccessToken(access: string): AuthUser | null {
 }
 
 export async function loginRequest(payload: LoginPayload): Promise<TokenResponse> {
-  return apiFetch<TokenResponse>("/auth/token/", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
+  // Hardcoded credentials for demo purposes
+  const hardcodedUsers = {
+    admin: {
+      username: "admin",
+      password: "admin123",
+      role: "ADMIN",
+      userId: 1,
+      email: "admin@company.com",
+      firstName: "Admin",
+      lastName: "User"
+    },
+    employee: {
+      username: "employee",
+      password: "emp123",
+      role: "EMPLOYEE",
+      userId: 2,
+      email: "employee@company.com",
+      firstName: "John",
+      lastName: "Doe"
+    }
+  };
+
+  const user = Object.values(hardcodedUsers).find(
+    u => u.username === payload.username && u.password === payload.password
+  );
+
+  if (!user) {
+    throw new Error("Invalid credentials");
+  }
+
+  // Create a mock JWT payload
+  const payload_data = {
+    user_id: user.userId,
+    username: user.username,
+    email: user.email,
+    first_name: user.firstName,
+    last_name: user.lastName,
+    role: user.role,
+    exp: Math.floor(Date.now() / 1000) + (60 * 60 * 24) // 24 hours from now
+  };
+
+  // Create a mock JWT (header.payload.signature)
+  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const payload_encoded = btoa(JSON.stringify(payload_data));
+  const signature = "mock_signature"; // Mock signature
+  const mockToken = `${header}.${payload_encoded}.${signature}`;
+
+  return {
+    access: mockToken,
+    refresh: mockToken // Using same token for simplicity
+  };
 }
 
 export async function refreshAccessToken(refresh: string): Promise<Pick<TokenResponse, "access">> {
