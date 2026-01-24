@@ -267,7 +267,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="border-border bg-card text-card-foreground flex h-full w-72 flex-col border-r shadow-sm relative z-20 overflow-hidden">
+    <aside className="border-border bg-card text-card-foreground flex h-dvh w-72 flex-col border-r shadow-sm relative z-20 overflow-hidden shrink-0 min-h-0">
       {/* Decorative top gradient */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
       
@@ -285,7 +285,7 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 overflow-y-auto space-y-6 px-4 py-2 custom-scrollbar">
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-6 px-4 py-2 custom-scrollbar">
         {NAVIGATION_CONFIG.map((section, sIdx) => {
           const visibleItems = section.items.filter(item => 
             !item.roles || item.roles.includes(userRole as any)

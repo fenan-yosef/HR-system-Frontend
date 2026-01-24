@@ -16,11 +16,11 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
   return (
     <RoleGuard>
-      <div className="bg-background text-foreground flex min-h-screen">
+      <div className="bg-background text-foreground flex h-dvh overflow-hidden">
         <Sidebar />
-        <div className="flex h-screen flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <Header />
-          <main className="flex-1 overflow-y-auto bg-muted/30">
+          <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-muted/30">
             <div className="mx-auto max-w-7xl p-8">
               <AnimatePresence mode="wait">
                 <motion.div
