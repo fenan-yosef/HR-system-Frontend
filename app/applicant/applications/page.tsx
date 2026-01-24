@@ -4,8 +4,10 @@ import { ClipboardList, CheckCircle2, Clock3 } from "lucide-react";
 import { RoleAppShell } from "@/components/layout/RoleAppShell";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function ApplicantApplicationsPage() {
+  const router = useRouter();
   return (
     <RoleAppShell role="APPLICANT" userName="Emma Applicant">
       <div className="grid gap-4 lg:grid-cols-2">
@@ -16,8 +18,8 @@ export default function ApplicantApplicationsPage() {
           </CardHeader>
           <CardContent className="space-y-3 px-6 pb-6">
             {[
-              { role: "Frontend Developer", company: "Tech Corp", status: "Interview Scheduled", icon: CheckCircle2, accent: "text-emerald-600" },
-              { role: "Product Designer", company: "Bright Labs", status: "Under Review", icon: Clock3, accent: "text-slate-500" },
+              { role: "Frontend Developer", company: "Ethio Telecom", status: "Interview Scheduled", icon: CheckCircle2, accent: "text-emerald-600" },
+              { role: "Product Designer", company: "Dashen Bank", status: "Under Review", icon: Clock3, accent: "text-slate-500" },
             ].map((app, idx) => (
               <div key={idx} className="flex items-center justify-between rounded-lg border bg-white px-4 py-3">
                 <div>
@@ -39,9 +41,9 @@ export default function ApplicantApplicationsPage() {
             <CardDescription>Quick tasks</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3 px-6 pb-6">
-            <Button size="sm">Withdraw application</Button>
-            <Button size="sm" variant="secondary">Update resume</Button>
-            <Button size="sm" variant="ghost">Contact recruiter</Button>
+            <Button size="sm" onClick={() => alert("Application withdrawn.")}>Withdraw application</Button>
+            <Button size="sm" variant="secondary" onClick={() => router.push("/applicant/profile")}>Update resume</Button>
+            <Button size="sm" variant="ghost" onClick={() => router.push("/applicant/messages")}>Contact recruiter</Button>
           </CardContent>
         </Card>
       </div>

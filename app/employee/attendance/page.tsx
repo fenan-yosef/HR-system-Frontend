@@ -10,8 +10,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function EmployeeAttendancePage() {
+  const router = useRouter();
   return (
     <RoleAppShell role="EMPLOYEE" userName="Emma Employee">
       <div className="grid gap-4 lg:grid-cols-3">
@@ -92,9 +94,9 @@ export default function EmployeeAttendancePage() {
             <CardDescription>Quick attendance tasks</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3 px-6 pb-6">
-            <Button size="sm">Download timesheet</Button>
-            <Button size="sm" variant="secondary">View policy</Button>
-            <Button size="sm" variant="ghost">Report an issue</Button>
+            <Button size="sm" onClick={() => alert("Downloading timesheet...")}>Download timesheet</Button>
+            <Button size="sm" variant="secondary" onClick={() => router.push("/hr/settings")}>View policy</Button>
+            <Button size="sm" variant="ghost" onClick={() => router.push("/employee/support")}>Report an issue</Button>
           </CardContent>
         </Card>
       </div>

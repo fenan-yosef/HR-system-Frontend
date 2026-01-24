@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, CheckCircle2, MessageSquare } from "lucide-react";
+import { Briefcase, CheckCircle2, MessageSquare, MapPin, Banknote } from "lucide-react";
 import { RoleAppShell } from "@/components/layout/RoleAppShell";
 import {
   Card,
@@ -10,8 +10,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function ApplicantDashboard() {
+  const router = useRouter();
   return (
     <RoleAppShell role="APPLICANT" userName="Emma Applicant">
       <div className="grid gap-4 lg:grid-cols-3">
@@ -59,18 +61,26 @@ export default function ApplicantDashboard() {
             <div className="flex items-center justify-between rounded-lg border bg-white px-4 py-3">
               <div>
                 <div className="font-semibold">Senior Frontend Developer</div>
-                <div className="text-xs text-slate-500">Tech Corp · Remote</div>
+                <div className="text-xs text-slate-500 flex items-center gap-3">
+                  <span>Ethio Telecom</span>
+                  <span className="flex items-center gap-1"><MapPin className="size-3" /> Addis Ababa (Remote)</span>
+                  <span className="flex items-center gap-1"><Banknote className="size-3" /> Br 100,000</span>
+                </div>
               </div>
-              <Button size="sm" variant="secondary">
+              <Button size="sm" variant="secondary" onClick={() => router.push("/applicant/jobs")}> 
                 <Briefcase className="mr-2 size-4" /> View role
               </Button>
             </div>
             <div className="flex items-center justify-between rounded-lg border bg-white px-4 py-3">
               <div>
                 <div className="font-semibold">Product Designer</div>
-                <div className="text-xs text-slate-500">Bright Labs · Hybrid</div>
+                <div className="text-xs text-slate-500 flex items-center gap-3">
+                  <span>Dashen Bank</span>
+                  <span className="flex items-center gap-1"><MapPin className="size-3" /> Addis Ababa (Hybrid)</span>
+                  <span className="flex items-center gap-1"><Banknote className="size-3" /> Br 80,000</span>
+                </div>
               </div>
-              <Button size="sm" variant="ghost">Save</Button>
+              <Button size="sm" variant="ghost" onClick={() => alert("Saved role.")}>Save</Button>
             </div>
           </CardContent>
         </Card>
