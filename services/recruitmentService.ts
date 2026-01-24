@@ -6,6 +6,8 @@ import type {
   Department,
   PaginatedResponse,
   ShortlistEntry,
+  CreateApplicant,
+  ApplicantResponse,
 } from "@/types/recruitment";
 import { apiFetch } from "@/services/apiClient";
 
@@ -46,4 +48,31 @@ export function triggerShortlist(applicationId: number) {
     method: "POST",
     requiresAuth: true,
   });
+}
+
+export function fetchPublicJobPositions(): Promise<PaginatedResponse<JobPosition>> {
+  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions/", { requiresAuth: false });
+}
+
+export function fetchPublicJobPosition(positionId: number): Promise<JobPosition> {
+  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, { requiresAuth: false });
+}
+
+export function createApplicant(data: CreateApplicant): Promise<ApplicantResponse> {
+  return apiFetch<ApplicantResponse>("/applicants/", {
+    method: "POST",
+    body: JSON.stringify(data),
+    requiresAuth: false, // Ensure public access
+  });
+}
+
+// Assuming the backend has this endpoint for tracking
+export function trackApplicant(trackingCode: string, email?: string): Promise<any> {
+    // Construct query or body. Using POST for security/privacy if email is involved, or GET with query params.
+    // I will try GET with query param for now as it's a "Track" (Read) operation.
+    const params = new URLSearchParams({ tracking_code: trackingCode });
+    if (email) params.append("email", email);
+    
+    // Note: The actual endpoint might differ. Adjust as needed.
+    return apiFetch<any>(`/applicants/track/?${params.toString()}`, { requiresAuth: false });
 }

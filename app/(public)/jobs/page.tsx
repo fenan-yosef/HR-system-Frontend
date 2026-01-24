@@ -1,0 +1,105 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { fetchPublicJobPositions } from "@/services/recruitmentService";
+import { JobPosition } from "@/types/recruitment";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "lucide-react"; // Wait, Badge is usually a component, let me check if I have it. I'll use a span if not.
+
+export default function PublicJobsPage() {
+  const [jobs, setJobs] = useState<JobPosition[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPublicJobPositions()
+      .then((response) => {
+        // Filter for open jobs only
+        const openJobs = response.results.filter((job) => job.status === "open");
+        setJobs(openJobs);
+      })
+      .catch((err) => {
+        console.error("Failed to load jobs", err);
+        setError("Unable to load job openings. Please try again later.");
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-12 text-red-500">
+        <p>{error}</p>
+        <Button onClick={() => window.location.reload()} variant="outline" className="mt-4">
+          Retry
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto space-y-8">
+      <div className="text-center space-y-4">
+        <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+          Join Our Team
+        </h1>
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          Explore exciting opportunities and help us build the future. We are always looking for talented individuals.
+        </p>
+      </div>
+
+      <div className="grid gap-6">
+        {jobs.length === 0 ? (
+          <Card>
+            <CardContent className="py-8 text-center text-gray-500">
+              No open positions at the moment. Please check back later.
+            </CardContent>
+          </Card>
+        ) : (
+          jobs.map((job) => (
+            <Card key={job.position_id} className="hover:shadow-md transition-shadow">
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-xl text-blue-600">
+                      <Link href={`/jobs/${job.position_id}`} className="hover:underline">
+                        {job.title}
+                      </Link>
+                    </CardTitle>
+                    <CardDescription className="mt-1">
+                      Posted on {new Date(job.posted_date).toLocaleDateString()}
+                    </CardDescription>
+                  </div>
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 capitalize">
+                    {job.status.replace("_", " ")}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-600 line-clamp-3">
+                  {job.description || "No description available."}
+                </p>
+              </CardContent>
+              <CardFooter>
+                <Link href={`/jobs/${job.position_id}`} className="w-full sm:w-auto">
+                  <Button>View Details & Apply</Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}

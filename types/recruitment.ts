@@ -86,3 +86,22 @@ export interface ShortlistEntry {
   updated_at: string;
   reviewer_role?: UserRole;
 }
+
+export interface CreateApplicant {
+  full_name: string;
+  email: string;
+  phone: string;
+  cv_path: string;
+  position_id?: number;
+}
+
+export interface ApplicantResponse {
+  applicant_id: number;
+  full_name: string;
+  email: string;
+  phone: string;
+  cv_path: string;
+  submitted_at: string;
+  tracking_code: string;
+  tracking_code_sent_at: string;
+}
