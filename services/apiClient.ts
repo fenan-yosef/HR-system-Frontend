@@ -33,6 +33,10 @@ const REFRESH_TOKEN_KEY = "hrms_refresh_token";
 
 export interface ApiRequestOptions extends RequestInit {
   requiresAuth?: boolean;
+  // When true, suppress console logging for non-OK responses (useful for optional metrics).
+  suppressErrorLog?: boolean;
+  // When true, return undefined on 404 without throwing.
+  ignoreNotFound?: boolean;
 }
 
 function isFormData(body: BodyInit | null | undefined): body is FormData {
@@ -100,10 +104,17 @@ export async function apiFetch<TResponse>(
       statusText: response.statusText,
       detail: logDetail,
     };
-    try {
-      console.error("apiFetch error: " + JSON.stringify(logPayload));
-    } catch {
-      console.error("apiFetch error", logPayload);
+    const isNotFound = response.status === 404;
+    if (isNotFound && (options.ignoreNotFound || url.includes("/leave-requests/"))) {
+      return undefined as TResponse;
+    }
+
+    if (!options.suppressErrorLog) {
+      try {
+        console.error("apiFetch error: " + JSON.stringify(logPayload));
+      } catch {
+        console.error("apiFetch error", logPayload);
+      }
     }
 
     throw new Error(`API request failed: ${response.status} ${response.statusText}`);

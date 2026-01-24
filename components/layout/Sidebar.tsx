@@ -6,22 +6,20 @@ import { cn } from "@/lib/utils";
 import { ROUTES } from "@/constants/routes";
 import { ROLE_LABELS } from "@/constants/roles";
 import { useAuth } from "@/hooks/useAuth";
-
-interface NavItem {
-  label: string;
-  href: string;
-}
-
-const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: ROUTES.DASHBOARD },
-  { label: "Job Postings", href: ROUTES.RECRUITMENT_JOB_POSTINGS },
-  { label: "Applications", href: ROUTES.RECRUITMENT_APPLICATIONS },
-  { label: "Shortlist", href: ROUTES.RECRUITMENT_SHORTLIST },
-];
+import { navItems } from "@/components/navigation/navConfig";
 
 export function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuth();
+
+  const roleKey = (user?.role ?? "").toUpperCase();
+  const items = (() => {
+    if (roleKey === "ADMIN" || roleKey === "HR_MANAGER") return navItems.HR;
+    if (roleKey === "MANAGER") return navItems.MANAGER;
+    if (roleKey === "EMPLOYEE") return navItems.EMPLOYEE;
+    if (roleKey === "APPLICANT") return navItems.APPLICANT;
+    return navItems.DEFAULT;
+  })();
 
   return (
     <aside className="border-sidebar-border bg-sidebar text-sidebar-foreground flex h-full w-64 flex-col border-r">
@@ -53,12 +51,12 @@ export function Sidebar() {
       </div>
 
       <nav className="flex-1 space-y-1 px-2 py-4 text-sm">
-        {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href;
+        {items.map((item) => {
+          const isActive = pathname === item.path;
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={item.path}
+              href={item.path}
               className={cn(
                 "flex items-center gap-2 rounded-md px-3 py-2 transition-colors",
                 isActive
