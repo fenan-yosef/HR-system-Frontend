@@ -22,7 +22,12 @@ import {
   CreditCard,
   Settings,
   ShieldAlert,
-  GraduationCap
+  GraduationCap,
+  Target,
+  FileText,
+  UserCircle,
+  HelpCircle,
+  Clock
 } from "lucide-react";
 import { UserRole } from "@/types/auth";
 
@@ -46,7 +51,7 @@ interface NavSection {
 
 const NAVIGATION_CONFIG: NavSection[] = [
   {
-    section: "Main",
+    section: "Overview",
     items: [
       { 
         label: "Dashboard", 
@@ -57,59 +62,54 @@ const NAVIGATION_CONFIG: NavSection[] = [
     ],
   },
   {
-    section: "Recruitment",
+    section: "Talent Hub",
     items: [
       { 
-        label: "Job Postings", 
-        href: ROUTES.RECRUITMENT_JOB_POSTINGS, 
+        label: "Recruitment", 
         icon: Briefcase,
-        roles: ["ADMIN", "HR_MANAGER"]
+        roles: ["ADMIN", "HR_MANAGER"],
+        subItems: [
+          { label: "Job Postings", href: ROUTES.RECRUITMENT_JOB_POSTINGS },
+          { label: "Applications", href: ROUTES.RECRUITMENT_APPLICATIONS },
+          { label: "Shortlist", href: ROUTES.RECRUITMENT_SHORTLIST },
+        ]
       },
       { 
-        label: "Applications", 
-        href: ROUTES.RECRUITMENT_APPLICATIONS, 
-        icon: Users,
-        roles: ["ADMIN", "HR_MANAGER"]
-      },
-      { 
-        label: "Shortlist", 
-        href: ROUTES.RECRUITMENT_SHORTLIST, 
+        label: "Onboarding", 
+        href: ROUTES.ONBOARDING, 
         icon: UserCheck,
         roles: ["ADMIN", "HR_MANAGER"]
       },
     ],
   },
   {
-    section: "People & Ops",
+    section: "Operations",
     items: [
       { 
-        label: "Employees", 
+        label: "People", 
         icon: Users2,
         roles: ["ADMIN", "HR_MANAGER"],
         subItems: [
-          { label: "All Directory", href: "#" },
-          { label: "Onboarding", href: "#" },
-          { label: "Offboarding", href: "#" },
+          { label: "Employee Directory", href: ROUTES.EMPLOYEES },
+          { label: "Offboarding", href: ROUTES.OFFBOARDING },
         ]
       },
       { 
         label: "Attendance", 
-        icon: CalendarDays,
+        icon: Clock,
         roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
         subItems: [
-          { label: "My Attendance", href: "#" },
-          { label: "Team Logs", href: "#" },
-          { label: "Leave Requests", href: "#" },
+          { label: "Time Logs", href: ROUTES.ATTENDANCE },
+          { label: "Leave Requests", href: ROUTES.LEAVE_REQUESTS },
         ]
       },
       { 
-        label: "Payroll", 
+        label: "Finance", 
         icon: CreditCard,
         roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
         subItems: [
-          { label: "Payslips", href: "#" },
-          { label: "Tax Forms", href: "#" },
-          { label: "Settings", href: "#" },
+          { label: "Payroll", href: ROUTES.PAYROLL },
+          { label: "Tax Info", href: "#" },
         ]
       },
     ],
@@ -118,30 +118,47 @@ const NAVIGATION_CONFIG: NavSection[] = [
     section: "Growth",
     items: [
       { 
-        label: "Learning", 
+        label: "Performance", 
+        href: ROUTES.PERFORMANCE, 
+        icon: Target,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"]
+      },
+      { 
+        label: "Academy", 
+        href: ROUTES.LEARNING, 
         icon: GraduationCap,
-        roles: ["EMPLOYEE", "ADMIN", "HR_MANAGER"],
-        subItems: [
-          { label: "Courses", href: "#" },
-          { label: "Certifications", href: "#" },
-        ]
+        roles: ["EMPLOYEE", "ADMIN", "HR_MANAGER"]
       },
     ],
   },
   {
-    section: "System",
+    section: "Personal",
     items: [
       { 
-        label: "Security", 
-        icon: ShieldAlert,
-        roles: ["ADMIN"],
-        href: "#"
+        label: "My Profile", 
+        href: ROUTES.MY_PROFILE, 
+        icon: UserCircle,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"]
       },
       { 
-        label: "Settings", 
+        label: "Documents", 
+        href: ROUTES.MY_DOCUMENTS, 
+        icon: FileText,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"]
+      },
+    ],
+  },
+  {
+    section: "Control",
+    items: [
+      { 
+        label: "System", 
         icon: Settings,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
-        href: "#"
+        roles: ["ADMIN"],
+        subItems: [
+          { label: "Security", href: ROUTES.SECURITY },
+          { label: "Config", href: ROUTES.SETTINGS },
+        ]
       },
     ],
   },
@@ -251,16 +268,20 @@ export function Sidebar() {
 
   return (
     <aside className="border-border bg-card text-card-foreground flex h-full w-72 flex-col border-r shadow-sm relative z-20 overflow-hidden">
-      <div className="flex items-center gap-3 px-6 py-8 shrink-0">
+      {/* Decorative top gradient */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
+      
+      <div className="flex items-center gap-3 px-6 py-8 shrink-0 relative group cursor-default">
         <motion.div 
-          whileHover={{ rotate: 5 }}
-          className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-xl shadow-lg shadow-primary/20"
+          whileHover={{ rotate: 180 }}
+          transition={{ type: "spring", stiffness: 200 }}
+          className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-2xl shadow-xl shadow-primary/20 ring-4 ring-primary/5"
         >
           <GalleryVerticalEnd className="size-6" />
         </motion.div>
         <div className="flex flex-col">
-          <span className="text-lg font-bold tracking-tight">HR<span className="text-primary/70">Flow</span></span>
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Workspace</span>
+          <span className="text-xl font-black tracking-tight leading-none">HR<span className="text-primary italic">Flow</span></span>
+          <span className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-black mt-1">Intelligence</span>
         </div>
       </div>
 
@@ -287,8 +308,8 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="mt-auto p-4 shrink-0 border-t border-border/40">
-        <div className="rounded-2xl bg-muted/50 p-4 border border-border/50 transition-all hover:bg-muted/80">
+      <div className="mt-auto p-4 shrink-0 border-t border-border/40 bg-muted/20">
+        <div className="rounded-2xl bg-background p-4 border border-border/50 transition-all hover:shadow-inner">
           {user ? (
             <div className="space-y-4">
               <div className="flex items-center gap-3">
@@ -318,8 +339,8 @@ export function Sidebar() {
             <p className="text-center text-xs text-muted-foreground">Not signed in</p>
           )}
         </div>
-        <p className="mt-4 text-center text-[10px] text-muted-foreground/50 font-medium uppercase tracking-tighter">
-          Enterprise v1.2.1 • HRFlow AI
+        <p className="mt-4 text-center text-[10px] text-muted-foreground/50 font-black uppercase tracking-[0.2em]">
+          HR system by ASTU Students
         </p>
       </div>
     </aside>
