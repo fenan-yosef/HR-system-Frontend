@@ -8,11 +8,11 @@ import { ROLE_LABELS } from "@/constants/roles";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  Users, 
-  UserCheck, 
+import {
+  LayoutDashboard,
+  Briefcase,
+  Users,
+  UserCheck,
   GalleryVerticalEnd,
   LogOut,
   ChevronRight,
@@ -27,7 +27,7 @@ import {
   FileText,
   UserCircle,
   HelpCircle,
-  Clock
+  Clock,
 } from "lucide-react";
 import { UserRole } from "@/types/auth";
 
@@ -53,115 +53,115 @@ const NAVIGATION_CONFIG: NavSection[] = [
   {
     section: "Overview",
     items: [
-      { 
-        label: "Dashboard", 
-        href: ROUTES.DASHBOARD, 
+      {
+        label: "Dashboard",
+        href: ROUTES.DASHBOARD,
         icon: LayoutDashboard,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"]
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
       },
     ],
   },
+  // {
+  //   section: "Talent Hub",
+  //   items: [
+  //     {
+  //       label: "Recruitment",
+  //       icon: Briefcase,
+  //       roles: ["ADMIN", "HR_MANAGER"],
+  //       subItems: [
+  //         { label: "Job Postings", href: ROUTES.RECRUITMENT_JOB_POSTINGS },
+  //         { label: "Applications", href: ROUTES.RECRUITMENT_APPLICATIONS },
+  //         { label: "Shortlist", href: ROUTES.RECRUITMENT_SHORTLIST },
+  //       ]
+  //     },
+  //     {
+  //       label: "Onboarding",
+  //       href: ROUTES.ONBOARDING,
+  //       icon: UserCheck,
+  //       roles: ["ADMIN", "HR_MANAGER"]
+  //     },
+  //   ],
+  // },
   {
-    section: "Talent Hub",
+    section: "",
     items: [
-      { 
-        label: "Recruitment", 
-        icon: Briefcase,
-        roles: ["ADMIN", "HR_MANAGER"],
-        subItems: [
-          { label: "Job Postings", href: ROUTES.RECRUITMENT_JOB_POSTINGS },
-          { label: "Applications", href: ROUTES.RECRUITMENT_APPLICATIONS },
-          { label: "Shortlist", href: ROUTES.RECRUITMENT_SHORTLIST },
-        ]
-      },
-      { 
-        label: "Onboarding", 
-        href: ROUTES.ONBOARDING, 
-        icon: UserCheck,
-        roles: ["ADMIN", "HR_MANAGER"]
-      },
-    ],
-  },
-  {
-    section: "Operations",
-    items: [
-      { 
-        label: "People", 
+      {
+        label: "Employees",
         icon: Users2,
         roles: ["ADMIN", "HR_MANAGER"],
         subItems: [
           { label: "Employee Directory", href: ROUTES.EMPLOYEES },
           { label: "Offboarding", href: ROUTES.OFFBOARDING },
-        ]
+        ],
       },
-      { 
-        label: "Attendance", 
+      {
+        label: "Attendance",
         icon: Clock,
         roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
         subItems: [
           { label: "Time Logs", href: ROUTES.ATTENDANCE },
           { label: "Leave Requests", href: ROUTES.LEAVE_REQUESTS },
-        ]
+        ],
       },
-      { 
-        label: "Finance", 
-        icon: CreditCard,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
-        subItems: [
-          { label: "Payroll", href: ROUTES.PAYROLL },
-          { label: "Tax Info", href: "#" },
-        ]
-      },
+      // {
+      //   label: "Finance",
+      //   icon: CreditCard,
+      //   roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
+      //   subItems: [
+      //     { label: "Payroll", href: ROUTES.PAYROLL },
+      //     { label: "Tax Info", href: "#" },
+      //   ],
+      // },
     ],
   },
-  {
-    section: "Growth",
-    items: [
-      { 
-        label: "Performance", 
-        href: ROUTES.PERFORMANCE, 
-        icon: Target,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"]
-      },
-      { 
-        label: "Academy", 
-        href: ROUTES.LEARNING, 
-        icon: GraduationCap,
-        roles: ["EMPLOYEE", "ADMIN", "HR_MANAGER"]
-      },
-    ],
-  },
-  {
-    section: "Personal",
-    items: [
-      { 
-        label: "My Profile", 
-        href: ROUTES.MY_PROFILE, 
-        icon: UserCircle,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"]
-      },
-      { 
-        label: "Documents", 
-        href: ROUTES.MY_DOCUMENTS, 
-        icon: FileText,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"]
-      },
-    ],
-  },
-  {
-    section: "Control",
-    items: [
-      { 
-        label: "System", 
-        icon: Settings,
-        roles: ["ADMIN"],
-        subItems: [
-          { label: "Security", href: ROUTES.SECURITY },
-          { label: "Config", href: ROUTES.SETTINGS },
-        ]
-      },
-    ],
-  },
+  // {
+  //   section: "Growth",
+  //   items: [
+  //     {
+  //       label: "Performance",
+  //       href: ROUTES.PERFORMANCE,
+  //       icon: Target,
+  //       roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
+  //     },
+  //     {
+  //       label: "Academy",
+  //       href: ROUTES.LEARNING,
+  //       icon: GraduationCap,
+  //       roles: ["EMPLOYEE", "ADMIN", "HR_MANAGER"],
+  //     },
+  //   ],
+  // },
+  // {
+  //   section: "Personal",
+  //   items: [
+  //     {
+  //       label: "My Profile",
+  //       href: ROUTES.MY_PROFILE,
+  //       icon: UserCircle,
+  //       roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
+  //     },
+  //     {
+  //       label: "Documents",
+  //       href: ROUTES.MY_DOCUMENTS,
+  //       icon: FileText,
+  //       roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
+  //     },
+  //   ],
+  // },
+  // {
+  //   section: "Control",
+  //   items: [
+  //     {
+  //       label: "System",
+  //       icon: Settings,
+  //       roles: ["ADMIN"],
+  //       subItems: [
+  //         { label: "Security", href: ROUTES.SECURITY },
+  //         { label: "Config", href: ROUTES.SETTINGS },
+  //       ],
+  //     },
+  //   ],
+  // },
 ];
 
 export function Sidebar() {
@@ -170,20 +170,20 @@ export function Sidebar() {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
   const toggleSection = (label: string) => {
-    setOpenSections(prev => ({ ...prev, [label]: !prev[label] }));
+    setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
   };
 
   // Pre-open sections that contain the active route
   useEffect(() => {
     const newOpenSections: Record<string, boolean> = {};
-    NAVIGATION_CONFIG.forEach(sec => {
-      sec.items.forEach(item => {
-        if (item.subItems?.some(sub => sub.href === pathname)) {
+    NAVIGATION_CONFIG.forEach((sec) => {
+      sec.items.forEach((item) => {
+        if (item.subItems?.some((sub) => sub.href === pathname)) {
           newOpenSections[item.label] = true;
         }
       });
     });
-    setOpenSections(prev => ({ ...prev, ...newOpenSections }));
+    setOpenSections((prev) => ({ ...prev, ...newOpenSections }));
   }, [pathname]);
 
   const userRole = user?.role || "UNKNOWN";
@@ -191,7 +191,8 @@ export function Sidebar() {
   const SidebarItem = ({ item, index }: { item: NavItem; index: number }) => {
     const hasSubItems = item.subItems && item.subItems.length > 0;
     const isOpen = openSections[item.label];
-    const isActive = item.href === pathname || item.subItems?.some(s => s.href === pathname);
+    const isActive =
+      item.href === pathname || item.subItems?.some((s) => s.href === pathname);
 
     return (
       <div className="flex flex-col gap-1">
@@ -199,12 +200,15 @@ export function Sidebar() {
           <button
             onClick={() => toggleSection(item.label)}
             className={cn(
-              "group flex items-center justify-between rounded-xl px-4 py-3 transition-all duration-300",
-              isActive ? "text-primary font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              "group flex items-center justify-between rounded-xl px-4 py-3 transition-all duration-300 text-primary font-bold",
             )}
           >
             <div className="flex items-center gap-3">
-              <item.icon className={cn("size-5 transition-transform group-hover:scale-110", isActive ? "text-primary" : "text-muted-foreground")} />
+              <item.icon
+                className={cn(
+                  "size-5 transition-transform group-hover:scale-110 text-primary",
+                )}
+              />
               <span className="font-medium text-sm">{item.label}</span>
             </div>
             <motion.div
@@ -218,16 +222,22 @@ export function Sidebar() {
           <Link
             href={item.href || "#"}
             className={cn(
-              "group relative flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300",
-              isActive
-                ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              "group relative flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ",
+              // isActive
+              //   ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
+              //   : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
-            <item.icon className={cn("size-5 transition-transform group-hover:scale-110", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
-            <span className="font-medium text-sm">{item.label}</span>
+            <item.icon
+              className={cn(
+                "size-5 transition-transform group-hover:scale-110 text-primary",
+              )}
+            />
+            <span className="font-medium text-sm text-primary">
+              {item.label}
+            </span>
             {isActive && (
-              <motion.div 
+              <motion.div
                 layoutId="activeNav"
                 className="absolute right-2 size-1.5 rounded-full bg-primary-foreground/50"
               />
@@ -250,12 +260,19 @@ export function Sidebar() {
                   href={sub.href}
                   className={cn(
                     "flex items-center gap-2 rounded-lg py-2 px-3 text-xs transition-colors",
-                    pathname === sub.href 
-                      ? "text-primary font-bold" 
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    pathname === sub.href
+                      ? "text-primary font-bold"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
-                  <div className={cn("size-1 rounded-full", pathname === sub.href ? "bg-primary" : "bg-muted-foreground/30")} />
+                  <div
+                    className={cn(
+                      "size-1 rounded-full",
+                      pathname === sub.href
+                        ? "bg-primary"
+                        : "bg-muted-foreground/30",
+                    )}
+                  />
                   {sub.label}
                 </Link>
               ))}
@@ -270,9 +287,9 @@ export function Sidebar() {
     <aside className="border-border bg-card text-card-foreground flex h-dvh w-72 flex-col border-r shadow-sm relative z-20 overflow-hidden shrink-0 min-h-0">
       {/* Decorative top gradient */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
-      
+
       <div className="flex items-center gap-3 px-6 py-8 shrink-0 relative group cursor-default">
-        <motion.div 
+        <motion.div
           whileHover={{ rotate: 180 }}
           transition={{ type: "spring", stiffness: 200 }}
           className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-2xl shadow-xl shadow-primary/20 ring-4 ring-primary/5"
@@ -280,24 +297,28 @@ export function Sidebar() {
           <GalleryVerticalEnd className="size-6" />
         </motion.div>
         <div className="flex flex-col">
-          <span className="text-xl font-black tracking-tight leading-none">HR<span className="text-primary italic">Flow</span></span>
-          <span className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-black mt-1">Intelligence</span>
+          <span className="text-xl font-black tracking-tight leading-none">
+            HR<span className="text-primary italic">Flow</span>
+          </span>
+          <span className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-black mt-1">
+            Intelligence
+          </span>
         </div>
       </div>
 
       <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-6 px-4 py-2 custom-scrollbar">
         {NAVIGATION_CONFIG.map((section, sIdx) => {
-          const visibleItems = section.items.filter(item => 
-            !item.roles || item.roles.includes(userRole as any)
+          const visibleItems = section.items.filter(
+            (item) => !item.roles || item.roles.includes(userRole as any),
           );
 
           if (visibleItems.length === 0) return null;
 
           return (
             <div key={sIdx} className="space-y-2">
-              <h3 className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">
+              {/* <h3 className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">
                 {section.section}
-              </h3>
+              </h3> */}
               <div className="space-y-1">
                 {visibleItems.map((item, iIdx) => (
                   <SidebarItem key={iIdx} item={item} index={iIdx} />
@@ -314,17 +335,22 @@ export function Sidebar() {
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary border border-primary/20">
-                  <span className="text-sm font-bold">{user.firstName?.[0]}{user.lastName?.[0]}</span>
+                  <span className="text-sm font-bold">
+                    {user.firstName?.[0]}
+                    {user.lastName?.[0]}
+                  </span>
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <p className="font-bold text-sm truncate">{user.firstName} {user.lastName}</p>
+                  <p className="font-bold text-sm truncate">
+                    {user.firstName} {user.lastName}
+                  </p>
                   <p className="text-[10px] font-medium text-primary uppercase tracking-wide">
                     {ROLE_LABELS[user.role]}
                   </p>
                 </div>
               </div>
-              
-              <button 
+
+              <button
                 onClick={logout}
                 className="flex w-full items-center justify-between gap-2 rounded-xl bg-background px-3 py-2.5 text-xs font-semibold text-muted-foreground transition-all hover:bg-destructive/5 hover:text-destructive border border-border group"
               >
@@ -336,7 +362,9 @@ export function Sidebar() {
               </button>
             </div>
           ) : (
-            <p className="text-center text-xs text-muted-foreground">Not signed in</p>
+            <p className="text-center text-xs text-muted-foreground">
+              Not signed in
+            </p>
           )}
         </div>
         <p className="mt-4 text-center text-[10px] text-muted-foreground/50 font-black uppercase tracking-[0.2em]">
