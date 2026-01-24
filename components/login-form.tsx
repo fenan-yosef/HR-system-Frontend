@@ -9,12 +9,10 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
-import { ROUTES } from "@/constants/routes";
-import { ROLE_DASHBOARD_ROUTE } from "@/constants/permissions";
+import type { UserRole } from "@/types/auth";
 
 export function LoginForm({
   className,
@@ -26,20 +24,28 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
+  function getLandingPath(role?: UserRole) {
+    switch (role) {
+      case "HR_MANAGER":
+        return "/hr";
+      case "MANAGER":
+        return "/manager";
+      case "EMPLOYEE":
+        return "/employee";
+      case "APPLICANT":
+        return "/applicant";
+      default:
+        return "/auth/login";
+    }
+  }
+
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     try {
       const authenticatedUser = await login(username, password);
-
-      // Redirect based on role: Admin to /dashboard, HR to /hr/dashboard
-      const role = authenticatedUser?.role ?? user?.role ?? "UNKNOWN";
-      const target = role === "ADMIN"
-        ? ROUTES.DASHBOARD
-        : role === "HR_MANAGER"
-          ? ROUTES.HR_DASHBOARD
-          : ROLE_DASHBOARD_ROUTE[role] ?? ROUTES.DASHBOARD;
-      router.replace(target);
+      const destination = getLandingPath(authenticatedUser?.role);
+      router.replace(destination);
     } catch (err) {
       console.error(err);
       setError("Unable to sign in. Please check your credentials.");
