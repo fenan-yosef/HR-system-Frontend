@@ -6,84 +6,342 @@ import { cn } from "@/lib/utils";
 import { ROUTES } from "@/constants/routes";
 import { ROLE_LABELS } from "@/constants/roles";
 import { useAuth } from "@/hooks/useAuth";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useEffect } from "react";
+import { 
+  LayoutDashboard, 
+  Briefcase, 
+  Users, 
+  UserCheck, 
+  GalleryVerticalEnd,
+  LogOut,
+  ChevronRight,
+  ChevronDown,
+  Users2,
+  CalendarDays,
+  CreditCard,
+  Settings,
+  ShieldAlert,
+  GraduationCap,
+  Target,
+  FileText,
+  UserCircle,
+  HelpCircle,
+  Clock
+} from "lucide-react";
+import { UserRole } from "@/types/auth";
 
-interface NavItem {
+interface NavSubItem {
   label: string;
   href: string;
 }
 
-const NAV_ITEMS: NavItem[] = [
-  { label: "Dashboard", href: ROUTES.DASHBOARD },
-  { label: "Job Postings", href: ROUTES.RECRUITMENT_JOB_POSTINGS },
-  { label: "Applications", href: ROUTES.RECRUITMENT_APPLICATIONS },
-  { label: "Shortlist", href: ROUTES.RECRUITMENT_SHORTLIST },
+interface NavItem {
+  label: string;
+  href?: string;
+  icon: React.ElementType;
+  roles?: UserRole[];
+  subItems?: NavSubItem[];
+}
+
+interface NavSection {
+  section: string;
+  items: NavItem[];
+}
+
+const NAVIGATION_CONFIG: NavSection[] = [
+  {
+    section: "Overview",
+    items: [
+      { 
+        label: "Dashboard", 
+        href: ROUTES.DASHBOARD, 
+        icon: LayoutDashboard,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"]
+      },
+    ],
+  },
+  {
+    section: "Talent Hub",
+    items: [
+      { 
+        label: "Recruitment", 
+        icon: Briefcase,
+        roles: ["ADMIN", "HR_MANAGER"],
+        subItems: [
+          { label: "Job Postings", href: ROUTES.RECRUITMENT_JOB_POSTINGS },
+          { label: "Applications", href: ROUTES.RECRUITMENT_APPLICATIONS },
+          { label: "Shortlist", href: ROUTES.RECRUITMENT_SHORTLIST },
+        ]
+      },
+      { 
+        label: "Onboarding", 
+        href: ROUTES.ONBOARDING, 
+        icon: UserCheck,
+        roles: ["ADMIN", "HR_MANAGER"]
+      },
+    ],
+  },
+  {
+    section: "Operations",
+    items: [
+      { 
+        label: "People", 
+        icon: Users2,
+        roles: ["ADMIN", "HR_MANAGER"],
+        subItems: [
+          { label: "Employee Directory", href: ROUTES.EMPLOYEES },
+          { label: "Offboarding", href: ROUTES.OFFBOARDING },
+        ]
+      },
+      { 
+        label: "Attendance", 
+        icon: Clock,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
+        subItems: [
+          { label: "Time Logs", href: ROUTES.ATTENDANCE },
+          { label: "Leave Requests", href: ROUTES.LEAVE_REQUESTS },
+        ]
+      },
+      { 
+        label: "Finance", 
+        icon: CreditCard,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
+        subItems: [
+          { label: "Payroll", href: ROUTES.PAYROLL },
+          { label: "Tax Info", href: "#" },
+        ]
+      },
+    ],
+  },
+  {
+    section: "Growth",
+    items: [
+      { 
+        label: "Performance", 
+        href: ROUTES.PERFORMANCE, 
+        icon: Target,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"]
+      },
+      { 
+        label: "Academy", 
+        href: ROUTES.LEARNING, 
+        icon: GraduationCap,
+        roles: ["EMPLOYEE", "ADMIN", "HR_MANAGER"]
+      },
+    ],
+  },
+  {
+    section: "Personal",
+    items: [
+      { 
+        label: "My Profile", 
+        href: ROUTES.MY_PROFILE, 
+        icon: UserCircle,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"]
+      },
+      { 
+        label: "Documents", 
+        href: ROUTES.MY_DOCUMENTS, 
+        icon: FileText,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"]
+      },
+    ],
+  },
+  {
+    section: "Control",
+    items: [
+      { 
+        label: "System", 
+        icon: Settings,
+        roles: ["ADMIN"],
+        subItems: [
+          { label: "Security", href: ROUTES.SECURITY },
+          { label: "Config", href: ROUTES.SETTINGS },
+        ]
+      },
+    ],
+  },
 ];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
+
+  const toggleSection = (label: string) => {
+    setOpenSections(prev => ({ ...prev, [label]: !prev[label] }));
+  };
+
+  // Pre-open sections that contain the active route
+  useEffect(() => {
+    const newOpenSections: Record<string, boolean> = {};
+    NAVIGATION_CONFIG.forEach(sec => {
+      sec.items.forEach(item => {
+        if (item.subItems?.some(sub => sub.href === pathname)) {
+          newOpenSections[item.label] = true;
+        }
+      });
+    });
+    setOpenSections(prev => ({ ...prev, ...newOpenSections }));
+  }, [pathname]);
+
+  const userRole = user?.role || "UNKNOWN";
+
+  const SidebarItem = ({ item, index }: { item: NavItem; index: number }) => {
+    const hasSubItems = item.subItems && item.subItems.length > 0;
+    const isOpen = openSections[item.label];
+    const isActive = item.href === pathname || item.subItems?.some(s => s.href === pathname);
+
+    return (
+      <div className="flex flex-col gap-1">
+        {hasSubItems ? (
+          <button
+            onClick={() => toggleSection(item.label)}
+            className={cn(
+              "group flex items-center justify-between rounded-xl px-4 py-3 transition-all duration-300",
+              isActive ? "text-primary font-bold" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            <div className="flex items-center gap-3">
+              <item.icon className={cn("size-5 transition-transform group-hover:scale-110", isActive ? "text-primary" : "text-muted-foreground")} />
+              <span className="font-medium text-sm">{item.label}</span>
+            </div>
+            <motion.div
+              animate={{ rotate: isOpen ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="size-3.5 opacity-50" />
+            </motion.div>
+          </button>
+        ) : (
+          <Link
+            href={item.href || "#"}
+            className={cn(
+              "group relative flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300",
+              isActive
+                ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            <item.icon className={cn("size-5 transition-transform group-hover:scale-110", isActive ? "text-primary-foreground" : "text-muted-foreground")} />
+            <span className="font-medium text-sm">{item.label}</span>
+            {isActive && (
+              <motion.div 
+                layoutId="activeNav"
+                className="absolute right-2 size-1.5 rounded-full bg-primary-foreground/50"
+              />
+            )}
+          </Link>
+        )}
+
+        <AnimatePresence initial={false}>
+          {hasSubItems && isOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeInOut" }}
+              className="overflow-hidden flex flex-col gap-0.5 pl-9 pr-2"
+            >
+              {item.subItems?.map((sub, idx) => (
+                <Link
+                  key={idx}
+                  href={sub.href}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg py-2 px-3 text-xs transition-colors",
+                    pathname === sub.href 
+                      ? "text-primary font-bold" 
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )}
+                >
+                  <div className={cn("size-1 rounded-full", pathname === sub.href ? "bg-primary" : "bg-muted-foreground/30")} />
+                  {sub.label}
+                </Link>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
 
   return (
-    <aside className="border-sidebar-border bg-sidebar text-sidebar-foreground flex h-full w-64 flex-col border-r">
-      <div className="flex items-center gap-2 border-b px-4 py-4">
-        <div className="flex size-8 items-center justify-center">
-          <svg
-            width="32"
-            height="32"
-            viewBox="0 0 512 512"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <rect width="512" height="512" rx="24" fill="#6938EF" />
-            <path
-              d="M293.046 160.743C260.886 160.742 229.256 160.742 197.592 160.742C196.219 162.422 196.678 164.449 196.675 166.337C196.643 186.856 196.795 207.375 196.575 227.891C196.522 232.742 198.281 234.708 202.941 234.677C236.896 234.45 270.853 235.251 304.807 234.281C309.466 234.148 310.871 232.338 310.833 227.863C310.668 208.407 310.932 188.947 310.657 169.493C310.583 164.264 312.427 162.634 317.382 162.867C323.383 163.149 329.423 163.175 335.416 162.816C340.073 162.537 341.059 164.54 341.045 168.736C340.938 203.051 341.128 237.367 340.888 271.681C340.85 277.192 342.562 278.558 347.822 278.452C363.381 278.14 378.953 278.481 394.516 278.273C399.024 278.213 400.793 279.444 400.691 284.241C400.408 297.678 400.727 311.127 400.548 324.568C400.178 352.285 375.443 380.227 348.189 384.082C344.373 384.622 342.327 383.836 342.728 379.579C342.861 378.176 342.911 376.732 342.739 375.339C341.369 364.248 343.55 356.124 354.482 349.228C367.484 341.025 372.868 326.891 372.475 311.096C372.391 307.709 371.183 306.321 367.768 306.394C360.872 306.542 353.961 306.712 347.078 306.395C342.474 306.182 340.82 307.681 340.901 312.383C341.146 326.706 341.025 341.036 341.026 355.364C341.027 375.528 340.89 395.694 341.086 415.857C341.133 420.704 339.58 422.54 334.674 422.261C328.857 421.929 322.985 421.901 317.173 422.291C311.909 422.644 310.474 420.519 310.671 415.543C311.006 407.066 310.643 398.564 310.803 390.077C310.87 386.507 309.759 385.073 305.965 385.086C271.474 385.196 236.981 385.196 202.489 385.095C197.854 385.081 196.702 387.556 196.694 391.417C196.676 399.907 196.56 408.399 196.702 416.887C196.766 420.689 195.433 422.368 191.47 422.254C184.754 422.061 178.025 422.066 171.308 422.245C167.608 422.344 166.307 420.859 166.363 417.241C166.504 408.223 166.181 399.193 166.481 390.182C166.623 385.915 165.303 384.038 161.06 382.788C137.427 375.822 121.805 360.44 114.378 336.906C112.349 330.478 111.371 323.812 111.363 317.075C111.315 278.337 111.249 239.6 111.386 200.863C111.489 171.783 129.127 147.828 156.652 138.873C164.03 136.473 164.621 136.881 164.633 144.374C164.634 145.258 164.548 146.153 164.65 147.026C166.028 158.717 164.189 168.256 153.442 176.233C143.079 183.925 139.682 196.665 139.579 209.441C139.304 243.577 139.23 277.72 139.596 311.854C139.773 328.329 146.606 341.948 160.246 351.727C161.78 352.827 163.258 354.211 165.47 354.127C167.087 352.297 166.342 350.075 166.343 348.065C166.394 265.992 166.396 183.918 166.407 101.845C166.408 93.6279 166.418 93.626 174.397 93.6197C179.704 93.6155 185.029 93.8926 190.311 93.5362C195.158 93.2092 196.785 94.8427 196.712 99.8058C196.47 116.428 196.665 133.058 196.714 149.684C196.719 151.345 196.874 153.006 198.193 154.66C198.193 151.408 198.192 148.156 198.193 144.904C198.198 136.101 198.198 136.1 206.74 136.099C238.756 136.097 270.773 136.261 302.787 136.013C315.857 135.912 328.9 135.067 341.988 136.051C375.798 138.594 400.551 165.024 400.584 198.93C400.598 213.097 400.598 213.097 386.288 213.095C372.667 213.093 372.667 213.093 372.471 199.934C372.145 178.02 355.898 161.398 333.897 160.878C320.464 160.56 307.017 160.77 293.046 160.743ZM276.593 361.078C284.903 361.037 293.214 360.951 301.525 360.967C309.271 360.981 309.208 361.029 309.33 368.631C309.376 371.523 308.871 374.523 310.356 377.284C310.734 354.878 310.716 332.495 310.753 310.112C310.758 306.809 308.697 306.477 306.173 306.485C299.63 306.503 293.087 306.413 286.546 306.5C283.098 306.545 281.23 305.32 281.288 301.592C281.384 295.405 281.356 289.214 281.258 283.026C281.204 279.662 282.637 278.247 286.033 278.318C292.219 278.447 298.423 278.093 304.594 278.425C309.547 278.691 311.074 276.836 310.899 271.974C310.74 267.573 310.603 264.699 304.807 264.739C271.034 264.97 237.259 264.963 203.485 264.787C198.039 264.759 196.527 266.764 196.565 271.953C196.762 298.476 196.67 325.001 196.668 351.526C196.667 360.886 196.678 360.981 206.037 361.006C229.202 361.067 252.366 361.059 276.593 361.078Z"
-              fill="white"
-            />
-            <path
-              d="M335.181 134.259C328.497 134.269 322.306 134.203 316.118 134.323C312.434 134.395 310.628 133.168 310.707 129.112C310.905 118.858 310.85 108.598 310.753 98.3409C310.721 95.0151 311.894 93.5077 315.375 93.5791C322.446 93.7241 329.524 93.7091 336.596 93.5879C339.845 93.5323 340.975 94.9949 340.956 98.0657C340.894 108.323 340.865 118.582 340.988 128.838C341.033 132.642 339.528 134.491 335.181 134.259Z"
-              fill="white"
-            />
-          </svg>
-        </div>
+    <aside className="border-border bg-card text-card-foreground flex h-dvh w-72 flex-col border-r shadow-sm relative z-20 overflow-hidden shrink-0 min-h-0">
+      {/* Decorative top gradient */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
+      
+      <div className="flex items-center gap-3 px-6 py-8 shrink-0 relative group cursor-default">
+        <motion.div 
+          whileHover={{ rotate: 180 }}
+          transition={{ type: "spring", stiffness: 200 }}
+          className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-2xl shadow-xl shadow-primary/20 ring-4 ring-primary/5"
+        >
+          <GalleryVerticalEnd className="size-6" />
+        </motion.div>
         <div className="flex flex-col">
-          <span className="text-sm font-semibold">Guest Home HRMS</span>
-          <span className="text-xs text-muted-foreground">Intelligent Recruitment</span>
+          <span className="text-xl font-black tracking-tight leading-none">HR<span className="text-primary italic">Flow</span></span>
+          <span className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-black mt-1">Intelligence</span>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 px-2 py-4 text-sm">
-        {NAV_ITEMS.map((item) => {
-          const isActive = pathname === item.href;
+      <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-6 px-4 py-2 custom-scrollbar">
+        {NAVIGATION_CONFIG.map((section, sIdx) => {
+          const visibleItems = section.items.filter(item => 
+            !item.roles || item.roles.includes(userRole as any)
+          );
+
+          if (visibleItems.length === 0) return null;
+
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 transition-colors",
-                isActive
-                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                  : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground",
-              )}
-            >
-              <span>{item.label}</span>
-            </Link>
+            <div key={sIdx} className="space-y-2">
+              <h3 className="px-4 text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">
+                {section.section}
+              </h3>
+              <div className="space-y-1">
+                {visibleItems.map((item, iIdx) => (
+                  <SidebarItem key={iIdx} item={item} index={iIdx} />
+                ))}
+              </div>
+            </div>
           );
         })}
       </nav>
 
-      <div className="border-sidebar-border mt-auto border-t px-4 py-3 text-xs text-muted-foreground">
-        {user ? (
-          <div className="space-y-0.5">
-            <p className="font-medium text-foreground">{user.firstName + " " + user.lastName}</p>
-            <p>{user.email}</p>
-            <p className="text-[11px] uppercase tracking-wide">
-              {ROLE_LABELS[user.role]} role
-            </p>
-          </div>
-        ) : (
-          <p>Not signed in</p>
-        )}
+      <div className="mt-auto p-4 shrink-0 border-t border-border/40 bg-muted/20">
+        <div className="rounded-2xl bg-background p-4 border border-border/50 transition-all hover:shadow-inner">
+          {user ? (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary border border-primary/20">
+                  <span className="text-sm font-bold">{user.firstName?.[0]}{user.lastName?.[0]}</span>
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <p className="font-bold text-sm truncate">{user.firstName} {user.lastName}</p>
+                  <p className="text-[10px] font-medium text-primary uppercase tracking-wide">
+                    {ROLE_LABELS[user.role]}
+                  </p>
+                </div>
+              </div>
+              
+              <button 
+                onClick={logout}
+                className="flex w-full items-center justify-between gap-2 rounded-xl bg-background px-3 py-2.5 text-xs font-semibold text-muted-foreground transition-all hover:bg-destructive/5 hover:text-destructive border border-border group"
+              >
+                <div className="flex items-center gap-2">
+                  <LogOut className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
+                  Sign Out
+                </div>
+                <ChevronRight className="size-3 opacity-50 group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </div>
+          ) : (
+            <p className="text-center text-xs text-muted-foreground">Not signed in</p>
+          )}
+        </div>
+        <p className="mt-4 text-center text-[10px] text-muted-foreground/50 font-black uppercase tracking-[0.2em]">
+          HR system by ASTU Students
+        </p>
       </div>
     </aside>
   );
