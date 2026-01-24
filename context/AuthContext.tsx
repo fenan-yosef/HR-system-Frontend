@@ -62,6 +62,7 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
 
       persistUser(authenticatedUser);
       setUser(authenticatedUser);
+      return authenticatedUser;
     } finally {
       setIsLoading(false);
     }
