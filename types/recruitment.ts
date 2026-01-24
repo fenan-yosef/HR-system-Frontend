@@ -7,16 +7,46 @@ export interface PaginatedResponse<T> {
   results: T[];
 }
 
+export type JobStatus = "open" | "closed" | "on_hold" | "cancelled";
+
 export interface JobPosting {
   job_id: number;
   title: string;
   department: string;
   description: string;
   requirements: string;
-  status: string;
+  status: JobStatus;
   posted_date: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface JobPosition {
+  position_id: number;
+  title: string;
+  department: number;
+  description: string | null;
+  status: JobStatus;
+  posted_date: string;
+  closed_date: string | null;
+  created_at: string;
+}
+
+export interface CreateJobPosition {
+  title: string;
+  department: number;
+  description?: string;
+  status?: JobStatus;
+  posted_date: string;
+  closed_date?: string;
+}
+
+export interface Department {
+  department_id: number;
+  name: string;
+  code: string;
+  manager: number | null;
+  created_at: string;
 }
 
 export interface ApplicationPosition {
