@@ -4,7 +4,7 @@ import { useEffect, useMemo } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import type { UserRole } from "@/types/auth";
 import { useAuth } from "@/hooks/useAuth";
-import { ROLE_ALLOWED_ROUTES } from "@/constants/permissions";
+import { ROLE_ALLOWED_ROUTES, ROLE_DASHBOARD_ROUTE } from "@/constants/permissions";
 import { ROUTES } from "@/constants/routes";
 
 interface UseRoleGuardOptions {
@@ -57,6 +57,24 @@ export function useRoleGuard(options: UseRoleGuardOptions = {}) {
       router.replace(ROUTES.LOGIN);
     }
   }, [isLoading, isAuthenticated, normalizedPathname, router]);
+
+  // If the user is authenticated but not authorised for the current route,
+  // redirect them to their role's dashboard/landing page to avoid the
+  // generic "no permission" screen and provide a better UX.
+  useEffect(() => {
+    if (
+      !isLoading &&
+      isAuthenticated &&
+      user &&
+      !isAuthorisedForRoute &&
+      normalizedPathname !== ROUTES.LOGIN
+    ) {
+      const landing = ROLE_DASHBOARD_ROUTE[user.role] ?? ROUTES.DASHBOARD;
+      if (landing !== normalizedPathname) {
+        router.replace(landing);
+      }
+    }
+  }, [isLoading, isAuthenticated, isAuthorisedForRoute, user, normalizedPathname, router]);
 
   const canAccess = isAuthenticated && isAuthorisedForRoute && isAuthorisedForRole;
 
