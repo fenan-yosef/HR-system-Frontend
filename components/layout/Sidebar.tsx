@@ -30,6 +30,7 @@ import {
   Clock,
 } from "lucide-react";
 import { UserRole } from "@/types/auth";
+import Image from "next/image";
 
 interface NavSubItem {
   label: string;
@@ -61,27 +62,27 @@ const NAVIGATION_CONFIG: NavSection[] = [
       },
     ],
   },
-  // {
-  //   section: "Talent Hub",
-  //   items: [
-  //     {
-  //       label: "Recruitment",
-  //       icon: Briefcase,
-  //       roles: ["ADMIN", "HR_MANAGER"],
-  //       subItems: [
-  //         { label: "Job Postings", href: ROUTES.RECRUITMENT_JOB_POSTINGS },
-  //         { label: "Applications", href: ROUTES.RECRUITMENT_APPLICATIONS },
-  //         { label: "Shortlist", href: ROUTES.RECRUITMENT_SHORTLIST },
-  //       ]
-  //     },
-  //     {
-  //       label: "Onboarding",
-  //       href: ROUTES.ONBOARDING,
-  //       icon: UserCheck,
-  //       roles: ["ADMIN", "HR_MANAGER"]
-  //     },
-  //   ],
-  // },
+  {
+    section: "Talent Hub",
+    items: [
+      {
+        label: "Recruitment",
+        icon: Briefcase,
+        roles: ["ADMIN", "HR_MANAGER"],
+        subItems: [
+          { label: "Job Postings", href: ROUTES.RECRUITMENT_JOB_POSTINGS },
+          { label: "Applications", href: ROUTES.RECRUITMENT_APPLICATIONS },
+          { label: "Shortlist", href: ROUTES.RECRUITMENT_SHORTLIST },
+        ],
+      },
+      {
+        label: "Onboarding",
+        href: ROUTES.ONBOARDING,
+        icon: UserCheck,
+        roles: ["ADMIN", "HR_MANAGER"],
+      },
+    ],
+  },
   {
     section: "",
     items: [
@@ -289,19 +290,15 @@ export function Sidebar() {
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
 
       <div className="flex items-center gap-3 px-6 py-8 shrink-0 relative group cursor-default">
-        <motion.div
-          whileHover={{ rotate: 180 }}
-          transition={{ type: "spring", stiffness: 200 }}
-          className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-2xl shadow-xl shadow-primary/20 ring-4 ring-primary/5"
-        >
-          <GalleryVerticalEnd className="size-6" />
+        <motion.div transition={{ type: "spring", stiffness: 200 }}>
+          <Image src={"/logo.svg"} alt="HRMS" width={50} height={50} />
         </motion.div>
         <div className="flex flex-col">
           <span className="text-xl font-black tracking-tight leading-none">
-            HR<span className="text-primary italic">Flow</span>
+            GUEST<span className="text-primary italic">HOME</span>
           </span>
           <span className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-black mt-1">
-            Intelligence
+            HRMS
           </span>
         </div>
       </div>
@@ -367,9 +364,6 @@ export function Sidebar() {
             </p>
           )}
         </div>
-        <p className="mt-4 text-center text-[10px] text-muted-foreground/50 font-black uppercase tracking-[0.2em]">
-          HR system by ASTU Students
-        </p>
       </div>
     </aside>
   );
