@@ -2,12 +2,13 @@ import { DashboardOverview } from "@/features/dashboard/components/DashboardOver
 
 export default function DashboardPage() {
   return (
-    <section className="space-y-4">
-      <div className="space-y-1">
-        <h1 className="text-xl font-semibold">Role-based dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Central workspace for HR staff, administrators, employees, and
-          applicants.
+    <section className="space-y-10">
+      <div className="flex flex-col gap-2">
+        <h1 className="text-4xl font-extrabold tracking-tight text-foreground">
+          Welcome back, Explorer.
+        </h1>
+        <p className="text-base font-medium text-muted-foreground max-w-2xl">
+          Unified command center for HR operations, talent acquisition, and organizational health.
         </p>
       </div>
       <DashboardOverview />
