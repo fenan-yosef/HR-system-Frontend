@@ -2,62 +2,113 @@
 
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
-import { ROLE_LABELS } from "@/constants/roles";
 import { motion } from "framer-motion";
-import { 
-  UserCircle, 
-  ShieldCheck, 
-  Zap, 
-  TrendingUp, 
-  Users, 
-  Briefcase 
+import {
+  UserCircle,
+  ShieldCheck,
+  Zap,
+  TrendingUp,
+  Users,
+  Briefcase,
 } from "lucide-react";
+import { fetchJobPositions } from "@/services/recruitmentService";
+import { fetchEmployees, fetchUsers } from "@/services/employeeService";
+import { useEffect, useState } from "react";
+import { JobPosition } from "@/types/recruitment";
+import { Employee } from "@/types/employee";
 
 export function DashboardOverview() {
   const { user } = useAuth();
+
+  const [positions, setPositions] = useState<JobPosition[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [users, setUsers] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  /* =============================
+     Animations
+  ============================== */
 
   const container = {
     hidden: { opacity: 0 },
     show: {
       opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
+      transition: { staggerChildren: 0.1 },
+    },
   };
 
   const item = {
     hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
+    show: { opacity: 1, y: 0 },
   };
+
+  /* =============================
+     Fetch Data
+  ============================== */
+
+  useEffect(() => {
+    async function loadDashboardData() {
+      try {
+        setLoading(true);
+
+        const [positionsRes, employeesRes, usersRes] = await Promise.all([
+          fetchJobPositions(),
+          fetchEmployees(),
+          fetchUsers(),
+        ]);
+
+        console.log(positionsRes.results);
+        setPositions(positionsRes.results);
+        console.log(employeesRes.results);
+        setEmployees(employeesRes.results);
+        console.log(usersRes.results);
+        setUsers(usersRes.results);
+      } catch (error) {
+        console.error("Failed to fetch dashboard data", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadDashboardData();
+  }, []);
+
+  /* =============================
+     Derived Stats (Auto-updates)
+  ============================== */
+
+  const totalusers = users.length;
+  const activeEmployees = employees.filter((emp) => emp.is_active).length;
+  const activeJobs = positions.length;
 
   const statCards = [
     {
-      title: "Current User",
-      value: user?.firstName ? `${user.firstName} ${user.lastName}` : "Guest User",
-      desc: user?.email ?? "Temporary Session",
+      title: "Total Human Resource",
+      value: loading ? "Loading..." : totalusers.toString(),
+      desc: "All Employees in System",
       icon: UserCircle,
-      color: "bg-blue-500/10 text-blue-500"
+      color: "bg-blue-500/10 text-blue-500",
     },
     {
-      title: "Active Role",
-      value: user ? ROLE_LABELS[user.role] : "Guest",
-      desc: "Permissions fully enforced",
+      title: "Active Jobs",
+      value: loading ? "Loading..." : activeJobs.toString(),
+      desc: "Open Job Positions",
       icon: ShieldCheck,
-      color: "bg-emerald-500/10 text-emerald-500"
+      color: "bg-emerald-500/10 text-emerald-500",
     },
     {
-      title: "Recruitment Pulse",
-      value: "Intelligent Mode",
-      desc: "AI-driven talent acquisition",
+      title: "Active Employees",
+      value: loading ? "Loading..." : activeEmployees.toString(),
+      desc: "Employees Currently on work.",
       icon: Zap,
-      color: "bg-amber-500/10 text-amber-500"
-    }
+      color: "bg-amber-500/10 text-amber-500",
+    },
   ];
 
   return (
     <div className="space-y-8">
-      <motion.div 
+      {/* ===== Top Stat Cards ===== */}
+      <motion.div
         variants={container}
         initial="hidden"
         animate="show"
@@ -73,6 +124,7 @@ export function DashboardOverview() {
                   </div>
                   <TrendingUp className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
+
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     {stat.title}
@@ -85,53 +137,73 @@ export function DashboardOverview() {
                   </p>
                 </div>
               </div>
+
               <div className="absolute -right-4 -bottom-4 size-24 rounded-full bg-primary/5 blur-2xl transition-all group-hover:bg-primary/10" />
             </Card>
           </motion.div>
         ))}
       </motion.div>
 
+      {/* ===== Bottom Section ===== */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5 }}
         className="grid gap-6 lg:grid-cols-2"
       >
+        {/* Recent Activity */}
         <Card className="border-none bg-card p-8 shadow-md lg:col-span-1">
           <div className="flex items-center gap-4 mb-6">
             <div className="bg-primary/10 p-3 rounded-2xl">
               <Users className="size-6 text-primary" />
             </div>
             <div>
-              <h3 className="text-lg font-bold tracking-tight">Recent Activity</h3>
-              <p className="text-sm text-muted-foreground">Stay updated with team changes</p>
+              <h3 className="text-lg font-bold tracking-tight">
+                Recent Activity
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Stay updated with team changes
+              </p>
             </div>
           </div>
+
           <div className="space-y-6">
             {[1, 2, 3].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 group cursor-default">
+              <div
+                key={i}
+                className="flex items-center gap-4 group cursor-default"
+              >
                 <div className="size-2 rounded-full bg-primary/40 group-hover:bg-primary transition-colors" />
                 <div className="flex-1 border-b border-border/50 pb-4">
-                  <p className="text-sm font-bold">New applicant for Senior Frontend Dev</p>
-                  <p className="text-xs text-muted-foreground">2 hours ago • Recruitment Team</p>
+                  <p className="text-sm font-bold">
+                    New applicant for Senior Frontend Dev
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    2 hours ago • Recruitment Team
+                  </p>
                 </div>
               </div>
             ))}
           </div>
         </Card>
 
+        {/* Hiring Roadmap */}
         <Card className="border-none bg-primary text-primary-foreground p-8 shadow-lg lg:col-span-1 relative overflow-hidden">
           <div className="relative z-10">
             <Briefcase className="size-12 mb-6 text-white/20" />
-            <h3 className="text-2xl font-bold mb-4 tracking-tight">Hiring Roadmap</h3>
+            <h3 className="text-2xl font-bold mb-4 tracking-tight">
+              Hiring Roadmap
+            </h3>
             <p className="text-primary-foreground/80 mb-8 leading-relaxed">
-              Your recruitment pipeline is looking healthy. You have 12 active job postings 
-              and 48 candidates in the shortlist.
+              Your recruitment pipeline is looking healthy. You have{" "}
+              {loading ? "…" : activeJobs} active job postings and 48 candidates
+              in the shortlist.
             </p>
             <button className="rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary shadow-sm transition-all hover:bg-opacity-90 active:scale-95">
               View Analytics
             </button>
           </div>
+
           {/* Decorative shapes */}
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
           <div className="absolute bottom-0 left-0 w-32 h-32 bg-black/10 rounded-full translate-y-1/2 -translate-x-1/2 blur-2xl" />
