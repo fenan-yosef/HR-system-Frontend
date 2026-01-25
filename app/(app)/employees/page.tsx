@@ -32,10 +32,10 @@ export default function EmployeesPage() {
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div className="space-y-2">
           <h1 className="text-4xl font-extrabold tracking-tight">
-            People Directory
+            System Users Directory
           </h1>
           <p className="text-muted-foreground">
-            Manage your organization&apos;s most valuable asset.
+            Manage and explore all system users in one place.
           </p>
         </div>
 
