@@ -31,6 +31,14 @@ export function createJobPosition(data: CreateJobPosition): Promise<JobPosition>
   });
 }
 
+export function updateJobPosition(positionId: number, data: Partial<JobPosition>): Promise<JobPosition> {
+  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
 export function fetchDepartments(): Promise<PaginatedResponse<Department>> {
   return apiFetch<PaginatedResponse<Department>>("/departments/", { requiresAuth: true });
 }
@@ -62,17 +70,25 @@ export function createApplicant(data: CreateApplicant): Promise<ApplicantRespons
   return apiFetch<ApplicantResponse>("/applicants/", {
     method: "POST",
     body: JSON.stringify(data),
-    requiresAuth: false, // Ensure public access
+    requiresAuth: false,
+  });
+}
+
+export function createPublicApplication(publicId: string, data: CreateApplicant): Promise<any> {
+  return apiFetch<any>(`/recruitment/public/apply/${publicId}/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    requiresAuth: false,
   });
 }
 
 // Assuming the backend has this endpoint for tracking
 export function trackApplicant(trackingCode: string, email?: string): Promise<any> {
-    // Construct query or body. Using POST for security/privacy if email is involved, or GET with query params.
-    // I will try GET with query param for now as it's a "Track" (Read) operation.
-    const params = new URLSearchParams({ tracking_code: trackingCode });
-    if (email) params.append("email", email);
-    
-    // Note: The actual endpoint might differ. Adjust as needed.
-    return apiFetch<any>(`/applicants/track/?${params.toString()}`, { requiresAuth: false });
+  // Construct query or body. Using POST for security/privacy if email is involved, or GET with query params.
+  // I will try GET with query param for now as it's a "Track" (Read) operation.
+  const params = new URLSearchParams({ tracking_code: trackingCode });
+  if (email) params.append("email", email);
+
+  // Note: The actual endpoint might differ. Adjust as needed.
+  return apiFetch<any>(`/applicants/track/?${params.toString()}`, { requiresAuth: false });
 }

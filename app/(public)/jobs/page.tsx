@@ -6,7 +6,7 @@ import { fetchPublicJobPositions } from "@/services/recruitmentService";
 import { JobPosition } from "@/types/recruitment";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "lucide-react"; // Wait, Badge is usually a component, let me check if I have it. I'll use a span if not.
+import { Share2 } from "lucide-react";
 
 export default function PublicJobsPage() {
   const [jobs, setJobs] = useState<JobPosition[]>([]);
@@ -28,6 +28,20 @@ export default function PublicJobsPage() {
         setLoading(false);
       });
   }, []);
+
+  const handleShare = (job: JobPosition) => {
+    const url = `${window.location.origin}/apply/${job.public_id || job.position_id}`;
+    if (navigator.share) {
+      navigator.share({
+        title: `Apply for ${job.title}`,
+        text: `Check out this job opening at our company: ${job.title}`,
+        url: url,
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(url);
+      alert("Link copied to clipboard!");
+    }
+  };
 
   if (loading) {
     return (
@@ -91,10 +105,19 @@ export default function PublicJobsPage() {
                   {job.description || "No description available."}
                 </p>
               </CardContent>
-              <CardFooter>
-                <Link href={`/jobs/${job.position_id}`} className="w-full sm:w-auto">
-                  <Button>View Details & Apply</Button>
+              <CardFooter className="flex justify-between gap-3">
+                <Link href={`/jobs/${job.position_id}`} className="flex-1 sm:flex-initial">
+                  <Button className="w-full">View Details & Apply</Button>
                 </Link>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => handleShare(job)}
+                  className="rounded-xl hover:bg-primary/5 hover:text-primary transition-all"
+                  title="Share job"
+                >
+                  <Share2 className="h-4 w-4" />
+                </Button>
               </CardFooter>
             </Card>
           ))

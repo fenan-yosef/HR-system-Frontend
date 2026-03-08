@@ -23,6 +23,8 @@ export interface JobPosting {
 
 export interface JobPosition {
   position_id: number;
+  public_id: string;
+  application_url?: string; // URL for the public application form
   title: string;
   department: number;
   description: string | null;
@@ -67,6 +69,7 @@ export interface Application {
   email: string;
   phone: string;
   cv_path: string;
+  cover_letter?: string; // Optional cover letter
   position: ApplicationPosition;
   status: string;
   submitted_at: string;
@@ -92,6 +95,7 @@ export interface CreateApplicant {
   email: string;
   phone: string;
   cv_path: string;
+  cover_letter?: string; // Optional cover letter
   position_id?: number;
 }
 
