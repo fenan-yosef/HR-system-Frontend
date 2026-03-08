@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
   JobPosition,
@@ -9,7 +10,8 @@ import {
 import {
   fetchJobPositions,
   createJobPosition,
-  fetchDepartments
+  fetchDepartments,
+  updateJobPosition
 } from "@/services/recruitmentService";
 import { Card } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
@@ -84,6 +86,18 @@ export function JobPositionManager() {
     }
   }
 
+  async function handleStatusChange(positionId: number, newStatus: JobPosition["status"]) {
+    try {
+      // Optimistic update
+      setPositions(prev => prev.map(p => p.position_id === positionId ? { ...p, status: newStatus } : p));
+      await updateJobPosition(positionId, { status: newStatus });
+    } catch (error) {
+      console.error("Failed to update status", error);
+      // Revert if error
+      loadPositions();
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -117,13 +131,28 @@ export function JobPositionManager() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const getShareUrl = (publicId: string) => {
-    const base = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL || window.location.origin;
+  const resolvePublicId = (job: JobPosition) => {
+    if (job.public_id) return job.public_id;
+    if (job.application_url) {
+      try {
+        const u = new URL(job.application_url);
+        const parts = u.pathname.split("/").filter(Boolean);
+        return parts[parts.length - 1];
+      } catch (e) {
+        return String(job.position_id);
+      }
+    }
+    return String(job.position_id);
+  };
+
+  const getShareUrl = (jobOrId: JobPosition | string) => {
+    const base = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+    const publicId = typeof jobOrId === 'string' ? jobOrId : resolvePublicId(jobOrId);
     return `${base}/apply/${publicId}`;
   };
 
   const triggerNativeShare = (job: JobPosition) => {
-    const shareUrl = getShareUrl(job.public_id);
+    const shareUrl = getShareUrl(job);
     if (navigator.share) {
       navigator.share({
         title: `Apply for ${job.title}`,
@@ -190,9 +219,17 @@ export function JobPositionManager() {
                     <div>
                       <div className="flex items-center gap-3">
                         <h4 className="font-black text-xl tracking-tight text-foreground transition-colors group-hover:text-primary">{pos.title}</h4>
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getStatusColor(pos.status)}`}>
-                          {pos.status.replace(/_/g, " ").replace(/(^|\s)\S/g, t => t.toUpperCase())}
-                        </span>
+                        <select
+                          value={pos.status}
+                          onChange={(e) => handleStatusChange(pos.position_id, e.target.value as any)}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border appearance-none cursor-pointer outline-none hover:opacity-80 transition-opacity ${getStatusColor(pos.status)}`}
+                        >
+                          <option value="open">OPEN</option>
+                          <option value="on_hold">ON HOLD</option>
+                          <option value="closed">CLOSED</option>
+                          <option value="cancelled">CANCELLED</option>
+                        </select>
                       </div>
                       <div className="flex items-center gap-6 mt-3">
                         <span className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-widest">
@@ -214,9 +251,12 @@ export function JobPositionManager() {
                       <Share2 className="size-4" />
                       <span className="hidden sm:inline font-bold text-xs uppercase tracking-widest">Share</span>
                     </button>
-                    <button className="hidden md:flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:underline">
+                    <Link
+                      href={`/recruitment/job-postings/${pos.position_id}`}
+                      className="hidden md:flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:underline"
+                    >
                       View details <MoreVertical className="size-3" />
-                    </button>
+                    </Link>
                   </div>
                 </Card>
               </motion.div>
@@ -376,11 +416,11 @@ export function JobPositionManager() {
                 <div className="relative group">
                   <Input
                     readOnly
-                    value={getShareUrl(selectedJob.public_id)}
+                    value={getShareUrl(selectedJob)}
                     className="pr-24 font-mono text-xs bg-muted/30 border-dashed rounded-xl h-12"
                   />
                   <button
-                    onClick={() => copyToClipboard(getShareUrl(selectedJob.public_id))}
+                    onClick={() => copyToClipboard(getShareUrl(selectedJob))}
                     className="absolute right-1 top-1 bottom-1 px-4 bg-primary text-primary-foreground rounded-lg text-xs font-black uppercase tracking-widest hover:bg-primary/90 flex items-center gap-2 transition-all"
                   >
                     {copied ? <Check className="size-3" /> : <Copy className="size-3" />}
@@ -399,7 +439,7 @@ export function JobPositionManager() {
                     <span className="text-[10px] font-black uppercase tracking-widest">Send to Apps</span>
                   </button>
                   <a
-                    href={`https://wa.me/?text=Apply%20for%20${encodeURIComponent(selectedJob.title)}%20here:%20${encodeURIComponent(getShareUrl(selectedJob.public_id))}`}
+                    href={`https://wa.me/?text=Apply%20for%20${encodeURIComponent(selectedJob.title)}%20here:%20${encodeURIComponent(getShareUrl(selectedJob))}`}
                     target="_blank"
                     rel="noreferrer"
                     className="flex flex-col items-center justify-center gap-2 p-4 rounded-2xl bg-muted/50 border border-border hover:bg-muted transition-all"

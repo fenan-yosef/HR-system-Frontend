@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +24,9 @@ export default function PublicApplyPage() {
 
     const [jobTitle, setJobTitle] = useState<string>("Job Application");
     const [jobDescription, setJobDescription] = useState<string | null>(null);
+    const [jobStatus, setJobStatus] = useState<string | null>(null);
+    const [jobPostedDate, setJobPostedDate] = useState<string | null>(null);
+    const [applicationUrl, setApplicationUrl] = useState<string | null>(null);
     const [isLoadingJob, setIsLoadingJob] = useState(true);
 
     const [formData, setFormData] = useState({
@@ -33,6 +36,7 @@ export default function PublicApplyPage() {
         cover_letter: "",
     });
     const [cvFile, setCvFile] = useState<File | null>(null);
+    const cvInputRef = useRef<HTMLInputElement | null>(null);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -49,24 +53,43 @@ export default function PublicApplyPage() {
         const fetchJobDetails = async () => {
             try {
                 const isNumeric = /^\d+$/.test(publicId);
-                let fetchUrl = "";
-
-                if (isNumeric) {
-                    // If admin provided numeric ID
-                    fetchUrl = `${baseUrl}job-positions/${publicId}/share/`;
+                // Try the public job endpoint first (no auth), then fall back to older endpoints
+                const candidates: string[] = [];
+                if (!isNumeric) {
+                    candidates.push(`${baseUrl}recruitment/public/job/${publicId}/`); // preferred public metadata
+                    candidates.push(`${baseUrl}job-positions/?public_id=${publicId}`); // fallback
                 } else {
-                    // Otherwise fetch by public_id UUID
-                    fetchUrl = `${baseUrl}job-positions/?public_id=${publicId}`;
+                    candidates.push(`${baseUrl}job-positions/${publicId}/share/`); // admin/share route for numeric ids
                 }
 
-                const res = await fetch(fetchUrl);
-                if (res.ok) {
-                    const data = await res.json();
-                    // API could return an array (for ?public_id=) or an object (for /share/)
-                    const job = Array.isArray(data.results) ? data.results[0] : (Array.isArray(data) ? data[0] : data);
-                    if (job && job.title) {
-                        setJobTitle(job.title);
+                let data: any = null;
+                for (const url of candidates) {
+                    try {
+                        const res = await fetch(url);
+                        if (!res.ok) continue;
+                        data = await res.json();
+                        break;
+                    } catch (e) {
+                        // try next
+                    }
+                }
+
+                if (data) {
+                    let job: any = null;
+                    if (data && Array.isArray(data.results)) job = data.results[0];
+                    else if (data && data.position) job = data.position;
+                    else if (data && data.title) job = data;
+                    else if (data && data.application_url && (data.title || data.position)) job = data.position || data;
+
+                    if (job) {
+                        if (job.title) setJobTitle(job.title);
                         if (job.description) setJobDescription(job.description);
+                        if (job.status) setJobStatus(job.status);
+                        if (job.posted_date) setJobPostedDate(job.posted_date);
+                        if (job.application_url) setApplicationUrl(job.application_url);
+                    } else if (data && data.application_url) {
+                        // some responses only return share info
+                        setApplicationUrl(data.application_url);
                     }
                 }
             } catch (err) {
@@ -110,6 +133,11 @@ export default function PublicApplyPage() {
 
             setCvFile(file);
         }
+    };
+
+    const handleRemoveFile = () => {
+        setCvFile(null);
+        setValidationErrors((prev) => ({ ...prev, cv: "" }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -240,9 +268,24 @@ export default function PublicApplyPage() {
                     {isLoadingJob ? (
                         <div className="h-10 w-64 bg-gray-200 animate-pulse rounded mx-auto"></div>
                     ) : (
-                        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
-                            Apply for <span className="text-primary">{jobTitle}</span>
-                        </h1>
+                        <div className="space-y-3">
+                            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 sm:text-5xl">
+                                Apply for <span className="text-primary">{jobTitle}</span>
+                            </h1>
+                            <div className="flex items-center gap-3 justify-center">
+                                {jobStatus && (
+                                    <span className={`text-xs font-black uppercase px-3 py-1 rounded-full ${jobStatus === 'open' ? 'bg-emerald-100 text-emerald-800' : 'bg-gray-100 text-gray-700'}`}>
+                                        {jobStatus.replace('_', ' ').toUpperCase()}
+                                    </span>
+                                )}
+                                {jobPostedDate && (
+                                    <span className="text-sm text-gray-500">Posted {new Date(jobPostedDate).toLocaleDateString()}</span>
+                                )}
+                                {applicationUrl && (
+                                    <a href={applicationUrl} target="_blank" rel="noreferrer" className="text-sm text-primary underline">Open application (backend)</a>
+                                )}
+                            </div>
+                        </div>
                     )}
                     {jobDescription && (
                         <p className="text-lg text-gray-600 max-w-2xl mx-auto mt-4">
@@ -317,7 +360,13 @@ export default function PublicApplyPage() {
 
                                 <div className="sm:col-span-2 space-y-2">
                                     <Label htmlFor="cv" className="text-sm font-semibold text-gray-900">Resume / CV <span className="text-red-500">*</span></Label>
-                                    <div className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors ${cvFile ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary/50 bg-gray-50'} ${validationErrors.cv ? 'border-red-500 bg-red-50/50' : ''}`}>
+                                    <div
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => !isSubmitting && cvInputRef.current?.click()}
+                                        onKeyDown={(e) => { if (!isSubmitting && (e.key === 'Enter' || e.key === ' ')) cvInputRef.current?.click(); }}
+                                        className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors ${cvFile ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary/50 bg-gray-50'} ${validationErrors.cv ? 'border-red-500 bg-red-50/50' : ''}`}
+                                    >
                                         <div className="space-y-2 text-center">
                                             <UploadCloud className={`mx-auto h-10 w-10 ${cvFile ? 'text-primary' : 'text-gray-400'}`} />
                                             <div className="flex text-sm text-gray-600 justify-center">
@@ -329,6 +378,7 @@ export default function PublicApplyPage() {
                                                     <input
                                                         id="cv"
                                                         name="cv"
+                                                        ref={cvInputRef}
                                                         type="file"
                                                         accept=".pdf,.doc,.docx"
                                                         className="sr-only"
@@ -344,6 +394,27 @@ export default function PublicApplyPage() {
                                                     "PDF, DOCX up to 5MB"
                                                 )}
                                             </p>
+
+                                            {cvFile && (
+                                                <div className="flex items-center justify-center gap-4 mt-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => !isSubmitting && cvInputRef.current?.click()}
+                                                        disabled={isSubmitting}
+                                                        className="text-sm font-semibold text-primary hover:underline"
+                                                    >
+                                                        Change
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRemoveFile}
+                                                        disabled={isSubmitting}
+                                                        className="text-sm font-semibold text-red-600 hover:underline"
+                                                    >
+                                                        Remove
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     {validationErrors.cv && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {validationErrors.cv}</p>}
