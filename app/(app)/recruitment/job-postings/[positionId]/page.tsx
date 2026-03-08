@@ -12,6 +12,7 @@ import {
     fetchApplications,
     updateJobPosition
 } from "@/services/recruitmentService";
+import { getMediaUrl } from "@/services/apiClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -50,13 +51,39 @@ export default function JobDetailsPage() {
         ]).then(([jobData, appsData]) => {
             setJob(jobData);
 
-            // Filter applications that belong to this position
-            // Application.position.job_id matches positionId
-            const relatedApps = appsData?.results?.filter(
-                (app: Application) => app.position.job_id === positionId
-            ) || [];
+            // appsData.results contains API Application objects
+            const rawResults = Array.isArray(appsData) ? appsData : (appsData?.results || []);
 
-            setCandidates(relatedApps);
+            const flattened = rawResults.map((r: any) => {
+                const applicant = r.applicant || {};
+                const pos = r.position || {};
+
+                // Extremely robust ID extraction
+                const apiPositionId =
+                    (typeof pos === 'object' ? (pos.position_id || pos.job_id) : pos) ||
+                    (r.position_id || r.job_id);
+
+                return {
+                    ...r,
+                    full_name: applicant.full_name || r.full_name || "Unknown Name",
+                    email: applicant.email || r.email || "",
+                    phone: applicant.phone || r.phone || "",
+                    cv_path: applicant.cv_path || r.cv_path || r.cv_version_path,
+                    _derived_position_id: Number(apiPositionId)
+                };
+            });
+
+            // Loose comparison to handle any string/number boundary issues
+            const relatedApps = flattened.filter((app: any) => {
+                const appId = Number(app._derived_position_id);
+                return !isNaN(appId) && appId === positionId;
+            });
+
+            console.log(`[JobDetails Debug] Current positionId: ${positionId}`);
+            console.log(`[JobDetails Debug] Found ${rawResults.length} total local apps.`);
+            console.log(`[JobDetails Debug] Matched ${relatedApps.length} candidates.`);
+
+            setCandidates(relatedApps as any);
             setLoading(false);
         });
     }, [positionId]);
@@ -238,7 +265,7 @@ export default function JobDetailsPage() {
                                     <div className="flex items-center gap-3 pt-4 sm:pt-0 sm:border-l sm:border-t-0 border-t border-border sm:pl-6">
                                         {app.cv_path ? (
                                             <a
-                                                href={app.cv_path.startsWith('http') || app.cv_path.startsWith('data:') ? app.cv_path : `${process.env.NEXT_PUBLIC_API_BASE_URL}${app.cv_path}`}
+                                                href={getMediaUrl(app.cv_path)}
                                                 target="_blank"
                                                 rel="noreferrer"
                                                 className="flex-1 sm:flex-initial flex justify-center items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap"

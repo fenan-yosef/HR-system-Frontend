@@ -44,7 +44,7 @@ export function fetchDepartments(): Promise<PaginatedResponse<Department>> {
 }
 
 export function fetchApplications(): Promise<PaginatedResponse<Application>> {
-  return apiFetch<PaginatedResponse<Application>>("/applications/", { requiresAuth: true });
+  return apiFetch<PaginatedResponse<Application>>("/applicant-applications/", { requiresAuth: true });
 }
 
 export function fetchShortlist(): Promise<PaginatedResponse<ShortlistEntry>> {
@@ -52,7 +52,7 @@ export function fetchShortlist(): Promise<PaginatedResponse<ShortlistEntry>> {
 }
 
 export function triggerShortlist(applicationId: number) {
-  return apiFetch<ShortlistEntry>(`/applications/${applicationId}/shortlist/`, {
+  return apiFetch<ShortlistEntry>(`/applicant-applications/${applicationId}/shortlist/`, {
     method: "POST",
     requiresAuth: true,
   });
@@ -82,13 +82,10 @@ export function createPublicApplication(publicId: string, data: CreateApplicant)
   });
 }
 
-// Assuming the backend has this endpoint for tracking
 export function trackApplicant(trackingCode: string, email?: string): Promise<any> {
-  // Construct query or body. Using POST for security/privacy if email is involved, or GET with query params.
-  // I will try GET with query param for now as it's a "Track" (Read) operation.
-  const params = new URLSearchParams({ tracking_code: trackingCode });
-  if (email) params.append("email", email);
-
-  // Note: The actual endpoint might differ. Adjust as needed.
-  return apiFetch<any>(`/applicants/track/?${params.toString()}`, { requiresAuth: false });
+  return apiFetch<any>("/applicants/track-status/", {
+    method: "POST",
+    body: JSON.stringify({ tracking_code: trackingCode, email }),
+    requiresAuth: false,
+  });
 }

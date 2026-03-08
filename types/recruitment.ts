@@ -52,7 +52,7 @@ export interface Department {
 }
 
 export interface ApplicationPosition {
-  job_id: number;
+  position_id: number; // Corrected to position_id
   title: string;
   department: string;
   description: string;
@@ -69,8 +69,16 @@ export interface Application {
   email: string;
   phone: string;
   cv_path: string;
-  cover_letter?: string; // Optional cover letter
+  cover_letter?: string;
   position: ApplicationPosition;
+  applicant?: {
+    applicant_id: number;
+    full_name: string;
+    email: string;
+    phone: string;
+    cv_path: string;
+    submitted_at: string;
+  };
   status: string;
   submitted_at: string;
   created_at: string;

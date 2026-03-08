@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { Copy, Check } from "lucide-react";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,7 @@ export default function PublicApplyPage() {
     const [existingDataMsg, setExistingDataMsg] = useState<string | null>(null);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+    const [copiedTracking, setCopiedTracking] = useState(false);
 
     const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/";
 
@@ -159,56 +161,80 @@ export default function PublicApplyPage() {
         }
 
         try {
-            // 1. "Upload" File (Using base64 data URL convert as quick test option)
-            setUploadProgress(25);
-            const cvDataUrl = await convertFileToBase64(cvFile);
-            setUploadProgress(50);
+            // 1. Upload file to /api/uploads/ using multipart FormData
+            setUploadProgress(10);
+            const uploadUrl = `${baseUrl}uploads/`;
+            const form = new FormData();
+            form.append('file', cvFile as File);
 
+            const uploadRes = await fetch(uploadUrl, {
+                method: 'POST',
+                body: form,
+            });
+
+            if (!uploadRes.ok) {
+                const errBody = await uploadRes.json().catch(() => null);
+                setErrorMsg(errBody?.detail || errBody?.message || 'File upload failed');
+                setIsSubmitting(false);
+                setUploadProgress(0);
+                return;
+            }
+
+            const uploadData = await uploadRes.json().catch(() => null);
+            const uploadId = uploadData?.upload_id || uploadData?.id || null;
+            setUploadProgress(60);
+
+            if (!uploadId) {
+                setErrorMsg('Upload did not return an upload_id');
+                setIsSubmitting(false);
+                setUploadProgress(0);
+                return;
+            }
+
+            // 2. Submit application with upload_id
             const payload = {
                 full_name: formData.full_name,
                 email: formData.email,
                 phone: formData.phone,
-                cv_path: cvDataUrl,
-                cover_letter: formData.cover_letter,
-            };
+                upload_id: uploadId,
+            } as any;
 
-            setUploadProgress(75);
+            if (formData.cover_letter) payload.cover_letter = formData.cover_letter;
 
-            // 2. Submit Application JSON
             const applyUrl = `${baseUrl}recruitment/public/apply/${publicId}/`;
             const response = await fetch(applyUrl, {
-                method: "POST",
+                method: 'POST',
                 headers: {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json",
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                 },
                 body: JSON.stringify(payload),
             });
 
-            setUploadProgress(100);
+            setUploadProgress(90);
 
             const data = await response.json().catch(() => null);
 
-            if (response.status === 201) {
+            if (response.status === 201 || response.status === 200) {
+                // Treat both 201 and 200 as success. Show tracking_code even if tracking_email_sent is false.
                 setSuccessData(data || { success: true });
-            } else if (response.status === 200) {
-                setSuccessData(data || { success: true });
-                setExistingDataMsg("Your application has been updated/already exists.");
+                if (response.status === 200) setExistingDataMsg('Your application has been updated/already exists.');
             } else if (response.status === 400) {
                 if (data && typeof data === 'object') {
-                    // If backend returns field-specific errors
                     setValidationErrors(data);
-                    setErrorMsg("Please correct the highlighted errors.");
+                    setErrorMsg('Please correct the highlighted errors.');
                 } else {
-                    setErrorMsg("Validation failed. Please check your inputs.");
+                    setErrorMsg('Validation failed. Please check your inputs.');
                 }
             } else {
-                setErrorMsg(data?.detail || data?.message || "An unexpected error occurred. Please try again.");
+                setErrorMsg(data?.detail || data?.message || 'An unexpected error occurred. Please try again.');
             }
 
+            setUploadProgress(100);
+
         } catch (err: any) {
-            console.error("Apply error:", err);
-            setErrorMsg("Network error. Please check your connection and try again.");
+            console.error('Apply error:', err);
+            setErrorMsg('Network error. Please check your connection and try again.');
         } finally {
             setIsSubmitting(false);
             setTimeout(() => setUploadProgress(0), 1000);
@@ -235,10 +261,26 @@ export default function PublicApplyPage() {
                         {successData.tracking_code ? (
                             <div className="bg-white p-6 rounded-xl border border-green-200 shadow-sm mx-auto max-w-sm">
                                 <p className="text-sm text-gray-500 mb-2 font-semibold uppercase tracking-wider">Your Tracking Code</p>
-                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100">
-                                    <p className="text-3xl font-mono font-bold text-gray-800 tracking-wider select-all">
+                                <div className="bg-gray-50 p-4 rounded-lg border border-gray-100 flex items-center justify-between gap-4">
+                                    <p className="text-3xl font-mono font-bold text-gray-800 tracking-wider select-all break-words">
                                         {successData.tracking_code}
                                     </p>
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            try {
+                                                await navigator.clipboard.writeText(successData.tracking_code);
+                                                setCopiedTracking(true);
+                                                setTimeout(() => setCopiedTracking(false), 2000);
+                                            } catch (e) {
+                                                console.error('Copy failed', e);
+                                            }
+                                        }}
+                                        className="ml-2 inline-flex items-center gap-2 rounded px-3 py-2 border border-gray-200 bg-white hover:bg-gray-50 text-sm font-semibold"
+                                    >
+                                        {copiedTracking ? <Check className="h-4 w-4 text-green-600" /> : <Copy className="h-4 w-4" />}
+                                        <span>{copiedTracking ? 'Copied' : 'Copy'}</span>
+                                    </button>
                                 </div>
                                 <p className="text-xs text-gray-500 mt-4 leading-relaxed">
                                     A tracking code has been emailed to you. Use it to track your application status.

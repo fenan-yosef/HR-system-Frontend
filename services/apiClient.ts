@@ -12,6 +12,21 @@ function normalizeApiBaseUrl(baseUrl: string) {
 
 const API_BASE_URL = `${normalizeApiBaseUrl(RAW_API_BASE_URL)}/`;
 
+// Utility to resolve media URLs (CVs, profile pics, etc)
+export function getMediaUrl(path: string | null | undefined): string {
+  if (!path) return "";
+  if (path.startsWith("http") || path.startsWith("data:")) return path;
+
+  // Extract host from API_BASE_URL to point at /media/
+  try {
+    const url = new URL(API_BASE_URL);
+    return `${url.protocol}//${url.host}/media/${path.replace(/^\/+/, "")}`;
+  } catch (e) {
+    // Fallback if URL parsing fails
+    return `http://127.0.0.1:8000/media/${path.replace(/^\/+/, "")}`;
+  }
+}
+
 function ensureTrailingSlash(path: string) {
   if (path.endsWith("/")) return path;
   if (path.includes("?") || path.includes("#")) return path;
@@ -57,6 +72,48 @@ export async function apiFetch<TResponse>(
     ...options,
     headers,
   });
+
+  // If unauthorized and this request required auth, attempt a single refresh-then-retry flow.
+  if (response.status === 401 && options.requiresAuth) {
+    const refresh = getStoredRefreshToken();
+    if (refresh) {
+      try {
+        const tokenRes = await fetch(`${API_BASE_URL}auth/token/refresh/`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh }),
+        });
+
+        if (tokenRes.ok) {
+          const tokenJson = await tokenRes.json().catch(() => null);
+          const newAccess = tokenJson?.access;
+          if (newAccess) {
+            if (typeof window !== "undefined") {
+              window.localStorage.setItem(ACCESS_TOKEN_KEY, newAccess);
+            }
+            // retry original request with new access token
+            const retryHeaders = new Headers(options.headers);
+            if (!isFormData(options.body)) retryHeaders.set("Content-Type", "application/json");
+            retryHeaders.set("Authorization", `Bearer ${newAccess}`);
+            const retryRes = await fetch(url, { ...options, headers: retryHeaders });
+            if (!retryRes.ok) {
+              let errDetail = "";
+              try {
+                errDetail = await retryRes.text();
+              } catch { }
+              console.error("apiFetch retry error", { url, status: retryRes.status, detail: errDetail });
+              throw new Error(`API request failed with status ${retryRes.status}${errDetail ? ` - ${errDetail}` : ""}`);
+            }
+            if (retryRes.status === 204) return undefined as TResponse;
+            return (await retryRes.json()) as TResponse;
+          }
+        }
+      } catch (e) {
+        // fall through to original error handling below
+        console.warn("Token refresh failed", e);
+      }
+    }
+  }
 
   if (!response.ok) {
     let errorDetail = "";
