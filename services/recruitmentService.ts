@@ -89,3 +89,7 @@ export function trackApplicant(trackingCode: string, email?: string): Promise<an
     requiresAuth: false,
   });
 }
+
+export function fetchUploadMetadata(uploadId: number): Promise<any> {
+  return apiFetch<any>(`/uploads/${uploadId}/`, { requiresAuth: true });
+}

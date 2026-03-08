@@ -13,18 +13,15 @@ function normalizeApiBaseUrl(baseUrl: string) {
 const API_BASE_URL = `${normalizeApiBaseUrl(RAW_API_BASE_URL)}/`;
 
 // Utility to resolve media URLs (CVs, profile pics, etc)
+// Files are now served from the database via the /api/media/ route.
 export function getMediaUrl(path: string | null | undefined): string {
   if (!path) return "";
   if (path.startsWith("http") || path.startsWith("data:")) return path;
 
-  // Extract host from API_BASE_URL to point at /media/
-  try {
-    const url = new URL(API_BASE_URL);
-    return `${url.protocol}//${url.host}/media/${path.replace(/^\/+/, "")}`;
-  } catch (e) {
-    // Fallback if URL parsing fails
-    return `http://127.0.0.1:8000/media/${path.replace(/^\/+/, "")}`;
-  }
+  // Joins API_BASE_URL (which includes /api/) with media/ and the path
+  // We use encodeURI to handle spaces in filenames like "Key Prices - Sheet1.pdf"
+  const cleanPath = path.replace(/^\/+/, "");
+  return `${API_BASE_URL}media/${encodeURI(cleanPath)}`;
 }
 
 function ensureTrailingSlash(path: string) {
@@ -138,6 +135,23 @@ export async function apiFetch<TResponse>(
   }
 
   return (await response.json()) as TResponse;
+}
+
+export async function apiDownload(url: string): Promise<string> {
+  const headers = new Headers();
+  const token = await getStoredAccessToken();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const response = await fetch(url, { headers });
+
+  if (!response.ok) {
+    throw new Error(`Download failed with status ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
 }
 
 export function persistTokens(access: string, refresh: string) {

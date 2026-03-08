@@ -12,7 +12,7 @@ import {
     fetchApplications,
     updateJobPosition
 } from "@/services/recruitmentService";
-import { getMediaUrl } from "@/services/apiClient";
+import { getMediaUrl, apiDownload } from "@/services/apiClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -96,6 +96,22 @@ export default function JobDetailsPage() {
         } catch (e) {
             console.error(e);
             // revert not handled properly here for simplicity, but basic optimisim is applied.
+        }
+    };
+
+    const [cvLoading, setCvLoading] = useState<number | null>(null);
+
+    const handleViewCV = async (cvPath: string, appId: number) => {
+        try {
+            setCvLoading(appId);
+            const url = getMediaUrl(cvPath);
+            const blobUrl = await apiDownload(url);
+            window.open(blobUrl, '_blank');
+        } catch (err) {
+            console.error("Failed to view CV:", err);
+            alert("Could not load CV. It may be missing or you may not have permission.");
+        } finally {
+            setCvLoading(null);
         }
     };
 
@@ -264,14 +280,16 @@ export default function JobDetailsPage() {
 
                                     <div className="flex items-center gap-3 pt-4 sm:pt-0 sm:border-l sm:border-t-0 border-t border-border sm:pl-6">
                                         {app.cv_path ? (
-                                            <a
-                                                href={getMediaUrl(app.cv_path)}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="flex-1 sm:flex-initial flex justify-center items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap"
+                                            <button
+                                                onClick={() => handleViewCV(app.cv_path, app.application_id)}
+                                                disabled={cvLoading === app.application_id}
+                                                className="flex-1 sm:flex-initial flex justify-center items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap disabled:opacity-50"
                                             >
-                                                <FileText className="size-4" /> View CV
-                                            </a>
+                                                {cvLoading === app.application_id ? (
+                                                    <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                                                ) : <FileText className="size-4" />}
+                                                {cvLoading === app.application_id ? "Loading..." : "View CV"}
+                                            </button>
                                         ) : (
                                             <div className="flex-1 sm:flex-initial text-center text-xs text-muted-foreground px-4 py-2.5 bg-muted rounded-xl">
                                                 No CV
