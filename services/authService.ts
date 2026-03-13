@@ -14,6 +14,8 @@ export interface TokenResponse {
 const ROLE_MAP: Record<string, UserRole> = {
   ADMIN: "ADMIN",
   ADMINISTRATOR: "ADMIN",
+  HR_CEO: "HR_CEO",
+  CEO: "HR_CEO",
   HR_MANAGER: "HR_MANAGER",
   HRMANAGER: "HR_MANAGER",
   HR: "HR_MANAGER",

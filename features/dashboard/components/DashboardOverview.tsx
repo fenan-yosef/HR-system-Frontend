@@ -16,6 +16,7 @@ import { fetchEmployees, fetchUsers } from "@/services/employeeService";
 import { useEffect, useState } from "react";
 import { JobPosition } from "@/types/recruitment";
 import { Employee } from "@/types/employee";
+import { apiFetch } from "@/services/apiClient";
 
 export function DashboardOverview() {
   const { user } = useAuth();
@@ -23,6 +24,7 @@ export function DashboardOverview() {
   const [positions, setPositions] = useState<JobPosition[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [users, setUsers] = useState<Employee[]>([]);
+  const [shortlistCount, setShortlistCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   /* =============================
@@ -51,18 +53,17 @@ export function DashboardOverview() {
       try {
         setLoading(true);
 
-        const [positionsRes, employeesRes, usersRes] = await Promise.all([
+        const [positionsRes, employeesRes, usersRes, shortlistRes] = await Promise.all([
           fetchJobPositions(),
           fetchEmployees(),
           fetchUsers(),
+          apiFetch<any>("/shortlists/", { requiresAuth: true }).catch(() => ({ count: 0 })),
         ]);
 
-        console.log(positionsRes.results);
-        setPositions(positionsRes.results);
-        console.log(employeesRes.results);
-        setEmployees(employeesRes.results);
-        console.log(usersRes.results);
-        setUsers(usersRes.results);
+        setPositions(positionsRes.results || []);
+        setEmployees(employeesRes.results || []);
+        setUsers(usersRes.results || []);
+        setShortlistCount(shortlistRes.count || 0);
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);
       } finally {
@@ -196,7 +197,7 @@ export function DashboardOverview() {
             </h3>
             <p className="text-primary-foreground/80 mb-8 leading-relaxed">
               Your recruitment pipeline is looking healthy. You have{" "}
-              {loading ? "…" : activeJobs} active job postings and 48 candidates
+              {loading ? "…" : activeJobs} active job postings and {loading ? "…" : shortlistCount} candidates
               in the shortlist.
             </p>
             <button className="rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary shadow-sm transition-all hover:bg-opacity-90 active:scale-95">

@@ -93,3 +93,27 @@ export function trackApplicant(trackingCode: string, email?: string): Promise<an
 export function fetchUploadMetadata(uploadId: number): Promise<any> {
   return apiFetch<any>(`/uploads/${uploadId}/`, { requiresAuth: true });
 }
+
+export function confirmApplication(applicationId: number, data: { note?: string }) {
+  return apiFetch<any>(`/applicant-applications/${applicationId}/confirm/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
+export function inviteToInterview(applicationId: number, data: { datetime: string; location: string; message: string }) {
+  return apiFetch<any>(`/applicant-applications/${applicationId}/invite_interview/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
+export function hireApplicant(applicationId: number, data: { start_date: string; package: any }) {
+  return apiFetch<any>(`/applicant-applications/${applicationId}/hire/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
