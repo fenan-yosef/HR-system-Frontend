@@ -120,8 +120,7 @@ export async function apiFetch<TResponse>(
       errorDetail = "";
     }
     // Surface API errors in dev tools for quicker diagnosis.
-    console.error("apiFetch error", {
-      url,
+    console.error(`apiFetch error [${response.status}] ${url}`, {
       status: response.status,
       statusText: response.statusText,
       detail: errorDetail,

@@ -54,9 +54,9 @@ export function DashboardOverview() {
         setLoading(true);
 
         const [positionsRes, employeesRes, usersRes, shortlistRes] = await Promise.all([
-          fetchJobPositions(),
-          fetchEmployees(),
-          fetchUsers(),
+          fetchJobPositions().catch(() => ({ results: [] })),
+          fetchEmployees().catch(() => ({ results: [] })),
+          fetchUsers().catch(() => ({ results: [] })),
           apiFetch<any>("/shortlists/", { requiresAuth: true }).catch(() => ({ count: 0 })),
         ]);
 
