@@ -52,6 +52,7 @@ export interface FetchApplicationsParams {
   min_score?: number;
   starts_with?: string;
   applied_today?: boolean;
+  position_id?: number | string;
 }
 
 export function fetchApplications(params: FetchApplicationsParams = {}): Promise<PaginatedResponse<Application>> {
@@ -62,6 +63,7 @@ export function fetchApplications(params: FetchApplicationsParams = {}): Promise
   if (params.min_score) query.append("min_score", params.min_score.toString());
   if (params.starts_with) query.append("starts_with", params.starts_with);
   if (params.applied_today) query.append("applied_today", "true");
+  if (params.position_id) query.append("position_id", params.position_id.toString());
 
   const queryString = query.toString();
   const endpoint = `/applicant-applications/${queryString ? "?" + queryString : ""}`;

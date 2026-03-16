@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import {
   fetchApplications,
+  fetchJobPositions,
   triggerShortlist,
   exportApplicationsCsv,
   confirmApplication,
@@ -28,7 +29,7 @@ import {
   hireApplicant,
   batchEvaluateApplications,
 } from "@/services/recruitmentService";
-import type { Application } from "@/types/recruitment";
+import type { Application, JobPosition } from "@/types/recruitment";
 import { useAuth } from "@/hooks/useAuth";
 import { isHRStaff, isHRCeo } from "@/lib/permissions";
 import { useToast } from "@/components/ui/toast";
@@ -52,6 +53,8 @@ export function ApplicationsList() {
   const [appliedToday, setAppliedToday] = useState(false);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState("newest");
+  const [selectedJobId, setSelectedJobId] = useState<string | number>("");
+  const [jobPositions, setJobPositions] = useState<JobPosition[]>([]);
 
   // Export state
   const [isExporting, setIsExporting] = useState(false);
@@ -66,6 +69,10 @@ export function ApplicationsList() {
   const { toast } = useToast();
   const canShortlist = isHRStaff(user);
   const canCEOActions = isHRCeo(user);
+ 
+  useEffect(() => {
+    fetchJobPositions().then(res => setJobPositions(res.results)).catch(console.error);
+  }, []);
 
   const loadApplications = useCallback(async () => {
     setIsLoading(true);
@@ -78,6 +85,7 @@ export function ApplicationsList() {
         min_score: minScore > 0 ? minScore : undefined,
         starts_with: startsWith || undefined,
         applied_today: appliedToday || undefined,
+        position_id: selectedJobId || undefined,
       });
       setApps(response.results);
       setTotalCount(response.count);
@@ -92,7 +100,7 @@ export function ApplicationsList() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, search, status, minScore, startsWith, appliedToday]);
+  }, [page, search, status, minScore, startsWith, appliedToday, selectedJobId]);
 
   useEffect(() => {
     const timer = setTimeout(
@@ -215,6 +223,7 @@ export function ApplicationsList() {
     setAppliedToday(false);
     setPage(1);
     setSortBy("newest");
+    setSelectedJobId("");
   };
 
   const openCeoModal = (app: Application, modal: CeoModalType) => {
@@ -276,6 +285,9 @@ export function ApplicationsList() {
         canBatchEvaluate={canShortlist}
         onSearchChange={setSearch}
         onStatusChange={setStatus}
+        selectedJobId={selectedJobId}
+        jobPositions={jobPositions.map(j => ({ id: j.position_id, title: j.title }))}
+        onJobChange={(val) => { setSelectedJobId(val); setPage(1); }}
         onMinScoreChange={setMinScore}
         onAppliedTodayChange={setAppliedToday}
         onExport={handleExport}
@@ -349,15 +361,35 @@ export function ApplicationsList() {
             </button>
           </div>
         ) : (
-          <AnimatePresence mode="popLayout">
-            {[...apps]
-              .sort((a, b) => {
-                if (sortBy === "score_desc") return (b.evaluation?.matching_percentage ?? 0) - (a.evaluation?.matching_percentage ?? 0);
-                if (sortBy === "score_asc") return (a.evaluation?.matching_percentage ?? 0) - (b.evaluation?.matching_percentage ?? 0);
-                if (sortBy === "rank_asc") return (a.evaluation?.ai_rank ?? 999) - (b.evaluation?.ai_rank ?? 999);
-                return new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
-              })
-              .map((app, i) => (
+          <div className="space-y-12">
+            {Object.entries(
+              apps.reduce((acc, app) => {
+                const jobTitle = app.position?.title || "Other Positions";
+                if (!acc[jobTitle]) acc[jobTitle] = [];
+                acc[jobTitle].push(app);
+                return acc;
+              }, {} as Record<string, Application[]>)
+            ).map(([jobTitle, jobApps]) => (
+              <div key={jobTitle} className="space-y-4">
+                <div className="flex items-center gap-4 px-2">
+                   <div className="h-8 w-1 bg-primary rounded-full" />
+                   <h3 className="text-xl font-black tracking-tight text-foreground flex items-center gap-2">
+                     {jobTitle}
+                     <span className="text-xs font-bold text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                       {jobApps.length} candidates
+                     </span>
+                   </h3>
+                </div>
+                
+                <AnimatePresence mode="popLayout">
+                  {[...jobApps]
+                    .sort((a, b) => {
+                      if (sortBy === "score_desc") return (b.evaluation?.matching_percentage ?? 0) - (a.evaluation?.matching_percentage ?? 0);
+                      if (sortBy === "score_asc") return (a.evaluation?.matching_percentage ?? 0) - (b.evaluation?.matching_percentage ?? 0);
+                      if (sortBy === "rank_asc") return (a.evaluation?.ai_rank ?? 999) - (b.evaluation?.ai_rank ?? 999);
+                      return new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
+                    })
+                    .map((app, i) => (
                 <motion.div
                   key={app.application_id}
                   initial={{ opacity: 0, scale: 0.98, y: 10 }}
@@ -492,7 +524,10 @@ export function ApplicationsList() {
                   </Card>
                 </motion.div>
               ))}
-          </AnimatePresence>
+            </AnimatePresence>
+              </div>
+            ))}
+          </div>
         )}
       </div>
 

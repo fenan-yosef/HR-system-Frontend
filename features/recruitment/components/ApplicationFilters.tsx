@@ -10,6 +10,8 @@ interface ApplicationFiltersProps {
   status: string;
   minScore: number;
   appliedToday: boolean;
+  selectedJobId: string | number;
+  jobPositions: { id: number; title: string }[];
   isExporting: boolean;
   isBatchEvaluating?: boolean;
   onBatchEvaluate?: () => void;
@@ -18,6 +20,7 @@ interface ApplicationFiltersProps {
   onStatusChange: (value: string) => void;
   onMinScoreChange: (value: number) => void;
   onAppliedTodayChange: (value: boolean) => void;
+  onJobChange: (value: string) => void;
   onExport: () => void;
   onReset: () => void;
   sortBy: string;
@@ -29,6 +32,8 @@ export function ApplicationFilters({
   status,
   minScore,
   appliedToday,
+  selectedJobId,
+  jobPositions,
   isExporting,
   isBatchEvaluating,
   onBatchEvaluate,
@@ -37,12 +42,13 @@ export function ApplicationFilters({
   onStatusChange,
   onMinScoreChange,
   onAppliedTodayChange,
+  onJobChange,
   onExport,
   onReset,
   sortBy,
   onSortByChange,
 }: ApplicationFiltersProps) {
-  const hasActiveFilters = search || status || minScore > 0 || appliedToday;
+  const hasActiveFilters = search || status || minScore > 0 || appliedToday || selectedJobId;
 
   return (
     <div className="flex flex-col gap-4 bg-muted/30 p-4 rounded-2xl border border-border/50">
@@ -64,7 +70,26 @@ export function ApplicationFilters({
               className="h-11 px-4 bg-background border-none shadow-sm rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary outline-none"
             >
               <option value="">All Statuses</option>
-              {/* ... options ... */}
+              <option value="pending">Pending</option>
+              <option value="submitted">Submitted</option>
+              <option value="shortlisted">Shortlisted</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="interview_invited">Interview Invited</option>
+              <option value="hired">Hired</option>
+              <option value="rejected">Rejected</option>
+            </select>
+
+            <select
+              value={selectedJobId}
+              onChange={(e) => onJobChange(e.target.value)}
+              className="h-11 px-4 bg-background border-none shadow-sm rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary outline-none"
+            >
+              <option value="">All Jobs</option>
+              {jobPositions.map((job) => (
+                <option key={job.id} value={job.id}>
+                  {job.title}
+                </option>
+              ))}
             </select>
 
             <select
