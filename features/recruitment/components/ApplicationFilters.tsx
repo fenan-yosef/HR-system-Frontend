@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Input } from "@/components/ui/input";
-import { Search, Download, X, Loader2, CalendarCheck } from "lucide-react";
+import { Search, Download, X, Loader2, CalendarCheck, Wand2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ApplicationFiltersProps {
@@ -11,12 +11,17 @@ interface ApplicationFiltersProps {
   minScore: number;
   appliedToday: boolean;
   isExporting: boolean;
+  isBatchEvaluating?: boolean;
+  onBatchEvaluate?: () => void;
+  canBatchEvaluate?: boolean;
   onSearchChange: (value: string) => void;
   onStatusChange: (value: string) => void;
   onMinScoreChange: (value: number) => void;
   onAppliedTodayChange: (value: boolean) => void;
   onExport: () => void;
   onReset: () => void;
+  sortBy: string;
+  onSortByChange: (val: string) => void;
 }
 
 export function ApplicationFilters({
@@ -25,12 +30,17 @@ export function ApplicationFilters({
   minScore,
   appliedToday,
   isExporting,
+  isBatchEvaluating,
+  onBatchEvaluate,
+  canBatchEvaluate,
   onSearchChange,
   onStatusChange,
   onMinScoreChange,
   onAppliedTodayChange,
   onExport,
   onReset,
+  sortBy,
+  onSortByChange,
 }: ApplicationFiltersProps) {
   const hasActiveFilters = search || status || minScore > 0 || appliedToday;
 
@@ -48,19 +58,25 @@ export function ApplicationFilters({
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-          <select
-            className="h-11 px-4 bg-background border-none shadow-sm rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary outline-none"
-            value={status}
-            onChange={(e) => onStatusChange(e.target.value)}
-          >
-            <option value="">All Statuses</option>
-            <option value="pending">Pending</option>
-            <option value="shortlisted">Shortlisted</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="interview_invited">Interview Invited</option>
-            <option value="hired">Hired</option>
-            <option value="rejected">Rejected</option>
-          </select>
+            <select
+              value={status}
+              onChange={(e) => onStatusChange(e.target.value)}
+              className="h-11 px-4 bg-background border-none shadow-sm rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary outline-none"
+            >
+              <option value="">All Statuses</option>
+              {/* ... options ... */}
+            </select>
+
+            <select
+              value={sortBy}
+              onChange={(e) => onSortByChange(e.target.value)}
+              className="h-11 px-4 bg-background border-none shadow-sm rounded-xl text-sm font-medium focus:ring-2 focus:ring-primary outline-none"
+            >
+              <option value="newest">Newest First</option>
+              <option value="score_desc">Highest Match</option>
+              <option value="score_asc">Lowest Match</option>
+              <option value="rank_asc">AI Rank (1-X)</option>
+            </select>
 
           {/* Applied Today toggle */}
           <button
@@ -90,6 +106,21 @@ export function ApplicationFilters({
               className="w-24 accent-primary"
             />
           </div>
+
+          {canBatchEvaluate && (
+            <Button
+              className="h-11 px-6 rounded-xl font-bold flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white"
+              onClick={onBatchEvaluate}
+              disabled={isBatchEvaluating}
+            >
+              {isBatchEvaluating ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Wand2 className="size-4" />
+              )}
+              {isBatchEvaluating ? "Evaluating..." : "Batch Evaluate AI"}
+            </Button>
+          )}
 
           {hasActiveFilters && (
             <Button

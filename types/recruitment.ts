@@ -65,9 +65,15 @@ export interface ApplicationPosition {
 
 export interface AiEvaluation {
   evaluation_id: number;
+  fit_label?: "Strong fit" | "Good fit (gaps)" | "Review manually";
   skill_score: number;
   experience_score: number;
   matching_percentage: number;
+  semantic_score?: number;
+  keyword_ratio?: number;
+  embedding_model_name?: string;
+  matched_keywords?: string[];
+  missing_keywords?: string[];
   ai_rank: number;
   notes?: string;
   evaluated_at: string;

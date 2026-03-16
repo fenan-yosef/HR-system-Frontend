@@ -16,6 +16,8 @@ import {
   Briefcase,
   AlertCircle,
   RefreshCw,
+  Wand2,
+  Loader2,
 } from "lucide-react";
 import {
   fetchApplications,
@@ -24,6 +26,7 @@ import {
   confirmApplication,
   inviteToInterview,
   hireApplicant,
+  batchEvaluateApplications,
 } from "@/services/recruitmentService";
 import type { Application } from "@/types/recruitment";
 import { useAuth } from "@/hooks/useAuth";
@@ -48,6 +51,7 @@ export function ApplicationsList() {
   const [startsWith, setStartsWith] = useState("");
   const [appliedToday, setAppliedToday] = useState(false);
   const [page, setPage] = useState(1);
+  const [sortBy, setSortBy] = useState("newest");
 
   // Export state
   const [isExporting, setIsExporting] = useState(false);
@@ -55,6 +59,8 @@ export function ApplicationsList() {
   // CEO action modals
   const [ceoModal, setCeoModal] = useState<CeoModalType>(null);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [isBatchEvaluating, setIsBatchEvaluating] = useState(false);
+  const [evaluatingApps, setEvaluatingApps] = useState<number[]>([]);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -98,20 +104,30 @@ export function ApplicationsList() {
     return () => clearTimeout(timer);
   }, [loadApplications, search]);
 
-  /* ───── Shortlist action ───── */
+  /* ───── Shortlist/Evaluate action ───── */
   const handleShortlist = async (appId: number) => {
+    setEvaluatingApps(prev => [...prev, appId]);
     try {
       await triggerShortlist(appId);
-      toast("Application shortlisted successfully", "success");
+      toast("AI Evaluation completed successfully", "success");
       loadApplications();
     } catch (err: any) {
-      if (err?.message?.includes("403")) {
-        toast("You don't have permission to perform this action.", "error");
-      } else if (err?.message?.includes("400")) {
-        toast("Validation error — check the application status.", "warning");
-      } else {
-        toast("Failed to shortlist application. Please try again.", "error");
-      }
+      handleActionError(err, "evaluate");
+    } finally {
+      setEvaluatingApps(prev => prev.filter(id => id !== appId));
+    }
+  };
+
+  const handleBatchEvaluate = async () => {
+    setIsBatchEvaluating(true);
+    try {
+      const resp = await batchEvaluateApplications();
+      toast(resp.message || "Batch evaluation started", "success");
+      loadApplications();
+    } catch (err: any) {
+      handleActionError(err, "batch evaluate");
+    } finally {
+      setIsBatchEvaluating(false);
     }
   };
 
@@ -198,6 +214,7 @@ export function ApplicationsList() {
     setStartsWith("");
     setAppliedToday(false);
     setPage(1);
+    setSortBy("newest");
   };
 
   const openCeoModal = (app: Application, modal: CeoModalType) => {
@@ -254,12 +271,17 @@ export function ApplicationsList() {
         minScore={minScore}
         appliedToday={appliedToday}
         isExporting={isExporting}
+        isBatchEvaluating={isBatchEvaluating}
+        onBatchEvaluate={handleBatchEvaluate}
+        canBatchEvaluate={canShortlist}
         onSearchChange={setSearch}
         onStatusChange={setStatus}
         onMinScoreChange={setMinScore}
         onAppliedTodayChange={setAppliedToday}
         onExport={handleExport}
         onReset={handleResetFilters}
+        sortBy={sortBy}
+        onSortByChange={setSortBy}
       />
 
       {/* Alphabet quick-filter */}
@@ -328,127 +350,148 @@ export function ApplicationsList() {
           </div>
         ) : (
           <AnimatePresence mode="popLayout">
-            {apps.map((app, i) => (
-              <motion.div
-                key={app.application_id}
-                initial={{ opacity: 0, scale: 0.98, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Card className="group flex flex-col sm:flex-row sm:items-center justify-between p-5 border-none shadow-sm hover:shadow-md transition-all gap-6">
-                  {/* ── Applicant info ── */}
-                  <div className="flex items-center gap-4 flex-1">
-                    <div className="size-14 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-500">
-                      <User className="size-7" />
+            {[...apps]
+              .sort((a, b) => {
+                if (sortBy === "score_desc") return (b.evaluation?.matching_percentage ?? 0) - (a.evaluation?.matching_percentage ?? 0);
+                if (sortBy === "score_asc") return (a.evaluation?.matching_percentage ?? 0) - (b.evaluation?.matching_percentage ?? 0);
+                if (sortBy === "rank_asc") return (a.evaluation?.ai_rank ?? 999) - (b.evaluation?.ai_rank ?? 999);
+                return new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
+              })
+              .map((app, i) => (
+                <motion.div
+                  key={app.application_id}
+                  initial={{ opacity: 0, scale: 0.98, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Card className="group flex flex-col sm:flex-row sm:items-center justify-between p-5 border-none shadow-sm hover:shadow-md transition-all gap-6">
+                    {/* ── Applicant info ── */}
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="size-14 rounded-2xl bg-primary/5 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                        <User className="size-7" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-base leading-none mb-1.5">
+                          {getApplicantName(app)}
+                        </h4>
+                        <p className="text-xs text-muted-foreground font-medium flex items-center gap-2">
+                          {app.position?.title}
+                          <span className="size-1 rounded-full bg-border" />
+                          {new Date(app.submitted_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-bold text-base leading-none mb-1.5">
-                        {getApplicantName(app)}
-                      </h4>
-                      <p className="text-xs text-muted-foreground font-medium flex items-center gap-2">
-                        {app.position?.title}
-                        <span className="size-1 rounded-full bg-border" />
-                        {new Date(app.submitted_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* ── AI Evaluation Section ── */}
-                  <div className="flex items-center gap-6 px-6 border-x border-border/50 hidden lg:flex">
-                    <div className="flex flex-col items-center gap-1.5 min-w-[120px]">
-                      <div className="flex items-center justify-between w-full">
-                        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
-                          Match Score
+                    {/* ── AI Evaluation Section ── */}
+                    <div className="flex items-center gap-6 px-6 border-x border-border/50 hidden lg:flex">
+                      <div className="flex flex-col items-center gap-1.5 min-w-[120px]">
+                        <div className="flex items-center justify-between w-full">
+                          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest leading-none">
+                            Match Score
+                          </span>
+                          <span className="text-xs font-bold text-primary">
+                            {app.evaluation?.matching_percentage ?? 0}%
+                          </span>
+                        </div>
+                        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${app.evaluation?.matching_percentage ?? 0}%` }}
+                            transition={{ duration: 1 }}
+                            className="h-full bg-primary"
+                          />
+                        </div>
+                      </div>
+                      {app.evaluation?.ai_rank && (
+                        <div className="bg-amber-500/10 text-amber-600 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                          <Star className="size-3.5 fill-current" />
+                          <span className="text-xs font-extrabold">
+                            RANK #{app.evaluation.ai_rank}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* ── Status & Actions ── */}
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center justify-between sm:justify-end">
+                      <div className="flex flex-col items-start sm:items-end min-w-[120px] gap-2">
+                        <span
+                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(
+                            app.status
+                          )}`}
+                        >
+                          {getStatusIcon(app.status)}
+                          {app.status.replace("_", " ")}
                         </span>
-                        <span className="text-xs font-bold text-primary">
-                          {app.evaluation?.matching_percentage ?? 0}%
-                        </span>
+                        
+                        {app.evaluation?.fit_label && (
+                          <span className={`text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md border ${
+                            app.evaluation.fit_label === "Strong fit" 
+                              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-600" 
+                              : app.evaluation.fit_label === "Good fit (gaps)"
+                              ? "bg-amber-500/10 border-amber-500/30 text-amber-600"
+                              : "bg-red-500/10 border-red-500/30 text-red-600"
+                          }`}>
+                            {app.evaluation.fit_label}
+                          </span>
+                        )}
                       </div>
-                      <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${app.evaluation?.matching_percentage ?? 0}%` }}
-                          transition={{ duration: 1 }}
-                          className="h-full bg-primary"
-                        />
-                      </div>
-                    </div>
-                    {app.evaluation?.ai_rank && (
-                      <div className="bg-amber-500/10 text-amber-600 px-3 py-1.5 rounded-xl flex items-center gap-2">
-                        <Star className="size-3.5 fill-current" />
-                        <span className="text-xs font-extrabold">
-                          RANK #{app.evaluation.ai_rank}
-                        </span>
-                      </div>
-                    )}
-                  </div>
 
-                  {/* ── Status & Actions ── */}
-                  <div className="flex items-center gap-6 justify-between sm:justify-end">
-                    <div className="flex flex-col items-end min-w-[100px]">
-                      <span
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(
-                          app.status
-                        )}`}
-                      >
-                        {getStatusIcon(app.status)}
-                        {app.status.replace("_", " ")}
-                      </span>
-                    </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* Evaluate/Shortlist Action */}
+                        {canShortlist && (app.status === "pending" || app.status === "submitted") && (
+                          <button
+                            onClick={() => handleShortlist(app.application_id)}
+                            disabled={evaluatingApps.includes(app.application_id)}
+                            className="px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:shadow-lg shadow-violet-200 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {evaluatingApps.includes(app.application_id) ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              <Wand2 className="size-3" />
+                            )}
+                            {app.evaluation ? "Re-evaluate" : "Evaluate AI"}
+                          </button>
+                        )}
 
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {/* Shortlist (HR Staff) */}
-                      {canShortlist && app.status === "pending" && (
-                        <button
-                          onClick={() => handleShortlist(app.application_id)}
-                          className="px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-bold hover:shadow-lg shadow-primary/20 transition-all active:scale-95"
-                        >
-                          Shortlist
-                        </button>
-                      )}
+                        {/* CEO Actions */}
+                        {canCEOActions && app.status === "shortlisted" && (
+                          <button
+                            onClick={() => openCeoModal(app, "confirm")}
+                            className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all active:scale-95"
+                          >
+                            <ShieldCheck className="size-3.5 inline mr-1" />
+                            Confirm
+                          </button>
+                        )}
+                        {canCEOActions && (app.status === "confirmed" || app.status === "shortlisted") && (
+                          <button
+                            onClick={() => openCeoModal(app, "invite")}
+                            className="px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-all active:scale-95"
+                          >
+                            <Calendar className="size-3.5 inline mr-1" />
+                            Invite
+                          </button>
+                        )}
+                        {canCEOActions && (app.status === "confirmed" || app.status === "interview_invited") && (
+                          <button
+                            onClick={() => openCeoModal(app, "hire")}
+                            className="px-3 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-all active:scale-95"
+                          >
+                            <Briefcase className="size-3.5 inline mr-1" />
+                            Hire
+                          </button>
+                        )}
 
-                      {/* CEO Actions */}
-                      {canCEOActions && app.status === "shortlisted" && (
-                        <button
-                          onClick={() => openCeoModal(app, "confirm")}
-                          className="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-all active:scale-95"
-                          title="Confirm application"
-                        >
-                          <ShieldCheck className="size-3.5 inline mr-1" />
-                          Confirm
-                        </button>
-                      )}
-                      {canCEOActions && (app.status === "confirmed" || app.status === "shortlisted") && (
-                        <button
-                          onClick={() => openCeoModal(app, "invite")}
-                          className="px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-all active:scale-95"
-                          title="Invite to interview"
-                        >
-                          <Calendar className="size-3.5 inline mr-1" />
-                          Invite
-                        </button>
-                      )}
-                      {canCEOActions && (app.status === "confirmed" || app.status === "interview_invited") && (
-                        <button
-                          onClick={() => openCeoModal(app, "hire")}
-                          className="px-3 py-2 rounded-xl bg-violet-600 text-white text-xs font-bold hover:bg-violet-700 transition-all active:scale-95"
-                          title="Hire candidate"
-                        >
-                          <Briefcase className="size-3.5 inline mr-1" />
-                          Hire
-                        </button>
-                      )}
-
-                      {/* View detail arrow */}
-                      <div className="bg-muted p-2.5 rounded-xl group-hover:bg-primary/10 transition-colors cursor-pointer">
-                        <ArrowUpRight className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        <div className="bg-muted p-2.5 rounded-xl group-hover:bg-primary/10 transition-colors cursor-pointer">
+                          <ArrowUpRight className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
+                  </Card>
+                </motion.div>
+              ))}
           </AnimatePresence>
         )}
       </div>

@@ -6,6 +6,7 @@ notes to send to front end for a specific implementation
 - **Endpoint**: `POST /api/uploads/`
 - **Authentication**: AllowAny (public access for applicants)
 - **Content-Type**: Supports `multipart/form-data` or `application/json`
+- **File Size Limit**: 100MB maximum per file
 
 #### Request Payload Options:
 
@@ -33,6 +34,11 @@ Content-Type: application/json
   "document_type": "cv"
 }
 ```
+
+#### Error Responses:
+- `{"file": "File size exceeds maximum limit of 100MB."}` - File too large
+- `{"file_data": "File size exceeds maximum limit of 100MB."}` - Base64 data too large
+- `{"file": "Invalid base64 file payload."}` - Corrupted base64 data
 
 #### Response:
 ```json
@@ -175,7 +181,74 @@ Returns the complete `AiEvaluation` object (same structure as above).
 #### Response:
 ```json
 {
-  "message": "Evaluated 5 applications"
+  "evaluated": 5
+}
+```
+
+### Application Metrics
+- **Endpoint**: `GET /api/applicant-applications/metrics/`
+- **Authentication**: HR Staff or Admin
+- **Purpose**: Get application statistics
+
+#### Response:
+```json
+{
+  "total": 25,
+  "applied_today": 3,
+  "shortlisted": 5,
+  "pending": 15
+}
+```
+
+### List Applications
+- **Endpoint**: `GET /api/applicant-applications/`
+- **Authentication**: HR Staff or Admin
+- **Purpose**: Get paginated list of applications with optional filtering
+
+#### Query Parameters:
+- `position_id`: Filter by job position
+- `status`: Filter by application status
+- `page`: Pagination page number
+
+#### Response:
+```json
+{
+  "count": 25,
+  "next": "http://localhost:8000/api/applicant-applications/?page=2",
+  "previous": null,
+  "results": [
+    {
+      "application_id": 1,
+      "applicant": {
+        "applicant_id": 1,
+        "full_name": "John Doe",
+        "email": "john@example.com",
+        "phone": "+1234567890",
+        "cv_path": "document:123",
+        "documents": [...],
+        "submitted_at": "2024-01-15T10:30:00Z"
+      },
+      "evaluation": {
+        "evaluation_id": 1,
+        "fit_label": "Strong fit",
+        "skill_score": 85.50,
+        "experience_score": 78.25,
+        "matching_percentage": 82.00,
+        "ai_rank": 3,
+        "matched_keywords": ["Python", "Django"],
+        "missing_keywords": ["AWS"],
+        "notes": "Fit label: Strong fit | Matched keywords: Python, Django",
+        "evaluated_at": "2024-01-15T10:35:00Z"
+      },
+      "position": {
+        "position_id": 101,
+        "title": "Software Engineer",
+        "department": "IT"
+      },
+      "status": "shortlisted",
+      "submitted_at": "2024-01-15T10:30:00Z"
+    }
+  ]
 }
 ```
 

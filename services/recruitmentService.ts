@@ -9,6 +9,7 @@ import type {
   ShortlistEntry,
   CreateApplicant,
   ApplicantResponse,
+  AiEvaluation,
 } from "@/types/recruitment";
 import { apiFetch } from "@/services/apiClient";
 
@@ -63,12 +64,12 @@ export function fetchApplications(params: FetchApplicationsParams = {}): Promise
   if (params.applied_today) query.append("applied_today", "true");
 
   const queryString = query.toString();
-  const endpoint = `/recruitment/applicant-applications/${queryString ? "?" + queryString : ""}`;
+  const endpoint = `/applicant-applications/${queryString ? "?" + queryString : ""}`;
   return apiFetch<PaginatedResponse<Application>>(endpoint, { requiresAuth: true });
 }
 
 export function fetchApplicationMetrics(): Promise<ApplicationMetrics> {
-  return apiFetch<ApplicationMetrics>("/recruitment/applicant-applications/metrics/", { requiresAuth: true });
+  return apiFetch<ApplicationMetrics>("/applicant-applications/metrics/", { requiresAuth: true });
 }
 
 export async function exportApplicationsCsv(params: FetchApplicationsParams = {}): Promise<void> {
@@ -77,7 +78,7 @@ export async function exportApplicationsCsv(params: FetchApplicationsParams = {}
   if (params.min_score) query.append("min_score", params.min_score.toString());
   
   const queryString = query.toString();
-  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || "/api"}/recruitment/applicant-applications/export-csv/${queryString ? "?" + queryString : ""}`;
+  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || "/api"}/applicant-applications/export-csv/${queryString ? "?" + queryString : ""}`;
   
   const link = document.createElement("a");
   link.href = url;
@@ -88,12 +89,20 @@ export async function exportApplicationsCsv(params: FetchApplicationsParams = {}
 }
 
 export function fetchShortlist(): Promise<PaginatedResponse<ShortlistEntry>> {
-  return apiFetch<PaginatedResponse<ShortlistEntry>>("/recruitment/shortlists/", { requiresAuth: true });
+  return apiFetch<PaginatedResponse<ShortlistEntry>>("/shortlists/", { requiresAuth: true });
 }
 
-export function triggerShortlist(applicationId: number) {
-  return apiFetch<ShortlistEntry>(`/recruitment/applicant-applications/${applicationId}/shortlist/`, {
+export function triggerShortlist(applicationId: number): Promise<AiEvaluation> {
+  return apiFetch<AiEvaluation>(`/applicant-applications/${applicationId}/shortlist/`, {
     method: "POST",
+    requiresAuth: true,
+  });
+}
+
+export function batchEvaluateApplications(positionId?: number): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/applicant-applications/batch-evaluate/", {
+    method: "POST",
+    body: positionId ? JSON.stringify({ position_id: positionId }) : undefined,
     requiresAuth: true,
   });
 }
@@ -135,7 +144,7 @@ export function fetchUploadMetadata(uploadId: number): Promise<any> {
 }
 
 export function confirmApplication(applicationId: number, data: { confirmed_by: number | null; note?: string }) {
-  return apiFetch<{ status: string; application_id: number }>(`/recruitment/applicant-applications/${applicationId}/confirm/`, {
+  return apiFetch<{ status: string; application_id: number }>(`/applicant-applications/${applicationId}/confirm/`, {
     method: "POST",
     body: JSON.stringify(data),
     requiresAuth: true,
@@ -143,7 +152,7 @@ export function confirmApplication(applicationId: number, data: { confirmed_by: 
 }
 
 export function inviteToInterview(applicationId: number, data: { datetime: string; location: string; message: string }) {
-  return apiFetch<any>(`/recruitment/applicant-applications/${applicationId}/invite_interview/`, {
+  return apiFetch<any>(`/applicant-applications/${applicationId}/invite_interview/`, {
     method: "POST",
     body: JSON.stringify(data),
     requiresAuth: true,
@@ -151,7 +160,7 @@ export function inviteToInterview(applicationId: number, data: { datetime: strin
 }
 
 export function hireApplicant(applicationId: number, data: { start_date: string; package: { salary: number }; hired_by: number | null }) {
-  return apiFetch<{ status: string; application_id: number }>(`/recruitment/applicant-applications/${applicationId}/hire/`, {
+  return apiFetch<{ status: string; application_id: number }>(`/applicant-applications/${applicationId}/hire/`, {
     method: "POST",
     body: JSON.stringify(data),
     requiresAuth: true,

@@ -131,12 +131,12 @@ export default function PublicApplyPage() {
             "image/webp"
         ];
 
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        const maxSize = 100 * 1024 * 1024; // 100MB
 
         if (type === 'cv') {
             const file = files[0];
             if (file.size > maxSize) {
-                setValidationErrors((prev) => ({ ...prev, cv: "File is too large (max 10MB)." }));
+                setValidationErrors((prev) => ({ ...prev, cv: "File is too large (max 100MB)." }));
                 return;
             }
             if (!allowedTypes.includes(file.type)) {
@@ -149,7 +149,7 @@ export default function PublicApplyPage() {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 if (file.size > maxSize) {
-                    toast(`File ${file.name} is too large (max 10MB).`, 'warning');
+                    toast(`File ${file.name} is too large (max 100MB).`, 'warning');
                     continue;
                 }
                 if (!allowedTypes.includes(file.type)) {
@@ -186,7 +186,8 @@ export default function PublicApplyPage() {
         const res = await fetch(uploadUrl, { method: 'POST', body: form });
         if (!res.ok) {
             const errBody = await res.json().catch(() => null);
-            throw new Error(errBody?.detail || errBody?.message || `Failed to upload ${file.name}`);
+            const errorMsg = errBody?.file || errBody?.file_data || errBody?.detail || errBody?.message || `Failed to upload ${file.name}`;
+            throw new Error(errorMsg);
         }
         const data = await res.json();
         return data?.upload_id || data?.id;
@@ -239,8 +240,8 @@ export default function PublicApplyPage() {
                 email: formData.email,
                 phone: formData.phone,
                 upload_id: cvId,
-                certificate_ids: certificateIds,
-                document_ids: documentIds,
+                certificate_upload_ids: certificateIds,
+                other_upload_ids: documentIds,
                 cover_letter: formData.cover_letter || undefined,
             };
 
@@ -473,7 +474,7 @@ export default function PublicApplyPage() {
                                                         {cvFile ? cvFile.name : 'Upload a file'}
                                                     </p>
                                                     <p className="text-sm text-gray-500 font-medium tracking-tight">
-                                                        {cvFile ? `(${(cvFile.size / 1024 / 1024).toFixed(2)} MB)` : 'PDF, DOCX or Images up to 10MB'}
+                                                        {cvFile ? `(${(cvFile.size / 1024 / 1024).toFixed(2)} MB)` : 'PDF, DOCX or Images up to 100MB'}
                                                     </p>
                                                 </div>
 
