@@ -77,6 +77,15 @@ export interface AiEvaluation {
   ai_rank: number;
   notes?: string;
   evaluated_at: string;
+  // New AI fields
+  summary?: string;
+  skill_gaps?: {
+    matched_skills: string[];
+    missing_skills: string[];
+    gaps: string[];
+  };
+  interview_questions?: string[];
+  cluster_id?: number;
 }
 
 export interface Application {

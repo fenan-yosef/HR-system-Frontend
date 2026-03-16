@@ -36,6 +36,7 @@ import { useToast } from "@/components/ui/toast";
 import { ApplicationMetrics } from "./ApplicationMetrics";
 import { ApplicationFilters } from "./ApplicationFilters";
 import { ConfirmModal, InviteInterviewModal, HireModal } from "./CEOActionModals";
+import { EvaluationDetailsModal } from "./EvaluationDetailsModal";
 
 type CeoModalType = "confirm" | "invite" | "hire" | null;
 
@@ -62,6 +63,7 @@ export function ApplicationsList() {
   // CEO action modals
   const [ceoModal, setCeoModal] = useState<CeoModalType>(null);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [isBatchEvaluating, setIsBatchEvaluating] = useState(false);
   const [evaluatingApps, setEvaluatingApps] = useState<number[]>([]);
 
@@ -229,6 +231,11 @@ export function ApplicationsList() {
   const openCeoModal = (app: Application, modal: CeoModalType) => {
     setSelectedApp(app);
     setCeoModal(modal);
+  };
+
+  const openDetailsModal = (app: Application) => {
+    setSelectedApp(app);
+    setIsDetailsModalOpen(true);
   };
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -516,7 +523,10 @@ export function ApplicationsList() {
                           </button>
                         )}
 
-                        <div className="bg-muted p-2.5 rounded-xl group-hover:bg-primary/10 transition-colors cursor-pointer">
+                        <div 
+                          onClick={() => openDetailsModal(app)}
+                          className="bg-muted p-2.5 rounded-xl group-hover:bg-primary/10 transition-colors cursor-pointer"
+                        >
                           <ArrowUpRight className="size-5 text-muted-foreground group-hover:text-primary transition-colors" />
                         </div>
                       </div>
@@ -578,6 +588,12 @@ export function ApplicationsList() {
             applicantName={getApplicantName(selectedApp)}
             onHire={handleHire}
             onClose={() => { setCeoModal(null); setSelectedApp(null); }}
+          />
+        )}
+        {isDetailsModalOpen && selectedApp && (
+          <EvaluationDetailsModal
+            application={selectedApp}
+            onClose={() => { setIsDetailsModalOpen(false); setSelectedApp(null); }}
           />
         )}
       </AnimatePresence>
