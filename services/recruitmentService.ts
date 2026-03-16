@@ -1,5 +1,6 @@
 import type {
   Application,
+  ApplicationMetrics,
   JobPosting,
   JobPosition,
   CreateJobPosition,
@@ -66,8 +67,8 @@ export function fetchApplications(params: FetchApplicationsParams = {}): Promise
   return apiFetch<PaginatedResponse<Application>>(endpoint, { requiresAuth: true });
 }
 
-export function fetchApplicationMetrics(): Promise<{ total: number; applied_today: number; shortlisted: number; pending: number }> {
-  return apiFetch<any>("/recruitment/applicant-applications/metrics/", { requiresAuth: true });
+export function fetchApplicationMetrics(): Promise<ApplicationMetrics> {
+  return apiFetch<ApplicationMetrics>("/recruitment/applicant-applications/metrics/", { requiresAuth: true });
 }
 
 export async function exportApplicationsCsv(params: FetchApplicationsParams = {}): Promise<void> {
@@ -133,8 +134,8 @@ export function fetchUploadMetadata(uploadId: number): Promise<any> {
   return apiFetch<any>(`/uploads/${uploadId}/`, { requiresAuth: true });
 }
 
-export function confirmApplication(applicationId: number, data: { note?: string }) {
-  return apiFetch<any>(`/recruitment/applicant-applications/${applicationId}/confirm/`, {
+export function confirmApplication(applicationId: number, data: { confirmed_by: number | null; note?: string }) {
+  return apiFetch<{ status: string; application_id: number }>(`/recruitment/applicant-applications/${applicationId}/confirm/`, {
     method: "POST",
     body: JSON.stringify(data),
     requiresAuth: true,
@@ -149,8 +150,8 @@ export function inviteToInterview(applicationId: number, data: { datetime: strin
   });
 }
 
-export function hireApplicant(applicationId: number, data: { start_date: string; package: any }) {
-  return apiFetch<any>(`/recruitment/applicant-applications/${applicationId}/hire/`, {
+export function hireApplicant(applicationId: number, data: { start_date: string; package: { salary: number }; hired_by: number | null }) {
+  return apiFetch<{ status: string; application_id: number }>(`/recruitment/applicant-applications/${applicationId}/hire/`, {
     method: "POST",
     body: JSON.stringify(data),
     requiresAuth: true,

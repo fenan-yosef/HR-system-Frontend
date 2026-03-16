@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle, UploadCloud, AlertCircle, FileText } from "lucide-react";
+import { CheckCircle, UploadCloud, AlertCircle, FileText, Plus, Trash2, X, Paperclip, Image as ImageIcon } from "lucide-react";
+import { useToast } from "@/components/ui/toast";
 
 // Helper to convert file to Base64 data URL for easy local testing
 const convertFileToBase64 = (file: File): Promise<string> => {
@@ -37,7 +38,12 @@ export default function PublicApplyPage() {
         cover_letter: "",
     });
     const [cvFile, setCvFile] = useState<File | null>(null);
+    const [certificates, setCertificates] = useState<File[]>([]);
+    const [supportingDocs, setSupportingDocs] = useState<File[]>([]);
+
     const cvInputRef = useRef<HTMLInputElement | null>(null);
+    const certInputRef = useRef<HTMLInputElement | null>(null);
+    const docInputRef = useRef<HTMLInputElement | null>(null);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -109,38 +115,84 @@ export default function PublicApplyPage() {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'cv' | 'certificates' | 'docs') => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
         setErrorMsg(null);
-        setValidationErrors((prev) => ({ ...prev, cv: "" }));
+        setValidationErrors((prev) => ({ ...prev, [type]: "" }));
 
-        if (file) {
-            if (file.size > 5 * 1024 * 1024) {
-                setValidationErrors((prev) => ({ ...prev, cv: "File is too large (max 5MB)." }));
-                setCvFile(null);
+        const allowedTypes = [
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/msword",
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+        ];
+
+        const maxSize = 10 * 1024 * 1024; // 10MB
+
+        if (type === 'cv') {
+            const file = files[0];
+            if (file.size > maxSize) {
+                setValidationErrors((prev) => ({ ...prev, cv: "File is too large (max 10MB)." }));
                 return;
             }
-
-            const allowedTypes = [
-                "application/pdf",
-                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                "application/msword",
-            ];
-
             if (!allowedTypes.includes(file.type)) {
-                setValidationErrors((prev) => ({ ...prev, cv: "Please upload a PDF or DOCX file." }));
-                setCvFile(null);
+                setValidationErrors((prev) => ({ ...prev, cv: "Invalid file type. Please upload PDF, DOCX or Images." }));
                 return;
             }
-
             setCvFile(file);
+        } else {
+            const newFiles: File[] = [];
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                if (file.size > maxSize) {
+                    toast(`File ${file.name} is too large (max 10MB).`, 'warning');
+                    continue;
+                }
+                if (!allowedTypes.includes(file.type)) {
+                    toast(`Invalid type for ${file.name}.`, 'warning');
+                    continue;
+                }
+                newFiles.push(file);
+            }
+
+            if (type === 'certificates') {
+                setCertificates((prev) => [...prev, ...newFiles]);
+            } else {
+                setSupportingDocs((prev) => [...prev, ...newFiles]);
+            }
         }
     };
 
-    const handleRemoveFile = () => {
-        setCvFile(null);
-        setValidationErrors((prev) => ({ ...prev, cv: "" }));
+    const handleRemoveFile = (type: 'cv' | 'certificates' | 'docs', index?: number) => {
+        if (type === 'cv') {
+            setCvFile(null);
+        } else if (type === 'certificates') {
+            setCertificates((prev) => prev.filter((_, i) => i !== index));
+        } else {
+            setSupportingDocs((prev) => prev.filter((_, i) => i !== index));
+        }
     };
+
+    // Helper to upload a single file and return its ID
+    const uploadSingleFile = async (file: File) => {
+        const uploadUrl = `${baseUrl}uploads/`;
+        const form = new FormData();
+        form.append('file', file);
+
+        const res = await fetch(uploadUrl, { method: 'POST', body: form });
+        if (!res.ok) {
+            const errBody = await res.json().catch(() => null);
+            throw new Error(errBody?.detail || errBody?.message || `Failed to upload ${file.name}`);
+        }
+        const data = await res.json();
+        return data?.upload_id || data?.id;
+    };
+
+    const { toast } = useToast();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -161,45 +213,36 @@ export default function PublicApplyPage() {
         }
 
         try {
-            // 1. Upload file to /api/uploads/ using multipart FormData
             setUploadProgress(10);
-            const uploadUrl = `${baseUrl}uploads/`;
-            const form = new FormData();
-            form.append('file', cvFile as File);
+            
+            // 1. Upload CV
+            const cvId = await uploadSingleFile(cvFile);
+            setUploadProgress(40);
 
-            const uploadRes = await fetch(uploadUrl, {
-                method: 'POST',
-                body: form,
-            });
-
-            if (!uploadRes.ok) {
-                const errBody = await uploadRes.json().catch(() => null);
-                setErrorMsg(errBody?.detail || errBody?.message || 'File upload failed');
-                setIsSubmitting(false);
-                setUploadProgress(0);
-                return;
+            // 2. Upload Certificates
+            let certificateIds: number[] = [];
+            if (certificates.length > 0) {
+                certificateIds = await Promise.all(certificates.map(f => uploadSingleFile(f)));
             }
-
-            const uploadData = await uploadRes.json().catch(() => null);
-            const uploadId = uploadData?.upload_id || uploadData?.id || null;
             setUploadProgress(60);
 
-            if (!uploadId) {
-                setErrorMsg('Upload did not return an upload_id');
-                setIsSubmitting(false);
-                setUploadProgress(0);
-                return;
+            // 3. Upload Supporting Docs
+            let documentIds: number[] = [];
+            if (supportingDocs.length > 0) {
+                documentIds = await Promise.all(supportingDocs.map(f => uploadSingleFile(f)));
             }
+            setUploadProgress(80);
 
-            // 2. Submit application with upload_id
+            // 4. Submit application
             const payload = {
                 full_name: formData.full_name,
                 email: formData.email,
                 phone: formData.phone,
-                upload_id: uploadId,
-            } as any;
-
-            if (formData.cover_letter) payload.cover_letter = formData.cover_letter;
+                upload_id: cvId,
+                certificate_ids: certificateIds,
+                document_ids: documentIds,
+                cover_letter: formData.cover_letter || undefined,
+            };
 
             const applyUrl = `${baseUrl}recruitment/public/apply/${publicId}/`;
             const response = await fetch(applyUrl, {
@@ -211,7 +254,7 @@ export default function PublicApplyPage() {
                 body: JSON.stringify(payload),
             });
 
-            setUploadProgress(90);
+            setUploadProgress(95);
 
             const data = await response.json().catch(() => null);
 
@@ -400,80 +443,185 @@ export default function PublicApplyPage() {
                                     {validationErrors.phone && <p className="text-red-500 text-xs mt-1">{validationErrors.phone}</p>}
                                 </div>
 
-                                <div className="sm:col-span-2 space-y-2">
-                                    <Label htmlFor="cv" className="text-sm font-semibold text-gray-900">Resume / CV <span className="text-red-500">*</span></Label>
-                                    <div
-                                        role="button"
-                                        tabIndex={0}
-                                        onClick={() => !isSubmitting && cvInputRef.current?.click()}
-                                        onKeyDown={(e) => { if (!isSubmitting && (e.key === 'Enter' || e.key === ' ')) cvInputRef.current?.click(); }}
-                                        className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-dashed rounded-xl transition-colors ${cvFile ? 'border-primary bg-primary/5' : 'border-gray-300 hover:border-primary/50 bg-gray-50'} ${validationErrors.cv ? 'border-red-500 bg-red-50/50' : ''}`}
-                                    >
-                                        <div className="space-y-2 text-center">
-                                            <UploadCloud className={`mx-auto h-10 w-10 ${cvFile ? 'text-primary' : 'text-gray-400'}`} />
-                                            <div className="flex text-sm text-gray-600 justify-center">
-                                                <label
-                                                    htmlFor="cv"
-                                                    className="relative cursor-pointer bg-white rounded-md font-medium text-primary hover:text-primary/80 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-primary px-2"
-                                                >
-                                                    <span>{cvFile ? 'Change File' : 'Upload a file'}</span>
-                                                    <input
-                                                        id="cv"
-                                                        name="cv"
-                                                        ref={cvInputRef}
-                                                        type="file"
-                                                        accept=".pdf,.doc,.docx"
-                                                        className="sr-only"
-                                                        onChange={handleFileChange}
-                                                        disabled={isSubmitting}
-                                                    />
-                                                </label>
-                                            </div>
-                                            <p className="text-xs text-gray-500">
-                                                {cvFile ? (
-                                                    <span className="font-semibold text-gray-900">{cvFile.name} ({(cvFile.size / 1024 / 1024).toFixed(2)} MB)</span>
-                                                ) : (
-                                                    "PDF, DOCX up to 5MB"
-                                                )}
-                                            </p>
+                                <div className="sm:col-span-2 space-y-4">
+                                    <div className="space-y-3">
+                                        <Label htmlFor="cv" className="text-base font-bold text-gray-900">Resume / CV <span className="text-red-500">*</span></Label>
+                                        <div
+                                            role="button"
+                                            tabIndex={0}
+                                            onClick={() => !isSubmitting && cvInputRef.current?.click()}
+                                            onKeyDown={(e) => { if (!isSubmitting && (e.key === 'Enter' || e.key === ' ')) cvInputRef.current?.click(); }}
+                                            className={`group relative flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-2xl transition-all duration-300 ${cvFile ? 'border-primary/50 bg-primary/5 shadow-inner' : 'border-gray-200 hover:border-primary/40 hover:bg-gray-50 bg-white'} ${validationErrors.cv ? 'border-red-500 bg-red-50/30' : ''}`}
+                                        >
+                                            <input
+                                                id="cv"
+                                                name="cv"
+                                                ref={cvInputRef}
+                                                type="file"
+                                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                className="sr-only"
+                                                onChange={(e) => handleFileChange(e, 'cv')}
+                                                disabled={isSubmitting}
+                                            />
+                                            
+                                            <div className="flex flex-col items-center text-center">
+                                                <div className={`mb-4 p-3 rounded-2xl transition-all duration-300 ${cvFile ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary'}`}>
+                                                    <UploadCloud className="h-10 w-10" />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <p className="text-lg font-bold text-gray-800">
+                                                        {cvFile ? cvFile.name : 'Upload a file'}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500 font-medium tracking-tight">
+                                                        {cvFile ? `(${(cvFile.size / 1024 / 1024).toFixed(2)} MB)` : 'PDF, DOCX or Images up to 10MB'}
+                                                    </p>
+                                                </div>
 
-                                            {cvFile && (
-                                                <div className="flex items-center justify-center gap-4 mt-2">
+                                                {cvFile && (
                                                     <button
                                                         type="button"
-                                                        onClick={() => !isSubmitting && cvInputRef.current?.click()}
-                                                        disabled={isSubmitting}
-                                                        className="text-sm font-semibold text-primary hover:underline"
+                                                        onClick={(e) => { e.stopPropagation(); handleRemoveFile('cv'); }}
+                                                        className="mt-4 flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition-colors"
                                                     >
-                                                        Change
+                                                        <Trash2 className="size-4" /> Remove CV
                                                     </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleRemoveFile}
-                                                        disabled={isSubmitting}
-                                                        className="text-sm font-semibold text-red-600 hover:underline"
-                                                    >
-                                                        Remove
-                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {validationErrors.cv && <p className="text-red-500 text-xs mt-1 flex items-center gap-1 font-bold italic"><AlertCircle className="h-3 w-3" /> {validationErrors.cv}</p>}
+                                    </div>
+
+                                    {/* Certificates & Certifications Section */}
+                                    <div className="space-y-4 pt-4 border-t border-gray-100/50">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-base font-bold text-gray-900">Certificates & Certifications</Label>
+                                                <span className="text-sm text-gray-400 font-medium">(Optional)</span>
+                                            </div>
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                size="sm" 
+                                                className="rounded-xl font-bold h-9 border-gray-200 hover:border-primary/50 hover:bg-primary/5 transition-all"
+                                                onClick={() => certInputRef.current?.click()}
+                                                disabled={isSubmitting}
+                                            >
+                                                <Plus className="size-4 mr-1.5" /> Add Certificate
+                                                <input 
+                                                    type="file" 
+                                                    ref={certInputRef} 
+                                                    className="hidden" 
+                                                    multiple 
+                                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                    onChange={(e) => handleFileChange(e, 'certificates')} 
+                                                />
+                                            </Button>
+                                        </div>
+                                        
+                                        <div className="space-y-2">
+                                            {certificates.length === 0 ? (
+                                                <p className="text-sm text-gray-400 font-medium italic">No certificates added yet.</p>
+                                            ) : (
+                                                <div className="grid gap-2">
+                                                    {certificates.map((file, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 group animate-in slide-in-from-left-2 fade-in">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 bg-white rounded-lg shadow-sm">
+                                                                    <Paperclip className="size-4 text-primary" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-bold text-gray-700 truncate max-w-[200px] sm:max-w-md">{file.name}</p>
+                                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                                </div>
+                                                            </div>
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => handleRemoveFile('certificates', idx)}
+                                                                className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                                            >
+                                                                <X className="size-4" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             )}
                                         </div>
                                     </div>
-                                    {validationErrors.cv && <p className="text-red-500 text-xs mt-1 flex items-center gap-1"><AlertCircle className="h-3 w-3" /> {validationErrors.cv}</p>}
-                                </div>
 
-                                <div className="sm:col-span-2 space-y-2">
-                                    <Label htmlFor="cover_letter" className="text-sm font-semibold text-gray-900">Cover Letter <span className="text-gray-400 font-normal">(Optional)</span></Label>
-                                    <textarea
-                                        id="cover_letter"
-                                        name="cover_letter"
-                                        rows={4}
-                                        placeholder="Tell us why you are a great fit for this role..."
-                                        value={formData.cover_letter}
-                                        onChange={handleInputChange}
-                                        className="flex w-full rounded-xl border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-y"
-                                        disabled={isSubmitting}
-                                    />
+                                    {/* Other Supporting Documents Section */}
+                                    <div className="space-y-4 pt-4 border-t border-gray-100/50">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-2">
+                                                <Label className="text-base font-bold text-gray-900">Other Supporting Documents</Label>
+                                                <span className="text-sm text-gray-400 font-medium">(Optional)</span>
+                                            </div>
+                                            <Button 
+                                                type="button" 
+                                                variant="outline" 
+                                                size="sm" 
+                                                className="rounded-xl font-bold h-9 border-gray-200 hover:border-primary/50 hover:bg-primary/5 transition-all"
+                                                onClick={() => docInputRef.current?.click()}
+                                                disabled={isSubmitting}
+                                            >
+                                                <Plus className="size-4 mr-1.5" /> Add Document
+                                                <input 
+                                                    type="file" 
+                                                    ref={docInputRef} 
+                                                    className="hidden" 
+                                                    multiple 
+                                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                    onChange={(e) => handleFileChange(e, 'docs')} 
+                                                />
+                                            </Button>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {supportingDocs.length === 0 ? (
+                                                <p className="text-sm text-gray-400 font-medium italic">No additional documents added.</p>
+                                            ) : (
+                                                <div className="grid gap-2">
+                                                    {supportingDocs.map((file, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 group animate-in slide-in-from-left-2 fade-in">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="p-2 bg-white rounded-lg shadow-sm">
+                                                                    <Paperclip className="size-4 text-blue-500" />
+                                                                </div>
+                                                                <div>
+                                                                    <p className="text-sm font-bold text-gray-700 truncate max-w-[200px] sm:max-w-md">{file.name}</p>
+                                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                                                                </div>
+                                                            </div>
+                                                            <button 
+                                                                type="button" 
+                                                                onClick={() => handleRemoveFile('docs', idx)}
+                                                                className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                                                            >
+                                                                <X className="size-4" />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Cover Letter Section */}
+                                    <div className="space-y-3 pt-4 border-t border-gray-100/50">
+                                        <div className="flex items-center gap-2">
+                                            <Label htmlFor="cover_letter" className="text-base font-bold text-gray-900">Cover Letter</Label>
+                                            <span className="text-sm text-gray-400 font-medium">(Optional)</span>
+                                        </div>
+                                        <textarea
+                                            id="cover_letter"
+                                            name="cover_letter"
+                                            rows={5}
+                                            placeholder="Tell us why you are a great fit for this role..."
+                                            value={formData.cover_letter}
+                                            onChange={handleInputChange}
+                                            className="flex w-full rounded-2xl border border-gray-200 bg-white px-4 py-4 text-sm shadow-sm placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50 resize-y transition-all"
+                                            disabled={isSubmitting}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 

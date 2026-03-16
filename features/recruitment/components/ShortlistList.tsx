@@ -35,7 +35,7 @@ export function ShortlistList() {
     const appId = entry.application.application_id;
     try {
       if (action === "confirm") {
-        await confirmApplication(appId, { note: "Manager approved" });
+        await confirmApplication(appId, { confirmed_by: user?.id ?? null, note: "Manager approved" });
         window.alert("Candidate confirmed!");
       } else if (action === "invite") {
         await inviteToInterview(appId, {
@@ -47,7 +47,8 @@ export function ShortlistList() {
       } else if (action === "hire") {
         await hireApplicant(appId, {
           start_date: "2026-04-01",
-          package: { salary: 75000 }
+          package: { salary: 75000 },
+          hired_by: user?.id ?? null,
         });
         window.alert("Candidate marked as HIRED!");
       }
