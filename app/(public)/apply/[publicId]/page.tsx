@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, UploadCloud, AlertCircle, FileText, Plus, Trash2, X, Paperclip, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
+import { apiFetch } from "@/services/apiClient";
 
 // Helper to convert file to Base64 data URL for easy local testing
 const convertFileToBase64 = (file: File): Promise<string> => {
@@ -53,33 +54,24 @@ export default function PublicApplyPage() {
     const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
     const [copiedTracking, setCopiedTracking] = useState(false);
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api/";
-
     useEffect(() => {
         if (!publicId) return;
 
         const fetchJobDetails = async () => {
             try {
                 const isNumeric = /^\d+$/.test(publicId);
-                // Try the public job endpoint first (no auth), then fall back to older endpoints
-                const candidates: string[] = [];
-                if (!isNumeric) {
-                    candidates.push(`${baseUrl}recruitment/public/job/${publicId}/`); // preferred public metadata
-                    candidates.push(`${baseUrl}job-positions/?public_id=${publicId}`); // fallback
-                } else {
-                    candidates.push(`${baseUrl}job-positions/${publicId}/share/`); // admin/share route for numeric ids
-                }
-
                 let data: any = null;
-                for (const url of candidates) {
+
+                if (!isNumeric) {
                     try {
-                        const res = await fetch(url);
-                        if (!res.ok) continue;
-                        data = await res.json();
-                        break;
+                        data = await apiFetch(`recruitment/public/job/${publicId}/`, { requiresAuth: false });
                     } catch (e) {
-                        // try next
+                        try {
+                            data = await apiFetch(`job-positions/?public_id=${publicId}`, { requiresAuth: false });
+                        } catch (e2) {}
                     }
+                } else {
+                    data = await apiFetch(`job-positions/${publicId}/share/`, { requiresAuth: false });
                 }
 
                 if (data) {
@@ -108,7 +100,7 @@ export default function PublicApplyPage() {
         };
 
         fetchJobDetails();
-    }, [publicId, baseUrl]);
+    }, [publicId]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -179,18 +171,20 @@ export default function PublicApplyPage() {
 
     // Helper to upload a single file and return its ID
     const uploadSingleFile = async (file: File) => {
-        const uploadUrl = `${baseUrl}uploads/`;
         const form = new FormData();
         form.append('file', file);
 
-        const res = await fetch(uploadUrl, { method: 'POST', body: form });
-        if (!res.ok) {
-            const errBody = await res.json().catch(() => null);
-            const errorMsg = errBody?.file || errBody?.file_data || errBody?.detail || errBody?.message || `Failed to upload ${file.name}`;
+        try {
+            const data = await apiFetch<any>("uploads/", {
+                method: "POST",
+                body: form,
+                requiresAuth: false,
+            });
+            return data?.upload_id || data?.id;
+        } catch (err: any) {
+            const errorMsg = err?.message || `Failed to upload ${file.name}`;
             throw new Error(errorMsg);
         }
-        const data = await res.json();
-        return data?.upload_id || data?.id;
     };
 
     const { toast } = useToast();
@@ -245,36 +239,41 @@ export default function PublicApplyPage() {
                 cover_letter: formData.cover_letter || undefined,
             };
 
-            const applyUrl = `${baseUrl}recruitment/public/apply/${publicId}/`;
-            const response = await fetch(applyUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                },
-                body: JSON.stringify(payload),
-            });
+            try {
+                const data = await apiFetch<any>(`recruitment/public/apply/${publicId}/`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload),
+                    requiresAuth: false,
+                });
 
-            setUploadProgress(95);
-
-            const data = await response.json().catch(() => null);
-
-            if (response.status === 201 || response.status === 200) {
-                // Treat both 201 and 200 as success. Show tracking_code even if tracking_email_sent is false.
+                setUploadProgress(100);
                 setSuccessData(data || { success: true });
-                if (response.status === 200) setExistingDataMsg('Your application has been updated/already exists.');
-            } else if (response.status === 400) {
-                if (data && typeof data === 'object') {
-                    setValidationErrors(data);
-                    setErrorMsg('Please correct the highlighted errors.');
+            } catch (err: any) {
+                // Handle specific API errors
+                let detail = err.message || "";
+                
+                // apiFetch throws with "API request failed with status 400 - { ... }"
+                if (detail.includes("status 400")) {
+                    try {
+                        // Attempt to parse validation errors from the message suffix
+                        const jsonPart = detail.split(" - ")[1];
+                        const errData = JSON.parse(jsonPart);
+                        if (errData.detail?.toLowerCase().includes("already applied")) {
+                            setExistingDataMsg(errData.detail);
+                        } else {
+                            setValidationErrors(errData);
+                            setErrorMsg('Please correct the highlighted errors.');
+                        }
+                    } catch {
+                        setErrorMsg('Validation failed. Please check your inputs.');
+                    }
+                } else if (detail.includes("status 200")) {
+                   // Some legacy endpoints might return 200 for "already updated"
+                   setExistingDataMsg('Your application has been updated/already exists.');
                 } else {
-                    setErrorMsg('Validation failed. Please check your inputs.');
+                    setErrorMsg(detail || 'An unexpected error occurred. Please try again.');
                 }
-            } else {
-                setErrorMsg(data?.detail || data?.message || 'An unexpected error occurred. Please try again.');
             }
-
-            setUploadProgress(100);
 
         } catch (err: any) {
             console.error('Apply error:', err);
