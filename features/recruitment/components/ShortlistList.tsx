@@ -12,6 +12,7 @@ import { isHRCeo } from "@/lib/permissions";
 export function ShortlistList() {
   const [shortlist, setShortlist] = useState<ShortlistEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const { user } = useAuth();
   const canCEOActions = isHRCeo(user);
 
@@ -54,6 +55,73 @@ export function ShortlistList() {
       loadShortlist();
     } catch (error) {
       window.alert(`Action ${action} failed.`);
+    }
+  };
+
+  const escapeCsv = (value: string | number | null | undefined) => {
+    const text = String(value ?? "").replace(/"/g, '""');
+    return `"${text}"`;
+  };
+
+  const handleGenerateReport = () => {
+    try {
+      setIsGeneratingReport(true);
+
+      if (shortlist.length === 0) {
+        window.alert("No shortlist data available to export.");
+        return;
+      }
+
+      const headers = [
+        "Shortlist ID",
+        "Application ID",
+        "Candidate Name",
+        "Candidate Email",
+        "Candidate Phone",
+        "Position",
+        "Application Status",
+        "AI Rank",
+        "Skill Score",
+        "Experience Score",
+        "Matching Percentage",
+        "Evaluated At",
+      ];
+
+      const rows = shortlist.map((entry) => [
+        entry.shortlist_id,
+        entry.application.application_id,
+        entry.application.full_name,
+        entry.application.email,
+        entry.application.phone,
+        entry.application.position?.title ?? "",
+        entry.application.status,
+        entry.ai_rank ?? "",
+        entry.skill_score ?? "",
+        entry.experience_score ?? "",
+        entry.matching_percentage ?? "",
+        new Date(entry.evaluated_at).toISOString(),
+      ]);
+
+      const csv = [
+        headers.map((h) => escapeCsv(h)).join(","),
+        ...rows.map((row) => row.map((cell) => escapeCsv(cell)).join(",")),
+      ].join("\n");
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const stamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `shortlist-detailed-report-${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to generate shortlist report", error);
+      window.alert("Could not generate report. Please try again.");
+    } finally {
+      setIsGeneratingReport(false);
     }
   };
 
@@ -177,9 +245,13 @@ export function ShortlistList() {
              </div>
            </div>
 
-           <button className="w-full py-3 rounded-xl bg-background text-xs font-bold text-foreground border border-border shadow-sm hover:bg-muted transition-colors">
-              Generate Detailed Report
-           </button>
+            <button
+              onClick={handleGenerateReport}
+              disabled={isGeneratingReport || shortlist.length === 0}
+              className="w-full py-3 rounded-xl bg-background text-xs font-bold text-foreground border border-border shadow-sm hover:bg-muted transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isGeneratingReport ? "Generating Report..." : "Generate Detailed Report"}
+            </button>
         </Card>
 
         <Card className="p-6 border-none bg-card shadow-sm flex items-center gap-4">

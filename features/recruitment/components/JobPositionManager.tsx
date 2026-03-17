@@ -95,6 +95,20 @@ export function JobPositionManager() {
     }
   }
 
+  async function reloadDepartments() {
+    try {
+      const response = await fetchDepartments();
+      const list = response.results || [];
+      setDepartments(list);
+
+      if (list.length > 0 && (!formData.department || formData.department <= 0)) {
+        setFormData((prev) => ({ ...prev, department: list[0].department_id }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch departments", error);
+    }
+  }
+
   async function handleStatusChange(positionId: number, newStatus: JobPosition["status"]) {
     try {
       // Optimistic update
@@ -222,30 +236,12 @@ export function JobPositionManager() {
           Live Roles
         </h3>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="flex items-center gap-2">
-            <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-              Department
-            </Label>
-            <select
-              value={selectedDepartmentFilter}
-              onChange={(e) => {
-                const value = e.target.value;
-                setSelectedDepartmentFilter(value === "all" ? "all" : Number(value));
-              }}
-              className="h-10 rounded-xl border border-border/50 bg-background px-3 text-xs font-bold uppercase tracking-wide outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="all">All Departments</option>
-              {departments.map((dept) => (
-                <option key={dept.department_id} value={dept.department_id}>
-                  {dept.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <button
             onClick={() => {
               setCreateError(null);
+              if (departments.length === 0) {
+                reloadDepartments();
+              }
               setIsModalOpen(true);
             }}
             className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
@@ -255,6 +251,29 @@ export function JobPositionManager() {
           </button>
         </div>
       </div>
+
+      <Card className="border border-border/60 bg-card/60 p-4 rounded-2xl">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+            Filter By Department
+          </Label>
+          <select
+            value={selectedDepartmentFilter}
+            onChange={(e) => {
+              const value = e.target.value;
+              setSelectedDepartmentFilter(value === "all" ? "all" : Number(value));
+            }}
+            className="h-11 w-full sm:max-w-xs rounded-xl border border-border bg-background px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="all">All Departments</option>
+            {departments.map((dept) => (
+              <option key={dept.department_id} value={dept.department_id}>
+                {dept.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </Card>
 
       {loading ? (
         <div className="flex h-64 items-center justify-center text-muted-foreground font-medium italic">
@@ -382,11 +401,14 @@ export function JobPositionManager() {
                       <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Department</Label>
                       <select
                         required
+                        disabled={departments.length === 0}
                         className="w-full rounded-xl border border-border/50 bg-background h-12 px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
                         value={formData.department}
                         onChange={e => setFormData({ ...formData, department: parseInt(e.target.value) })}
                       >
-                        <option value="" disabled>Select Department</option>
+                        <option value="" disabled>
+                          {departments.length === 0 ? "No departments available" : "Select Department"}
+                        </option>
                         {departments.map(dept => (
                           <option key={dept.department_id} value={dept.department_id}>
                             {dept.name} ({dept.code})
@@ -427,6 +449,12 @@ export function JobPositionManager() {
                   </div>
                 )}
 
+                {departments.length === 0 && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+                    Department list is empty. Check backend departments data, then reopen this modal.
+                  </div>
+                )}
+
                 <div className="flex gap-4 pt-4">
                   <button
                     type="button"
@@ -437,7 +465,7 @@ export function JobPositionManager() {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || departments.length === 0}
                     className="flex-[2] rounded-xl bg-primary px-4 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-98 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? "Publishing..." : "Confirm & Publish"}
