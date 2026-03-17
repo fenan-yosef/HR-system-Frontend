@@ -52,7 +52,7 @@ export interface Department {
 }
 
 export interface ApplicationPosition {
-  position_id: number; // Corrected to position_id
+  position_id: number;
   title: string;
   department: string;
   description: string;
@@ -61,6 +61,22 @@ export interface ApplicationPosition {
   posted_date: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface AiEvaluation {
+  evaluation_id: number;
+  fit_label?: "Strong fit" | "Good fit (gaps)" | "Review manually";
+  skill_score: number;
+  experience_score: number;
+  matching_percentage: number;
+  semantic_score?: number;
+  keyword_ratio?: number;
+  embedding_model_name?: string;
+  matched_keywords?: string[];
+  missing_keywords?: string[];
+  ai_rank: number;
+  notes?: string;
+  evaluated_at: string;
 }
 
 export interface Application {
@@ -79,10 +95,18 @@ export interface Application {
     cv_path: string;
     submitted_at: string;
   };
+  evaluation?: AiEvaluation;
   status: string;
   submitted_at: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface ApplicationMetrics {
+  total: number;
+  applied_today: number;
+  shortlisted: number;
+  pending: number;
 }
 
 export interface ShortlistEntry {
