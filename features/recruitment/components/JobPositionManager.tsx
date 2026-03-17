@@ -36,13 +36,22 @@ import { Label } from "@/components/ui/label";
 export function JobPositionManager() {
   const [positions, setPositions] = useState<JobPosition[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<number | "all">("all");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<JobPosition | null>(null);
   const [copied, setCopied] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
-  const getToday = () => new Date().toISOString().split("T")[0];
+  const getToday = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   const [formData, setFormData] = useState<CreateJobPosition>({
     title: "",
@@ -100,14 +109,32 @@ export function JobPositionManager() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    const normalizedTitle = formData.title.trim();
+    const normalizedDescription = (formData.description ?? "").trim();
+    if (!normalizedTitle) {
+      setCreateError("Position title is required.");
+      return;
+    }
+    if (!formData.department || formData.department <= 0) {
+      setCreateError("Please select a department.");
+      return;
+    }
+
     try {
+      setCreateError(null);
+      setIsSubmitting(true);
+
       // Ensure posted_date is always today's date when sending
       await createJobPosition({
         ...formData,
+        title: normalizedTitle,
+        description: normalizedDescription || undefined,
         posted_date: getToday()
       });
+
       setIsModalOpen(false);
-      loadPositions();
+      await loadPositions();
       setFormData({
         title: "",
         department: departments[0]?.department_id || 0,
@@ -117,6 +144,12 @@ export function JobPositionManager() {
       });
     } catch (error) {
       console.error("Failed to create job position", error);
+      const message = error instanceof Error
+        ? error.message.replace(/^API request failed with status \d+\s*-?\s*/i, "")
+        : "Unknown error";
+      setCreateError(message || "Could not create position. Check fields and try again.");
+    } finally {
+      setIsSubmitting(false);
     }
   }
 
@@ -177,20 +210,50 @@ export function JobPositionManager() {
     }
   };
 
+  const filteredPositions = selectedDepartmentFilter === "all"
+    ? positions
+    : positions.filter((position) => position.department === selectedDepartmentFilter);
+
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h3 className="text-2xl font-black tracking-tight flex items-center gap-2">
           <Activity className="size-6 text-primary" />
           Live Roles
         </h3>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
-        >
-          <Plus className="size-4" />
-          Create New Position
-        </button>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-2">
+            <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+              Department
+            </Label>
+            <select
+              value={selectedDepartmentFilter}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSelectedDepartmentFilter(value === "all" ? "all" : Number(value));
+              }}
+              className="h-10 rounded-xl border border-border/50 bg-background px-3 text-xs font-bold uppercase tracking-wide outline-none focus:ring-2 focus:ring-primary/20"
+            >
+              <option value="all">All Departments</option>
+              {departments.map((dept) => (
+                <option key={dept.department_id} value={dept.department_id}>
+                  {dept.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <button
+            onClick={() => {
+              setCreateError(null);
+              setIsModalOpen(true);
+            }}
+            className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+          >
+            <Plus className="size-4" />
+            Create New Position
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -199,12 +262,16 @@ export function JobPositionManager() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {positions.length === 0 ? (
+          {filteredPositions.length === 0 ? (
             <div className="text-center p-12 bg-muted/20 rounded-3xl border-2 border-dashed border-border/50">
-              <p className="text-muted-foreground font-medium">No job positions found. Start by creating one.</p>
+              <p className="text-muted-foreground font-medium">
+                {selectedDepartmentFilter === "all"
+                  ? "No job positions found. Start by creating one."
+                  : "No job positions found for this department."}
+              </p>
             </div>
           ) : (
-            positions.map((pos, i) => (
+            filteredPositions.map((pos, i) => (
               <motion.div
                 key={pos.position_id}
                 initial={{ opacity: 0, y: 10 }}
@@ -221,7 +288,7 @@ export function JobPositionManager() {
                         <h4 className="font-black text-xl tracking-tight text-foreground transition-colors group-hover:text-primary">{pos.title}</h4>
                         <select
                           value={pos.status}
-                          onChange={(e) => handleStatusChange(pos.position_id, e.target.value as any)}
+                          onChange={(e) => handleStatusChange(pos.position_id, e.target.value as JobPosition["status"])}
                           onClick={(e) => e.stopPropagation()}
                           className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border appearance-none cursor-pointer outline-none hover:opacity-80 transition-opacity ${getStatusColor(pos.status)}`}
                         >
@@ -333,7 +400,7 @@ export function JobPositionManager() {
                         required
                         className="w-full rounded-xl border border-border/50 bg-background h-12 px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
                         value={formData.status}
-                        onChange={e => setFormData({ ...formData, status: e.target.value as any })}
+                        onChange={e => setFormData({ ...formData, status: e.target.value as JobPosition["status"] })}
                       >
                         <option value="open">Open</option>
                         <option value="on_hold">On Hold</option>
@@ -354,6 +421,12 @@ export function JobPositionManager() {
                   </div>
                 </div>
 
+                {createError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {createError}
+                  </div>
+                )}
+
                 <div className="flex gap-4 pt-4">
                   <button
                     type="button"
@@ -364,9 +437,10 @@ export function JobPositionManager() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-[2] rounded-xl bg-primary px-4 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-98 transition-all"
+                    disabled={isSubmitting}
+                    className="flex-[2] rounded-xl bg-primary px-4 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-98 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                   >
-                    Confirm & Publish
+                    {isSubmitting ? "Publishing..." : "Confirm & Publish"}
                   </button>
                 </div>
               </form>
