@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { motion } from "framer-motion";
@@ -200,9 +201,12 @@ export function DashboardOverview() {
               {loading ? "…" : activeJobs} active job postings and {loading ? "…" : shortlistCount} candidates
               in the shortlist.
             </p>
-            <button className="rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary shadow-sm transition-all hover:bg-opacity-90 active:scale-95">
+            <Link
+              href="/recruitment/analytics"
+              className="inline-flex rounded-xl bg-white px-6 py-3 text-sm font-bold text-primary shadow-sm transition-all hover:bg-opacity-90 active:scale-95"
+            >
               View Analytics
-            </button>
+            </Link>
           </div>
 
           {/* Decorative shapes */}
