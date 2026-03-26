@@ -213,9 +213,13 @@ export function ShortlistList() {
              </div>
            </div>
 
-           <button className="w-full py-3 rounded-xl bg-background text-xs font-bold text-foreground border border-border shadow-sm hover:bg-muted transition-colors">
-              Generate Detailed Report
-           </button>
+            <button
+              onClick={handleGenerateReport}
+              disabled={isGeneratingReport || shortlist.length === 0}
+              className="w-full py-3 rounded-xl bg-background text-xs font-bold text-foreground border border-border shadow-sm hover:bg-muted transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isGeneratingReport ? "Generating Report..." : "Generate Detailed Report"}
+            </button>
         </Card>
 
         <Card className="p-6 border-none bg-card shadow-sm flex items-center gap-4">

@@ -1,19 +1,41 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Moon, Sun, Monitor, Bell, Globe, Trash2, BellRing, Mail, MessageSquare } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import {
+   NotificationPreferenceKey,
+   NotificationPreferences,
+   defaultNotificationPreferences,
+   loadNotificationPreferences,
+   saveNotificationPreferences,
+} from "@/lib/notifications";
 
-// Mock Switch component since we don't have it imported
-const Switch = ({ checked = false }: { checked?: boolean }) => (
-   <button className={`w-11 h-6 rounded-full transition-colors flex items-center px-0.5 ${checked ? "bg-primary" : "bg-muted"}`}>
+const Switch = ({ checked = false, onClick }: { checked?: boolean; onClick?: () => void }) => (
+    <button onClick={onClick} className={`w-11 h-6 rounded-full transition-colors flex items-center px-0.5 ${checked ? "bg-primary" : "bg-muted"}`}>
       <div className={`size-5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-5" : "translate-x-0"}`} />
    </button>
 );
 
 export default function SettingsPage() {
+   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences>(defaultNotificationPreferences);
+   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+   useEffect(() => {
+      setNotificationPreferences(loadNotificationPreferences());
+   }, []);
+
+   const togglePreference = (key: NotificationPreferenceKey) => {
+      const updated = { ...notificationPreferences, [key]: !notificationPreferences[key] };
+      setNotificationPreferences(updated);
+      saveNotificationPreferences(updated);
+      setSaveMessage("Notification preferences saved.");
+      window.setTimeout(() => setSaveMessage(null), 2000);
+   };
+
   return (
     <section className="space-y-8 pb-10">
       <div className="space-y-2">
@@ -67,9 +89,9 @@ export default function SettingsPage() {
 
                <div className="space-y-6">
                   {[
-                     { label: "Email Notifications", desc: "Receive daily digests and weekly summaries.", icon: Mail, checked: true },
-                     { label: "Push Notifications", desc: "Get real-time alerts on your mobile device.", icon: BellRing, checked: true },
-                     { label: "SMS Alerts", desc: "Receive critical security alerts via text.", icon: MessageSquare, checked: false },
+                     { label: "Email Notifications", desc: "Receive daily digests and weekly summaries.", icon: Mail, checked: notificationPreferences.email, key: "email" as NotificationPreferenceKey },
+                     { label: "Push Notifications", desc: "Get real-time alerts on your mobile device.", icon: BellRing, checked: notificationPreferences.push, key: "push" as NotificationPreferenceKey },
+                     { label: "SMS Alerts", desc: "Receive critical security alerts via text.", icon: MessageSquare, checked: notificationPreferences.sms, key: "sms" as NotificationPreferenceKey },
                   ].map((item, i) => (
                      <div key={i} className="flex items-center justify-between">
                         <div className="flex items-start gap-4">
@@ -79,9 +101,15 @@ export default function SettingsPage() {
                               <p className="text-xs text-muted-foreground">{item.desc}</p>
                            </div>
                         </div>
-                        <Switch checked={item.checked} />
+                        <Switch checked={item.checked} onClick={() => togglePreference(item.key)} />
                      </div>
                   ))}
+
+                  {saveMessage && (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                      {saveMessage}
+                    </div>
+                  )}
                </div>
             </Card>
          </motion.div>

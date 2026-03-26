@@ -1,11 +1,78 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Bell, Search, HelpCircle, Menu } from "lucide-react";
 import { motion } from "framer-motion";
+import {
+  AppNotification,
+  loadNotifications,
+  markAllNotificationsAsRead,
+  markNotificationAsRead,
+  saveNotifications,
+} from "@/lib/notifications";
 
 export function Header() {
   const { user } = useAuth();
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const notificationsRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    setNotifications(loadNotifications());
+  }, []);
+
+  useEffect(() => {
+    if (!isNotificationsOpen) return;
+
+    const updated = markAllNotificationsAsRead(loadNotifications());
+    setNotifications(updated);
+    saveNotifications(updated);
+  }, [isNotificationsOpen]);
+
+  useEffect(() => {
+    if (!isNotificationsOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (!notificationsRef.current) return;
+      if (!notificationsRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsNotificationsOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isNotificationsOpen]);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((notification) => !notification.read).length,
+    [notifications],
+  );
+
+  const markAllAsRead = () => {
+    const updated = markAllNotificationsAsRead(notifications);
+    setNotifications(updated);
+    saveNotifications(updated);
+    setIsNotificationsOpen(false);
+  };
+
+  const markSingleAsRead = (id: number) => {
+    const updated = markNotificationAsRead(notifications, id);
+    setNotifications(updated);
+    saveNotifications(updated);
+    setIsNotificationsOpen(false);
+  };
 
   return (
     <header
@@ -46,10 +113,61 @@ export function Header() {
         </div>
 
         <div className="flex items-center gap-2 border-l border-border/50 pl-6">
-          <button className="relative p-2 text-white hover:bg-muted hover:text-white rounded-xl transition-all">
+          <div ref={notificationsRef} className="relative">
+            <button
+              onClick={() => setIsNotificationsOpen((value) => !value)}
+              className="relative rounded-xl p-2 text-white transition-all hover:bg-muted hover:text-white"
+            >
             <Bell className="size-5" />
-            <span className="absolute right-2 top-2 size-2 rounded-full bg-primary ring-2 ring-background" />
-          </button>
+              {unreadCount > 0 && (
+                <span className="absolute right-1 top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white ring-2 ring-background">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+
+            {isNotificationsOpen && (
+              <div className="absolute right-0 top-12 z-30 w-80 overflow-hidden rounded-2xl border border-border/60 bg-background text-foreground shadow-2xl">
+                <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-bold text-foreground">Notifications</p>
+                    <p className="text-xs text-muted-foreground">{unreadCount} unread updates</p>
+                  </div>
+                  <button
+                    onClick={markAllAsRead}
+                    className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+                  >
+                    Mark all read
+                  </button>
+                </div>
+
+                <div className="max-h-96 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <p className="px-4 py-6 text-sm text-muted-foreground">No notifications available.</p>
+                  ) : (
+                    notifications.map((notification) => (
+                      <button
+                        key={notification.id}
+                        onClick={() => markSingleAsRead(notification.id)}
+                        className={`block w-full border-b border-border/40 px-4 py-3 text-left transition-colors hover:bg-muted/40 ${notification.read ? "bg-background" : "bg-primary/5"}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{notification.title}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{notification.description}</p>
+                          </div>
+                          {!notification.read && <span className="mt-1 size-2 rounded-full bg-primary" />}
+                        </div>
+                        <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <button className="p-2 text-white hover:bg-muted hover:text-white rounded-xl transition-all">
             <HelpCircle className="size-5" />
           </button>
