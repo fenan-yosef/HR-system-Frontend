@@ -18,6 +18,7 @@ import {
   RefreshCw,
   Wand2,
   Loader2,
+  Layers,
 } from "lucide-react";
 import {
   fetchApplications,
@@ -443,11 +444,21 @@ export function ApplicationsList() {
                         </div>
                       </div>
                       {app.evaluation?.ai_rank && (
-                        <div className="bg-amber-500/10 text-amber-600 px-3 py-1.5 rounded-xl flex items-center gap-2">
-                          <Star className="size-3.5 fill-current" />
-                          <span className="text-xs font-extrabold">
-                            RANK #{app.evaluation.ai_rank}
-                          </span>
+                        <div className="flex items-center gap-2">
+                          <div className="bg-amber-500/10 text-amber-600 px-3 py-1.5 rounded-xl flex items-center gap-2">
+                            <Star className="size-3.5 fill-current" />
+                            <span className="text-xs font-extrabold">
+                              RANK #{app.evaluation.ai_rank}
+                            </span>
+                          </div>
+                          {app.evaluation.cluster_id && (
+                            <div className="bg-slate-900 text-white px-3 py-1.5 rounded-xl flex items-center gap-2">
+                               <Layers className="size-3.5 text-blue-400" />
+                               <span className="text-[10px] font-black tracking-tighter">
+                                  CLUSTER {app.evaluation.cluster_id}
+                               </span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

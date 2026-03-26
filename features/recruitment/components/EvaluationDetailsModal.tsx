@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   X, 
@@ -12,8 +12,11 @@ import {
   Quote, 
   ExternalLink,
   ChevronRight,
+  ChevronDown,
   TrendingUp,
-  BrainCircuit
+  BrainCircuit,
+  Search,
+  BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Application } from "@/types/recruitment";
@@ -26,8 +29,18 @@ interface EvaluationDetailsModalProps {
 
 export function EvaluationDetailsModal({ application, onClose }: EvaluationDetailsModalProps) {
   const evalData = application.evaluation;
+  const [activeTab, setActiveTab] = useState<"matched" | "missing">("matched");
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    summary: true,
+    skills: true,
+    questions: true
+  });
   
   if (!evalData) return null;
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -66,113 +79,183 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
           
           {/* Summary Section */}
-          <section className="space-y-3">
-             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary bg-primary/5 px-3 py-1 rounded-full w-fit">
-                <Quote size={12} />
-                <span>Executive Summary</span>
-             </div>
-             <p className="text-base leading-relaxed text-foreground/80 bg-muted/30 p-5 rounded-2xl border border-border/50">
-                {evalData.summary || "No executive summary provided by AI evaluation."}
-             </p>
+          <section className="border border-border/50 rounded-2xl overflow-hidden bg-muted/5">
+             <button 
+                onClick={() => toggleSection('summary')}
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/10 transition-colors"
+             >
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary">
+                   <Quote size={14} />
+                   <span>Resume Summary</span>
+                </div>
+                <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-300 ${expandedSections.summary ? '' : '-rotate-90'}`} />
+             </button>
+             <AnimatePresence>
+                {expandedSections.summary && (
+                   <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                   >
+                      <div className="p-4 pt-0">
+                         <p className="text-sm leading-relaxed text-foreground/80 bg-background/50 p-4 rounded-xl border border-border/30">
+                            {evalData.summary || "No resume summary available."}
+                         </p>
+                      </div>
+                   </motion.div>
+                )}
+             </AnimatePresence>
           </section>
 
           {/* Skill Analysis */}
-          <section className="space-y-4">
-             <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full">
-                   <TrendingUp size={12} />
-                   <span>Skill Alignment</span>
+          <section className="border border-border/50 rounded-2xl overflow-hidden bg-muted/5">
+             <div className="p-4 border-b border-border/30 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-600">
+                   <TrendingUp size={14} />
+                   <span>Skill Analysis</span>
                 </div>
-                <div className="flex items-center gap-2">
-                   <span className="text-[10px] font-black uppercase text-muted-foreground">Match Accuracy</span>
-                   <span className="text-sm font-black text-primary">{evalData.matching_percentage}%</span>
-                </div>
-             </div>
-
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-3 p-5 rounded-2xl bg-emerald-50/50 border border-emerald-100">
-                   <h4 className="text-xs font-black uppercase tracking-tighter text-emerald-700 flex items-center gap-2">
-                      <CheckCircle2 size={14} /> Matched Skills
-                   </h4>
-                   <div className="flex flex-wrap gap-2">
-                      {evalData.skill_gaps?.matched_skills?.map((skill) => (
-                         <span key={skill} className="px-2.5 py-1 bg-white border border-emerald-200 text-emerald-700 text-[10px] font-bold rounded-lg shadow-sm">
-                            {skill}
-                         </span>
-                      )) || evalData.matched_keywords?.map((skill) => (
-                        <span key={skill} className="px-2.5 py-1 bg-white border border-emerald-200 text-emerald-700 text-[10px] font-bold rounded-lg shadow-sm">
-                           {skill}
-                        </span>
-                     ))}
-                   </div>
-                </div>
-
-                <div className="space-y-3 p-5 rounded-2xl bg-amber-50/50 border border-amber-100">
-                   <h4 className="text-xs font-black uppercase tracking-tighter text-amber-700 flex items-center gap-2">
-                      <AlertCircle size={14} /> Critical Gaps
-                   </h4>
-                   <div className="flex flex-wrap gap-2">
-                      {evalData.skill_gaps?.missing_skills?.map((skill) => (
-                         <span key={skill} className="px-2.5 py-1 bg-white border border-amber-200 text-amber-700 text-[10px] font-bold rounded-lg shadow-sm">
-                            {skill}
-                         </span>
-                      )) || evalData.missing_keywords?.map((skill) => (
-                        <span key={skill} className="px-2.5 py-1 bg-white border border-amber-200 text-amber-700 text-[10px] font-bold rounded-lg shadow-sm">
-                           {skill}
-                        </span>
-                     ))}
-                   </div>
+                <div className="flex items-center gap-2 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-100">
+                   <span className="text-[10px] font-black uppercase text-emerald-700">Match Accuracy</span>
+                   <span className="text-xs font-black text-emerald-700">{evalData.matching_percentage}%</span>
                 </div>
              </div>
 
-             {evalData.skill_gaps?.gaps && evalData.skill_gaps.gaps.length > 0 && (
-                <div className="p-4 bg-muted/50 rounded-2xl border border-border/50 space-y-2">
-                   <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest pl-1">Optimization Suggestions</p>
-                   <ul className="space-y-1.5">
-                      {evalData.skill_gaps.gaps.map((gap, i) => (
-                         <li key={i} className="flex items-start gap-2 text-xs font-medium text-foreground/70">
-                            <ChevronRight size={14} className="mt-0.5 text-primary shrink-0" />
-                            {gap}
-                         </li>
-                      ))}
-                   </ul>
+             <div className="p-4">
+                {/* Tabs */}
+                <div className="flex gap-1 p-1 bg-muted/50 rounded-xl mb-4">
+                   <button 
+                      onClick={() => setActiveTab('matched')}
+                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'matched' ? 'bg-background text-primary shadow-sm' : 'text-muted-foreground hover:bg-background/30'}`}
+                   >
+                      Matched Skills
+                   </button>
+                   <button 
+                      onClick={() => setActiveTab('missing')}
+                      className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'missing' ? 'bg-background text-amber-600 shadow-sm' : 'text-muted-foreground hover:bg-background/30'}`}
+                   >
+                      Missing Skills
+                   </button>
                 </div>
-             )}
+
+                <AnimatePresence mode="wait">
+                   {activeTab === 'matched' ? (
+                      <motion.div 
+                         key="matched"
+                         initial={{ opacity: 0, x: -10 }}
+                         animate={{ opacity: 1, x: 0 }}
+                         exit={{ opacity: 0, x: 10 }}
+                         className="flex flex-wrap gap-2"
+                      >
+                         {(evalData.skill_gaps?.matched_skills || evalData.matched_keywords)?.map((skill) => (
+                            <span key={skill} className="px-3 py-1.5 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase border border-emerald-100 rounded-lg shadow-sm flex items-center gap-1.5 hover:bg-emerald-100 transition-colors cursor-default">
+                               <CheckCircle2 size={12} />
+                               {skill}
+                            </span>
+                         )) || (
+                            <p className="text-xs text-muted-foreground w-full py-4 text-center">No matched skills identified.</p>
+                         )}
+                      </motion.div>
+                   ) : (
+                      <motion.div 
+                         key="missing"
+                         initial={{ opacity: 0, x: 10 }}
+                         animate={{ opacity: 1, x: 0 }}
+                         exit={{ opacity: 0, x: -10 }}
+                         className="space-y-3"
+                      >
+                         <div className="flex flex-wrap gap-2">
+                            {(evalData.skill_gaps?.missing_skills || evalData.missing_keywords)?.map((skill) => (
+                               <a 
+                                  key={skill} 
+                                  href={`https://www.google.com/search?q=learn+${encodeURIComponent(skill)}+courses`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-3 py-1.5 bg-amber-50 text-amber-700 text-[10px] font-black uppercase border border-amber-100 rounded-lg shadow-sm flex items-center gap-1.5 hover:bg-amber-100 transition-colors group"
+                               >
+                                  <AlertCircle size={12} />
+                                  {skill}
+                                  <Search size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                               </a>
+                            )) || (
+                               <p className="text-xs text-muted-foreground w-full py-4 text-center text-emerald-600 font-medium">Excellent match! No critical skills missing.</p>
+                            )}
+                         </div>
+                         
+                         {evalData.skill_gaps?.gaps && evalData.skill_gaps.gaps.length > 0 && (
+                            <div className="mt-4 p-4 bg-muted/30 rounded-xl border border-border/50 space-y-2">
+                               <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest flex items-center gap-1.5">
+                                  <BookOpen size={12} />
+                                  Improvement Suggestions
+                               </p>
+                               <ul className="space-y-1.5">
+                                  {evalData.skill_gaps.gaps.map((gap, i) => (
+                                     <li key={i} className="flex items-start gap-2 text-xs font-medium text-foreground/70">
+                                        <ChevronRight size={14} className="mt-0.5 text-primary shrink-0" />
+                                        {gap}
+                                     </li>
+                                  ))}
+                               </ul>
+                            </div>
+                         )}
+                      </motion.div>
+                   )}
+                </AnimatePresence>
+             </div>
           </section>
 
           {/* Interview Questions */}
-          <section className="space-y-4">
-             <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-violet-600 bg-violet-50 px-3 py-1 rounded-full w-fit">
-                <MessageSquare size={12} />
-                <span>Tailored Interview Questions</span>
-             </div>
-             <div className="space-y-3">
-                {evalData.interview_questions?.map((q, i) => (
-                   <div key={i} className="flex gap-4 p-4 rounded-2xl bg-muted/20 border border-border/30 hover:bg-muted/40 transition-colors">
-                      <span className="h-6 w-6 shrink-0 bg-violet-100 text-violet-600 text-[10px] font-black rounded-lg flex items-center justify-center">0{i+1}</span>
-                      <p className="text-sm font-medium leading-relaxed">{q}</p>
-                   </div>
-                )) || (
-                   <div className="text-center py-6 bg-muted/10 rounded-2xl border border-dashed text-xs text-muted-foreground">
-                      Interview questions will be generated upon confirmation.
-                   </div>
+          <section className="border border-border/50 rounded-2xl overflow-hidden bg-muted/5">
+             <button 
+                onClick={() => toggleSection('questions')}
+                className="w-full flex items-center justify-between p-4 hover:bg-muted/10 transition-colors"
+             >
+                <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-violet-600">
+                   <MessageSquare size={14} />
+                   <span>Tailored Interview Questions</span>
+                </div>
+                <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-300 ${expandedSections.questions ? '' : '-rotate-90'}`} />
+             </button>
+             <AnimatePresence>
+                {expandedSections.questions && (
+                   <motion.div 
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden"
+                   >
+                      <div className="p-4 pt-0 space-y-3">
+                         {evalData.interview_questions?.map((q, i) => (
+                            <div key={i} className="flex gap-4 p-4 rounded-xl bg-background/50 border border-border/30 hover:bg-muted/20 transition-all group">
+                               <span className="size-6 shrink-0 bg-violet-100 text-violet-700 text-[10px] font-black rounded-lg flex items-center justify-center group-hover:bg-violet-600 group-hover:text-white transition-colors">
+                                  {i+1}
+                               </span>
+                               <p className="text-sm font-medium leading-relaxed">{q}</p>
+                            </div>
+                         )) || (
+                            <div className="text-center py-6 bg-muted/10 rounded-xl border border-dashed text-xs text-muted-foreground">
+                               Evaluation pending more data for tailored questions.
+                            </div>
+                         )}
+                      </div>
+                   </motion.div>
                 )}
-             </div>
+             </AnimatePresence>
           </section>
 
-          {/* Clustering & Secondary Meta */}
-          <section className="flex flex-wrap gap-4 items-center justify-between pt-4 border-t border-border">
-             <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl">
+          {/* Clustering & Meta */}
+          <section className="flex flex-wrap gap-4 items-center justify-between pt-4 border-t border-border/50">
+             <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl shadow-sm">
                    <Layers size={14} className="text-blue-400" />
-                   <span className="text-[10px] font-black uppercase">Cluster Group {evalData.cluster_id || "N/A"}</span>
+                   <span className="text-[10px] font-black uppercase">Cluster #{evalData.cluster_id || "N/A"}</span>
                 </div>
                 {evalData.ai_rank && (
                    <div className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100">
-                      AI Rank #{evalData.ai_rank}
+                      Top Rank {evalData.ai_rank}
                    </div>
                 )}
              </div>
@@ -181,18 +264,18 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
                href={getMediaUrl(application.cv_path || application.applicant?.cv_path)} 
                target="_blank" 
                rel="noopener noreferrer"
-               className="flex items-center gap-2 text-[10px] font-black uppercase text-primary hover:underline"
+               className="flex items-center gap-2 text-[10px] font-black uppercase text-primary hover:bg-primary/5 px-3 py-1.5 rounded-xl transition-colors"
              >
                 <ExternalLink size={14} />
-                View Original Resume
+                Original Resume
              </a>
           </section>
         </div>
 
         {/* Footer */}
         <div className="p-6 border-t border-border bg-muted/20 flex justify-end">
-           <Button onClick={onClose} variant="ghost" className="rounded-xl font-bold">
-              Close Insights
+           <Button onClick={onClose} variant="secondary" className="rounded-xl font-bold bg-background shadow-sm hover:bg-muted">
+              Close Assessment
            </Button>
         </div>
       </motion.div>

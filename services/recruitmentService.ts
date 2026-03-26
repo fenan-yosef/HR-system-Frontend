@@ -168,3 +168,15 @@ export function hireApplicant(applicationId: number, data: { start_date: string;
     requiresAuth: true,
   });
 }
+
+export function fetchEvaluations(): Promise<PaginatedResponse<AiEvaluation>> {
+  return apiFetch<PaginatedResponse<AiEvaluation>>("/recruitment/evaluations/", { requiresAuth: true });
+}
+
+export function createEvaluation(data: Partial<AiEvaluation>): Promise<AiEvaluation> {
+  return apiFetch<AiEvaluation>("/recruitment/evaluations/", {
+    method: "POST",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}

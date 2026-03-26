@@ -40,3 +40,92 @@ The AI evaluation now includes additional features that the frontend should disp
 - Add interactive elements for skill gaps (e.g., links to learning resources).
 - Ensure mobile responsiveness for the new sections.
 - Add loading states for AI-generated content.
+
+## API Payloads and Responses
+
+### Per Application Evaluation
+**Endpoint**: POST /api/recruitment/evaluations/
+**Request Payload**:
+```json
+{
+  "application_id": 123
+}
+```
+**Response**:
+```json
+{
+  "evaluation_id": 456,
+  "application_id": 123,
+  "skill_score": 85.5,
+  "experience_score": 78.0,
+  "matching_percentage": 82.0,
+  "semantic_score": 0.85,
+  "keyword_ratio": 0.75,
+  "embedding_model_name": "all-mpnet-base-v2",
+  "matched_keywords": ["python", "machine learning"],
+  "missing_keywords": ["kubernetes", "docker"],
+  "summary": "Experienced Python developer with machine learning skills...",
+  "skill_gaps": {
+    "matched_skills": ["python", "machine learning"],
+    "missing_skills": ["kubernetes", "docker"],
+    "gaps": [
+      {"skill": "kubernetes", "suggestion": "Consider online courses for Kubernetes"}
+    ]
+  },
+  "interview_questions": [
+    "Can you explain your experience with Python?",
+    "Describe a machine learning project you've worked on."
+  ],
+  "cluster_id": 2,
+  "ai_rank": 1,
+  "notes": "Strong fit...",
+  "evaluated_at": "2026-03-16T12:00:00Z"
+}
+```
+
+### Batch Evaluation
+**Endpoint**: POST /api/recruitment/evaluations/batch/
+**Request Payload**:
+```json
+{
+  "application_ids": [123, 124, 125]
+}
+```
+**Response**:
+```json
+[
+  {
+    "evaluation_id": 456,
+    "application_id": 123,
+    "skill_score": 85.5,
+    "experience_score": 78.0,
+    "matching_percentage": 82.0,
+    "semantic_score": 0.85,
+    "keyword_ratio": 0.75,
+    "embedding_model_name": "all-mpnet-base-v2",
+    "matched_keywords": ["python", "machine learning"],
+    "missing_keywords": ["kubernetes", "docker"],
+    "summary": "Experienced Python developer with machine learning skills...",
+    "skill_gaps": {
+      "matched_skills": ["python", "machine learning"],
+      "missing_skills": ["kubernetes", "docker"],
+      "gaps": [
+        {"skill": "kubernetes", "suggestion": "Consider online courses for Kubernetes"}
+      ]
+    },
+    "interview_questions": [
+      "Can you explain your experience with Python?",
+      "Describe a machine learning project you've worked on."
+    ],
+    "cluster_id": 2,
+    "ai_rank": 1,
+    "notes": "Strong fit...",
+    "evaluated_at": "2026-03-16T12:00:00Z"
+  },
+  // Similar for other applications
+]
+```
+
+### GET Evaluations
+**Endpoint**: GET /api/recruitment/evaluations/
+**Response**: Array of evaluation objects as above.

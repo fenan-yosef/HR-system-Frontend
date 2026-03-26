@@ -5,13 +5,17 @@ import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { Star, Calendar, MessageSquare, UserCheck, ChevronRight, Loader2, Send, Check } from "lucide-react";
 import { fetchShortlist, confirmApplication, inviteToInterview, hireApplicant } from "@/services/recruitmentService";
-import { ShortlistEntry } from "@/types/recruitment";
+import { ShortlistEntry, Application } from "@/types/recruitment";
 import { useAuth } from "@/hooks/useAuth";
 import { isHRCeo } from "@/lib/permissions";
+import { EvaluationDetailsModal } from "./EvaluationDetailsModal";
+import { AnimatePresence } from "framer-motion";
 
 export function ShortlistList() {
   const [shortlist, setShortlist] = useState<ShortlistEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const { user } = useAuth();
   const canCEOActions = isHRCeo(user);
 
@@ -55,6 +59,30 @@ export function ShortlistList() {
       loadShortlist();
     } catch (error) {
       window.alert(`Action ${action} failed.`);
+    }
+  };
+
+  const openDetailsModal = (app: Application) => {
+    setSelectedApp(app);
+    setIsDetailsModalOpen(true);
+  };
+
+  const getStatusStyle = (s: string) => {
+    switch (s) {
+      case "shortlisted":
+        return "bg-emerald-500/10 text-emerald-600";
+      case "pending":
+        return "bg-blue-500/10 text-blue-600";
+      case "rejected":
+        return "bg-red-500/10 text-red-600";
+      case "confirmed":
+        return "bg-violet-500/10 text-violet-600";
+      case "hired":
+        return "bg-amber-500/10 text-amber-600";
+      case "interview_invited":
+        return "bg-cyan-500/10 text-cyan-600";
+      default:
+        return "bg-primary/10 text-primary";
     }
   };
 
@@ -103,8 +131,8 @@ export function ShortlistList() {
                         <Star className="size-3 fill-current" />
                         <span className="text-xs font-bold">{entry.ai_rank ? (entry.ai_rank * 5).toFixed(1) : "N/A"}</span>
                       </div>
-                      <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-wider">
-                        {entry.application.status}
+                      <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(entry.application.status)}`}>
+                        {entry.application.status.replace("_", " ")}
                       </span>
                     </div>
                   </div>
@@ -119,7 +147,7 @@ export function ShortlistList() {
                       </div>
                     </div>
 
-                    {canCEOActions && (
+                      {canCEOActions && (
                       <div className="flex gap-2">
                         <button 
                           onClick={() => handleAction("confirm", entry)}
@@ -141,6 +169,13 @@ export function ShortlistList() {
                         </button>
                       </div>
                     )}
+
+                    <button 
+                      onClick={() => openDetailsModal(entry.application)}
+                      className="p-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
+                    >
+                      <ChevronRight className="size-4" />
+                    </button>
                   </div>
                 </Card>
               </motion.div>
@@ -193,6 +228,14 @@ export function ShortlistList() {
            </div>
         </Card>
       </div>
+      <AnimatePresence>
+        {isDetailsModalOpen && selectedApp && (
+          <EvaluationDetailsModal
+            application={selectedApp}
+            onClose={() => { setIsDetailsModalOpen(false); setSelectedApp(null); }}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
