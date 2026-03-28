@@ -17,6 +17,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
     ArrowLeft,
+    BarChart3,
     Briefcase,
     Users,
     Calendar,
@@ -34,6 +35,26 @@ export default function JobDetailsPage() {
     const [job, setJob] = useState<JobPosition | null>(null);
     const [candidates, setCandidates] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
+
+    type RawApplication = Application & {
+        applicant?: {
+            full_name?: string;
+            email?: string;
+            phone?: string;
+            cv_path?: string;
+        };
+        position?: {
+            position_id?: number;
+            job_id?: number;
+        } | number;
+        position_id?: number;
+        job_id?: number;
+        cv_version_path?: string;
+    };
+
+    type CandidateWithDerivedPosition = Application & {
+        _derived_position_id: number;
+    };
 
     useEffect(() => {
         if (!positionId) return;
@@ -54,27 +75,27 @@ export default function JobDetailsPage() {
             // appsData.results contains API Application objects
             const rawResults = Array.isArray(appsData) ? appsData : (appsData?.results || []);
 
-            const flattened = rawResults.map((r: any) => {
-                const applicant = r.applicant || {};
-                const pos = r.position || {};
+            const flattened: CandidateWithDerivedPosition[] = rawResults.map((r: RawApplication) => {
+                const applicant = r.applicant;
+                const pos = r.position;
 
                 // Extremely robust ID extraction
                 const apiPositionId =
-                    (typeof pos === 'object' ? (pos.position_id || pos.job_id) : pos) ||
+                    (typeof pos === 'number' ? pos : (pos?.position_id || pos?.job_id)) ||
                     (r.position_id || r.job_id);
 
                 return {
                     ...r,
-                    full_name: applicant.full_name || r.full_name || "Unknown Name",
-                    email: applicant.email || r.email || "",
-                    phone: applicant.phone || r.phone || "",
-                    cv_path: applicant.cv_path || r.cv_path || r.cv_version_path,
+                    full_name: applicant?.full_name || r.full_name || "Unknown Name",
+                    email: applicant?.email || r.email || "",
+                    phone: applicant?.phone || r.phone || "",
+                    cv_path: applicant?.cv_path || r.cv_path || r.cv_version_path || "",
                     _derived_position_id: Number(apiPositionId)
                 };
             });
 
             // Loose comparison to handle any string/number boundary issues
-            const relatedApps = flattened.filter((app: any) => {
+            const relatedApps = flattened.filter((app) => {
                 const appId = Number(app._derived_position_id);
                 return !isNaN(appId) && appId === positionId;
             });
@@ -83,7 +104,7 @@ export default function JobDetailsPage() {
             console.log(`[JobDetails Debug] Found ${rawResults.length} total local apps.`);
             console.log(`[JobDetails Debug] Matched ${relatedApps.length} candidates.`);
 
-            setCandidates(relatedApps as any);
+            setCandidates(relatedApps);
             setLoading(false);
         });
     }, [positionId]);
@@ -160,9 +181,16 @@ export default function JobDetailsPage() {
                     <ArrowLeft className="size-4" /> Back to Dashboard
                 </Link>
                 <div className="flex items-center gap-3">
+                    <Link
+                        href={`/recruitment/job-postings/${job.position_id}/analytics`}
+                        className="inline-flex items-center gap-2 rounded-xl border border-border bg-background px-4 py-2 text-xs font-black uppercase tracking-widest text-foreground transition-colors hover:bg-muted"
+                    >
+                        <BarChart3 className="size-4" />
+                        View Analytics
+                    </Link>
                     <select
                         value={job.status}
-                        onChange={(e) => handleStatusChange(e.target.value as any)}
+                        onChange={(e) => handleStatusChange(e.target.value as JobPosition["status"])}
                         className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider border appearance-none cursor-pointer outline-none hover:opacity-80 transition-opacity ${getStatusColor(job.status)}`}
                     >
                         <option value="open">OPEN</option>
