@@ -16,8 +16,14 @@ export default function PublicJobsPage() {
   useEffect(() => {
     fetchPublicJobPositions()
       .then((response) => {
+        const results = Array.isArray(response) ? response : response.results;
+        if (!results) {
+          throw new Error("Public jobs response did not include results.");
+        }
         // Filter for open jobs only
-        const openJobs = response.results.filter((job) => job.status === "open");
+        const openJobs = results.filter((job) =>
+          job.status === "open" || job.status === "opend"
+        );
         setJobs(openJobs);
       })
       .catch((err) => {

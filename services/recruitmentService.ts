@@ -18,15 +18,15 @@ export function fetchJobPostings(): Promise<PaginatedResponse<JobPosting>> {
 }
 
 export function fetchJobPositions(): Promise<PaginatedResponse<JobPosition>> {
-  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions/", { requiresAuth: true });
+  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions-public/", { requiresAuth: true });
 }
 
 export function fetchJobPosition(positionId: number): Promise<JobPosition> {
-  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, { requiresAuth: true });
+  return apiFetch<JobPosition>(`/job-positions-public/${positionId}/`, { requiresAuth: true });
 }
 
 export function createJobPosition(data: CreateJobPosition): Promise<JobPosition> {
-  return apiFetch<JobPosition>("/job-positions/", {
+  return apiFetch<JobPosition>("/job-positions-public/", {
     method: "POST",
     body: JSON.stringify(data),
     requiresAuth: true,
@@ -34,7 +34,7 @@ export function createJobPosition(data: CreateJobPosition): Promise<JobPosition>
 }
 
 export function updateJobPosition(positionId: number, data: Partial<JobPosition>): Promise<JobPosition> {
-  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, {
+  return apiFetch<JobPosition>(`/job-positions-public/${positionId}/`, {
     method: "PATCH",
     body: JSON.stringify(data),
     requiresAuth: true,
@@ -110,11 +110,11 @@ export function batchEvaluateApplications(positionId?: number): Promise<{ messag
 }
 
 export function fetchPublicJobPositions(): Promise<PaginatedResponse<JobPosition>> {
-  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions/", { requiresAuth: false });
+  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions-public/", { requiresAuth: false });
 }
 
 export function fetchPublicJobPosition(positionId: number): Promise<JobPosition> {
-  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, { requiresAuth: false });
+  return apiFetch<JobPosition>(`/job-positions-public/${positionId}/`, { requiresAuth: false });
 }
 
 export function createApplicant(data: CreateApplicant): Promise<ApplicantResponse> {
