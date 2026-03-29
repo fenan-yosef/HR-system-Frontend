@@ -18,11 +18,11 @@ export function fetchJobPostings(): Promise<PaginatedResponse<JobPosting>> {
 }
 
 export function fetchJobPositions(): Promise<PaginatedResponse<JobPosition>> {
-  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions-public/", { requiresAuth: true });
+  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions/", { requiresAuth: true });
 }
 
 export function fetchJobPosition(positionId: number): Promise<JobPosition> {
-  return apiFetch<JobPosition>(`/job-positions-public/${positionId}/`, { requiresAuth: true });
+  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, { requiresAuth: true });
 }
 
 export function createJobPosition(data: CreateJobPosition): Promise<JobPosition> {
