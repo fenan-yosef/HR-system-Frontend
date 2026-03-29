@@ -72,8 +72,10 @@ export function JobPositionManager() {
         fetchJobPositions(),
         fetchDepartments()
       ]);
-      setPositions(posResponse.results);
-      setDepartments(deptResponse.results);
+      const posList = Array.isArray(posResponse) ? posResponse : posResponse?.results ?? [];
+      const deptList = deptResponse?.results ?? [];
+      setPositions(posList);
+      setDepartments(deptList);
 
       // Set default department if none selected
       if (deptResponse.results.length > 0) {
@@ -89,7 +91,8 @@ export function JobPositionManager() {
   async function loadPositions() {
     try {
       const response = await fetchJobPositions();
-      setPositions(response.results);
+      const list = Array.isArray(response) ? response : response?.results ?? [];
+      setPositions(list);
     } catch (error) {
       console.error("Failed to fetch job positions", error);
     }
@@ -281,7 +284,7 @@ export function JobPositionManager() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {filteredPositions.length === 0 ? (
+          {(filteredPositions?.length ?? 0) === 0 ? (
             <div className="text-center p-12 bg-muted/20 rounded-3xl border-2 border-dashed border-border/50">
               <p className="text-muted-foreground font-medium">
                 {selectedDepartmentFilter === "all"
