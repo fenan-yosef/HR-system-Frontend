@@ -12,7 +12,7 @@ import {
   Users,
   Briefcase,
 } from "lucide-react";
-import { fetchJobPositions } from "@/services/recruitmentService";
+import { fetchJobPositions, fetchApplications } from "@/services/recruitmentService";
 import { fetchEmployees, fetchUsers } from "@/services/employeeService";
 import { useEffect, useState } from "react";
 import { JobPosition } from "@/types/recruitment";
@@ -58,7 +58,7 @@ export function DashboardOverview() {
           fetchJobPositions().catch(() => ({ results: [] })),
           fetchEmployees().catch(() => ({ results: [] })),
           fetchUsers().catch(() => ({ results: [] })),
-          apiFetch<any>("/shortlists/", { requiresAuth: true }).catch(() => ({ count: 0 })),
+          fetchApplications({ status: "shortlisted" }).catch(() => ({ count: 0, results: [] })),
         ]);
 
         setPositions(positionsRes.results || []);

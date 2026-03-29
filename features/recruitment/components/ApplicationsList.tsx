@@ -74,7 +74,16 @@ export function ApplicationsList() {
   const canCEOActions = isHRCeo(user);
  
   useEffect(() => {
-    fetchJobPositions().then(res => setJobPositions(res.results)).catch(console.error);
+    fetchJobPositions()
+      .then((res: any) => {
+        // Support both paginated responses ({ results: [] }) and plain arrays ([])
+        const results = Array.isArray(res) ? res : res?.results ?? [];
+        setJobPositions(results);
+      })
+      .catch((err) => {
+        console.error("Failed to fetch job positions", err);
+        setJobPositions([]);
+      });
   }, []);
 
   const loadApplications = useCallback(async () => {
@@ -294,7 +303,7 @@ export function ApplicationsList() {
         onSearchChange={setSearch}
         onStatusChange={setStatus}
         selectedJobId={selectedJobId}
-        jobPositions={jobPositions.map(j => ({ id: j.position_id, title: j.title }))}
+        jobPositions={(jobPositions ?? []).map(j => ({ id: j.position_id, title: j.title }))}
         onJobChange={(val) => { setSelectedJobId(val); setPage(1); }}
         onMinScoreChange={setMinScore}
         onAppliedTodayChange={setAppliedToday}
