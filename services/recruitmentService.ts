@@ -26,7 +26,7 @@ export function fetchJobPosition(positionId: number): Promise<JobPosition> {
 }
 
 export function createJobPosition(data: CreateJobPosition): Promise<JobPosition> {
-  return apiFetch<JobPosition>("/job-positions-public/", {
+  return apiFetch<JobPosition>("/job-positions/", {
     method: "POST",
     body: JSON.stringify(data),
     requiresAuth: true,
@@ -34,7 +34,7 @@ export function createJobPosition(data: CreateJobPosition): Promise<JobPosition>
 }
 
 export function updateJobPosition(positionId: number, data: Partial<JobPosition>): Promise<JobPosition> {
-  return apiFetch<JobPosition>(`/job-positions-public/${positionId}/`, {
+  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, {
     method: "PATCH",
     body: JSON.stringify(data),
     requiresAuth: true,
