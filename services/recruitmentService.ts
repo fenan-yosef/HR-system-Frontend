@@ -101,8 +101,8 @@ export function triggerShortlist(applicationId: number): Promise<AiEvaluation> {
   });
 }
 
-export function batchEvaluateApplications(positionId?: number): Promise<{ message: string }> {
-  return apiFetch<{ message: string }>("/applicant-applications/batch-evaluate/", {
+export function batchEvaluateApplications(positionId?: number): Promise<{ evaluated: number }> {
+  return apiFetch<{ evaluated: number }>("/applicant-applications/batch-evaluate/", {
     method: "POST",
     body: positionId ? JSON.stringify({ position_id: positionId }) : undefined,
     requiresAuth: true,
@@ -145,26 +145,23 @@ export function fetchUploadMetadata(uploadId: number): Promise<any> {
   return apiFetch<any>(`/uploads/${uploadId}/`, { requiresAuth: true });
 }
 
-export function confirmApplication(applicationId: number, data: { confirmed_by: number | null; note?: string }) {
+export function confirmApplication(applicationId: number) {
   return apiFetch<{ status: string; application_id: number }>(`/applicant-applications/${applicationId}/confirm/`, {
     method: "POST",
-    body: JSON.stringify(data),
     requiresAuth: true,
   });
 }
 
-export function inviteToInterview(applicationId: number, data: { datetime: string; location: string; message: string }) {
+export function inviteToInterview(applicationId: number) {
   return apiFetch<any>(`/applicant-applications/${applicationId}/invite_interview/`, {
     method: "POST",
-    body: JSON.stringify(data),
     requiresAuth: true,
   });
 }
 
-export function hireApplicant(applicationId: number, data: { start_date: string; package: { salary: number }; hired_by: number | null }) {
+export function hireApplicant(applicationId: number) {
   return apiFetch<{ status: string; application_id: number }>(`/applicant-applications/${applicationId}/hire/`, {
     method: "POST",
-    body: JSON.stringify(data),
     requiresAuth: true,
   });
 }
