@@ -75,10 +75,7 @@ export function Header() {
   };
 
   return (
-    <header
-      className="sticky text-white top-0 z-10 flex h-20 items-center justify-between border-b border-border/50 bg-background/80 px-8 backdrop-blur-xl"
-      style={{ background: "linear-gradient(to right, #805AD5, #322659)" }}
-    >
+    <header className="sticky text-black top-0 z-10 flex h-20 items-center justify-between border-b border-border/50 bg-background/80 px-8 backdrop-blur-xl">
       <div className="flex items-center gap-4">
         <button className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors">
           <Menu className="size-5" />
@@ -87,7 +84,7 @@ export function Header() {
           <motion.h2
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-lg font-bold tracking-tight text-white"
+            className="text-lg font-bold tracking-tight "
           >
             Management Portal
           </motion.h2>
@@ -95,7 +92,7 @@ export function Header() {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-xs font-medium text-white"
+            className="text-xs font-medium text-muted-foreground"
           >
             Monitor recruitment metrics and employee data
           </motion.p>
@@ -104,7 +101,7 @@ export function Header() {
 
       <div className="flex items-center gap-6">
         <div className="relative hidden md:block">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2" />
           <input
             type="text"
             placeholder="Search anything..."
@@ -116,11 +113,11 @@ export function Header() {
           <div ref={notificationsRef} className="relative">
             <button
               onClick={() => setIsNotificationsOpen((value) => !value)}
-              className="relative rounded-xl p-2 text-white transition-all hover:bg-muted hover:text-white"
+              className="relative rounded-xl p-2  transition-all hover:bg-muted "
             >
-            <Bell className="size-5" />
+              <Bell className="size-5" />
               {unreadCount > 0 && (
-                <span className="absolute right-1 top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white ring-2 ring-background">
+                <span className="absolute right-1 top-1 inline-flex min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold  ring-2 ring-background">
                   {unreadCount}
                 </span>
               )}
@@ -130,8 +127,12 @@ export function Header() {
               <div className="absolute right-0 top-12 z-30 w-80 overflow-hidden rounded-2xl border border-border/60 bg-background text-foreground shadow-2xl">
                 <div className="flex items-center justify-between border-b border-border/60 px-4 py-3">
                   <div>
-                    <p className="text-sm font-bold text-foreground">Notifications</p>
-                    <p className="text-xs text-muted-foreground">{unreadCount} unread updates</p>
+                    <p className="text-sm font-bold text-foreground">
+                      Notifications
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {unreadCount} unread updates
+                    </p>
                   </div>
                   <button
                     onClick={markAllAsRead}
@@ -143,7 +144,9 @@ export function Header() {
 
                 <div className="max-h-96 overflow-y-auto">
                   {notifications.length === 0 ? (
-                    <p className="px-4 py-6 text-sm text-muted-foreground">No notifications available.</p>
+                    <p className="px-4 py-6 text-sm text-muted-foreground">
+                      No notifications available.
+                    </p>
                   ) : (
                     notifications.map((notification) => (
                       <button
@@ -153,10 +156,16 @@ export function Header() {
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
-                            <p className="text-sm font-semibold text-foreground">{notification.title}</p>
-                            <p className="mt-1 text-xs text-muted-foreground">{notification.description}</p>
+                            <p className="text-sm font-semibold text-foreground">
+                              {notification.title}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {notification.description}
+                            </p>
                           </div>
-                          {!notification.read && <span className="mt-1 size-2 rounded-full bg-primary" />}
+                          {!notification.read && (
+                            <span className="mt-1 size-2 rounded-full bg-primary" />
+                          )}
                         </div>
                         <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
                           {new Date(notification.createdAt).toLocaleString()}
@@ -168,7 +177,7 @@ export function Header() {
               </div>
             )}
           </div>
-          <button className="p-2 text-white hover:bg-muted hover:text-white rounded-xl transition-all">
+          <button className="p-2  hover:bg-muted rounded-xl transition-all">
             <HelpCircle className="size-5" />
           </button>
 
@@ -176,16 +185,16 @@ export function Header() {
 
           <div className="flex items-center gap-3 pl-2">
             <div className="flex flex-col items-end sm:flex">
-              <span className="text-sm font-bold leading-none text-white">
+              <span className="text-sm font-bold leading-none text-foreground">
                 {user?.firstName}
               </span>
-              <span className="text-[10px] font-bold text-white uppercase tracking-tighter">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-tighter">
                 Online
               </span>
             </div>
             <div className="size-9 rounded-xl bg-linear-to-br from-primary to-primary/60 p-px">
               <div className="flex h-full w-full items-center justify-center rounded-[10px] bg-background">
-                <span className="text-xs font-bold text-white">
+                <span className="text-xs font-bold text-foreground">
                   {user?.firstName?.[0]}
                 </span>
               </div>
