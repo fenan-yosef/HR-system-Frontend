@@ -7,26 +7,17 @@ import { ROUTES } from "@/constants/routes";
 import { ROLE_LABELS } from "@/constants/roles";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   LayoutDashboard,
   Briefcase,
-  Users,
   UserCheck,
-  GalleryVerticalEnd,
   LogOut,
   ChevronRight,
   ChevronDown,
   Users2,
-  CalendarDays,
-  CreditCard,
   Settings,
-  ShieldAlert,
-  GraduationCap,
-  Target,
-  FileText,
-  UserCircle,
-  HelpCircle,
+  Shield,
   Clock,
 } from "lucide-react";
 import { UserRole } from "@/types/auth";
@@ -115,6 +106,27 @@ const NAVIGATION_CONFIG: NavSection[] = [
       // },
     ],
   },
+  {
+    section: "Control",
+    items: [
+      {
+        label: "System",
+        icon: Settings,
+        roles: ["ADMIN"],
+        subItems: [
+          { label: "Role Management", href: ROUTES.ROLE_MANAGEMENT },
+          { label: "Security", href: ROUTES.SECURITY },
+          { label: "Config", href: ROUTES.SETTINGS },
+        ],
+      },
+      {
+        label: "Security",
+        href: ROUTES.SECURITY,
+        icon: Shield,
+        roles: ["HR_MANAGER", "HR_CEO"],
+      },
+    ],
+  },
   // {
   //   section: "Growth",
   //   items: [
@@ -175,23 +187,23 @@ export function Sidebar() {
   };
 
   // Pre-open sections that contain the active route
-  useEffect(() => {
-    const newOpenSections: Record<string, boolean> = {};
-    NAVIGATION_CONFIG.forEach((sec) => {
-      sec.items.forEach((item) => {
+  const routeOpenSections = useMemo(() => {
+    const activeSections: Record<string, boolean> = {};
+    NAVIGATION_CONFIG.forEach((section) => {
+      section.items.forEach((item) => {
         if (item.subItems?.some((sub) => sub.href === pathname)) {
-          newOpenSections[item.label] = true;
+          activeSections[item.label] = true;
         }
       });
     });
-    setOpenSections((prev) => ({ ...prev, ...newOpenSections }));
+    return activeSections;
   }, [pathname]);
 
-  const userRole = user?.role || "UNKNOWN";
+  const userRole: UserRole = user?.role ?? "UNKNOWN";
 
-  const SidebarItem = ({ item, index }: { item: NavItem; index: number }) => {
+  const SidebarItem = ({ item }: { item: NavItem }) => {
     const hasSubItems = item.subItems && item.subItems.length > 0;
-    const isOpen = openSections[item.label];
+    const isOpen = openSections[item.label] ?? routeOpenSections[item.label] ?? false;
     const isActive =
       item.href === pathname || item.subItems?.some((s) => s.href === pathname);
 
@@ -306,7 +318,7 @@ export function Sidebar() {
       <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-6 px-4 py-2 custom-scrollbar">
         {NAVIGATION_CONFIG.map((section, sIdx) => {
           const visibleItems = section.items.filter(
-            (item) => !item.roles || item.roles.includes(userRole as any),
+            (item) => !item.roles || item.roles.includes(userRole),
           );
 
           if (visibleItems.length === 0) return null;
@@ -318,7 +330,7 @@ export function Sidebar() {
               </h3> */}
               <div className="space-y-1">
                 {visibleItems.map((item, iIdx) => (
-                  <SidebarItem key={iIdx} item={item} index={iIdx} />
+                  <SidebarItem key={iIdx} item={item} />
                 ))}
               </div>
             </div>
