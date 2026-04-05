@@ -412,7 +412,7 @@ export default function DepartmentsPage() {
                   />
                 </Field>
 
-                <Field className="relative">
+                <Field>
                   <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Department Manager</FieldLabel>
                   <div className="relative">
                     <Input 
@@ -439,39 +439,39 @@ export default function DepartmentsPage() {
                          <Users className="size-4 text-muted-foreground opacity-50" />
                       )}
                     </div>
-                  </div>
 
-                  {/* Dropdown Results */}
-                  <AnimatePresence>
-                    {((managerQuery !== "" || managers.length > 0) && !formData.manager) && (
-                      <motion.div 
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute z-50 w-full mt-2 bg-card border border-border/50 shadow-2xl rounded-2xl overflow-hidden py-2 max-h-60 overflow-y-auto custom-scrollbar"
-                      >
-                        {managers.length === 0 && !searchingManagers ? (
-                          <div className="px-4 py-3 text-xs text-muted-foreground italic">No managers found matching "{managerQuery}"</div>
-                        ) : managers.map(m => (
-                          <button
-                            key={m.employee_id}
-                            type="button"
-                            onClick={() => {
-                              setFormData(p => ({ ...p, manager: m.employee_id }));
-                              setManagerQuery(m.full_name);
-                            }}
-                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted transition-colors text-left"
-                          >
-                            <div className="flex flex-col">
-                              <span className="text-sm font-bold">{m.full_name}</span>
-                              <span className="text-[10px] uppercase font-bold text-muted-foreground/60">{m.position}</span>
-                            </div>
-                            <span className="text-[10px] font-black text-primary/50">{m.email}</span>
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                    {/* Dropdown Results - Positioned absolutely relative to the input container */}
+                    <AnimatePresence>
+                      {((managerQuery !== "" || managers.length > 0) && !formData.manager) && (
+                        <motion.div 
+                          initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                          className="absolute z-50 w-full left-0 mt-2 bg-card border border-border/50 shadow-2xl rounded-2xl overflow-hidden py-2 max-h-60 overflow-y-auto custom-scrollbar ring-1 ring-primary/5"
+                        >
+                          {managers.length === 0 && !searchingManagers ? (
+                            <div className="px-4 py-3 text-xs text-muted-foreground italic text-center">No managers found matching "{managerQuery}"</div>
+                          ) : managers.map(m => (
+                            <button
+                              key={m.employee_id}
+                              type="button"
+                              onClick={() => {
+                                setFormData(p => ({ ...p, manager: m.employee_id }));
+                                setManagerQuery(m.full_name);
+                              }}
+                              className="w-full px-4 py-3 flex items-center justify-between hover:bg-muted transition-colors text-left"
+                            >
+                              <div className="flex flex-col">
+                                <span className="text-sm font-bold">{m.full_name}</span>
+                                <span className="text-[10px] uppercase font-bold text-muted-foreground/60">{m.position}</span>
+                              </div>
+                              <span className="text-[10px] font-black text-primary/50">{m.email}</span>
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                   
                   {formData.manager && (
                     <button 
@@ -480,7 +480,7 @@ export default function DepartmentsPage() {
                         setFormData(p => ({ ...p, manager: null }));
                         setManagerQuery("");
                       }}
-                      className="mt-2 text-[10px] font-black text-destructive/70 hover:text-destructive flex items-center gap-1 transition-colors uppercase tracking-widest pl-1"
+                      className="mt-2 text-[10px] font-black text-destructive/70 hover:text-destructive flex items-center gap-1 transition-colors uppercase tracking-widest pl-1 w-fit"
                     >
                       <X className="size-3" /> Remove Selection
                     </button>
