@@ -12,19 +12,21 @@ import {
   Users,
   Briefcase,
 } from "lucide-react";
-import { fetchJobPositions } from "@/services/recruitmentService";
+import {
+  fetchJobPositions,
+  fetchApplications,
+} from "@/services/recruitmentService";
 import { fetchEmployees, fetchUsers } from "@/services/employeeService";
 import { useEffect, useState } from "react";
 import { JobPosition } from "@/types/recruitment";
-import { Employee } from "@/types/employee";
-import { apiFetch } from "@/services/apiClient";
+import { Employee, User } from "@/types/employee";
 
 export function DashboardOverview() {
   const { user } = useAuth();
 
   const [positions, setPositions] = useState<JobPosition[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [users, setUsers] = useState<Employee[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [shortlistCount, setShortlistCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -54,15 +56,23 @@ export function DashboardOverview() {
       try {
         setLoading(true);
 
-        const [positionsRes, employeesRes, usersRes, shortlistRes] = await Promise.all([
-          fetchJobPositions().catch(() => ({ results: [] })),
-          fetchEmployees().catch(() => ({ results: [] })),
-          fetchUsers().catch(() => ({ results: [] })),
-          apiFetch<any>("/shortlists/", { requiresAuth: true }).catch(() => ({ count: 0 })),
-        ]);
+        const [positionsRes, employeesRes, usersRes, shortlistRes] =
+          await Promise.all([
+            fetchJobPositions().catch(() => ({ results: [] })),
+            fetchEmployees().catch(() => ({ results: [] })),
+            fetchUsers().catch(() => ({ results: [] })),
+            fetchApplications({ status: "shortlisted" }).catch(() => ({
+              count: 0,
+              results: [],
+            })),
+          ]);
 
         setPositions(positionsRes.results || []);
-        setEmployees(employeesRes.results || []);
+        setEmployees(
+          Array.isArray(employeesRes)
+            ? employeesRes
+            : employeesRes.results || [],
+        );
         setUsers(usersRes.results || []);
         setShortlistCount(shortlistRes.count || 0);
       } catch (error) {
@@ -80,7 +90,9 @@ export function DashboardOverview() {
   ============================== */
 
   const totalusers = users.length;
-  const activeEmployees = employees.filter((emp) => emp.is_active).length;
+  const activeEmployees = employees.filter(
+    (emp) => emp.status === "active",
+  ).length;
   const activeJobs = positions.length;
 
   const statCards = [
@@ -198,8 +210,8 @@ export function DashboardOverview() {
             </h3>
             <p className="text-primary-foreground/80 mb-8 leading-relaxed">
               Your recruitment pipeline is looking healthy. You have{" "}
-              {loading ? "…" : activeJobs} active job postings and {loading ? "…" : shortlistCount} candidates
-              in the shortlist.
+              {loading ? "…" : activeJobs} active job postings and{" "}
+              {loading ? "…" : shortlistCount} candidates in the shortlist.
             </p>
             <Link
               href="/recruitment/analytics"

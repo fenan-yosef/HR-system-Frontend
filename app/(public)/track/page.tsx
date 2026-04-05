@@ -22,7 +22,8 @@ import {
   Wand2,
   ExternalLink,
   ChevronRight,
-  Download
+  Download,
+  Quote
 } from "lucide-react";
 
 export default function TrackApplicationPage() {
@@ -241,6 +242,17 @@ export default function TrackApplicationPage() {
                             )}
                          </div>
 
+                         {/* AI Summary */}
+                         {app.evaluation && app.evaluation.summary && (
+                            <div className="mb-6 p-5 bg-slate-50 rounded-2xl border border-slate-100 relative">
+                               <Quote className="absolute top-4 right-4 text-slate-200" size={20} />
+                               <p className="text-[10px] font-black uppercase text-slate-400 mb-2 tracking-widest">AI Profile Summary</p>
+                               <p className="text-sm text-slate-600 leading-relaxed font-medium">
+                                  {app.evaluation.summary}
+                               </p>
+                            </div>
+                         )}
+
                          {/* AI Insights Bar */}
                          {app.evaluation && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -249,7 +261,7 @@ export default function TrackApplicationPage() {
                                      <CheckCircle2 size={12} /> Matched Skills
                                   </p>
                                   <div className="flex flex-wrap gap-1.5">
-                                     {app.evaluation.matched_keywords?.map((kw: string) => (
+                                     {(app.evaluation.skill_gaps?.matched_skills || app.evaluation.matched_keywords)?.map((kw: string) => (
                                         <span key={kw} className="px-2 py-0.5 bg-white border border-emerald-200 text-emerald-700 text-[10px] font-bold rounded-lg shadow-sm">
                                            {kw}
                                         </span>
@@ -261,13 +273,25 @@ export default function TrackApplicationPage() {
                                      <AlertCircle size={12} /> Optimization Gaps
                                   </p>
                                   <div className="flex flex-wrap gap-1.5">
-                                     {app.evaluation.missing_keywords?.map((kw: string) => (
+                                     {(app.evaluation.skill_gaps?.missing_skills || app.evaluation.missing_keywords)?.map((kw: string) => (
                                         <span key={kw} className="px-2 py-0.5 bg-slate-200/50 text-slate-600 text-[10px] font-bold rounded-lg">
                                            {kw}
                                         </span>
                                      ))}
                                   </div>
                                </div>
+                               {app.evaluation.skill_gaps?.gaps && app.evaluation.skill_gaps.gaps.length > 0 && (
+                                 <div className="md:col-span-2 bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
+                                    <p className="text-[10px] font-black uppercase text-amber-600 mb-2">Improvement Roadmap</p>
+                                    <ul className="space-y-1">
+                                       {app.evaluation.skill_gaps.gaps.map((gap: string, i: number) => (
+                                          <li key={i} className="text-xs text-amber-700 flex items-center gap-2">
+                                             <ChevronRight size={12} /> {gap}
+                                          </li>
+                                       ))}
+                                    </ul>
+                                 </div>
+                               )}
                             </div>
                          )}
 

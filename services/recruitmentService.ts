@@ -101,8 +101,8 @@ export function triggerShortlist(applicationId: number): Promise<AiEvaluation> {
   });
 }
 
-export function batchEvaluateApplications(positionId?: number): Promise<{ message: string }> {
-  return apiFetch<{ message: string }>("/applicant-applications/batch-evaluate/", {
+export function batchEvaluateApplications(positionId?: number): Promise<{ evaluated: number }> {
+  return apiFetch<{ evaluated: number }>("/applicant-applications/batch-evaluate/", {
     method: "POST",
     body: positionId ? JSON.stringify({ position_id: positionId }) : undefined,
     requiresAuth: true,
@@ -110,11 +110,11 @@ export function batchEvaluateApplications(positionId?: number): Promise<{ messag
 }
 
 export function fetchPublicJobPositions(): Promise<PaginatedResponse<JobPosition>> {
-  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions/", { requiresAuth: false });
+  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions-public/", { requiresAuth: false });
 }
 
 export function fetchPublicJobPosition(positionId: number): Promise<JobPosition> {
-  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, { requiresAuth: false });
+  return apiFetch<JobPosition>(`/job-positions-public/${positionId}/`, { requiresAuth: false });
 }
 
 export function createApplicant(data: CreateApplicant): Promise<ApplicantResponse> {
@@ -145,24 +145,33 @@ export function fetchUploadMetadata(uploadId: number): Promise<any> {
   return apiFetch<any>(`/uploads/${uploadId}/`, { requiresAuth: true });
 }
 
-export function confirmApplication(applicationId: number, data: { confirmed_by: number | null; note?: string }) {
+export function confirmApplication(applicationId: number) {
   return apiFetch<{ status: string; application_id: number }>(`/applicant-applications/${applicationId}/confirm/`, {
     method: "POST",
-    body: JSON.stringify(data),
     requiresAuth: true,
   });
 }
 
-export function inviteToInterview(applicationId: number, data: { datetime: string; location: string; message: string }) {
+export function inviteToInterview(applicationId: number) {
   return apiFetch<any>(`/applicant-applications/${applicationId}/invite_interview/`, {
     method: "POST",
-    body: JSON.stringify(data),
     requiresAuth: true,
   });
 }
 
-export function hireApplicant(applicationId: number, data: { start_date: string; package: { salary: number }; hired_by: number | null }) {
+export function hireApplicant(applicationId: number) {
   return apiFetch<{ status: string; application_id: number }>(`/applicant-applications/${applicationId}/hire/`, {
+    method: "POST",
+    requiresAuth: true,
+  });
+}
+
+export function fetchEvaluations(): Promise<PaginatedResponse<AiEvaluation>> {
+  return apiFetch<PaginatedResponse<AiEvaluation>>("/recruitment/evaluations/", { requiresAuth: true });
+}
+
+export function createEvaluation(data: Partial<AiEvaluation>): Promise<AiEvaluation> {
+  return apiFetch<AiEvaluation>("/recruitment/evaluations/", {
     method: "POST",
     body: JSON.stringify(data),
     requiresAuth: true,

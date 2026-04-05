@@ -83,6 +83,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         roles: ["ADMIN", "HR_MANAGER"],
         subItems: [
           { label: "Employee Directory", href: ROUTES.EMPLOYEES },
+          { label: "Departments", href: ROUTES.DEPARTMENTS },
           { label: "Offboarding", href: ROUTES.OFFBOARDING },
         ],
       },

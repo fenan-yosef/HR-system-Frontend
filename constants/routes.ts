@@ -7,6 +7,7 @@ export const ROUTES = {
   
   // People & Ops
   EMPLOYEES: "/employees",
+  DEPARTMENTS: "/departments",
   ONBOARDING: "/onboarding",
   OFFBOARDING: "/offboarding",
   ATTENDANCE: "/attendance",
