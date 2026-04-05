@@ -39,6 +39,7 @@ export function ShortlistList() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [metrics, setMetrics] = useState<ApplicationMetrics | null>(null);
   const { user } = useAuth();
   const canCEOActions = isHRCeo(user);
@@ -47,6 +48,20 @@ export function ShortlistList() {
     loadShortlistPageData();
   }, []);
 
+  const handleGenerateReport = async () => {
+    setIsGeneratingReport(true);
+    try {
+      // Simulation of report generation
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      window.alert("The detailed shortlist report has been generated successfully.");
+    } catch (error) {
+      console.error("Report generation failed:", error);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
+  const loadShortlist = async () => {
   const loadShortlistPageData = async () => {
     setIsLoading(true);
     setErrorMessage(null);
