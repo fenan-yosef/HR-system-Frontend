@@ -7,6 +7,7 @@ import { JobPosition } from "@/types/recruitment";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Share2 } from "lucide-react";
+import { getJobApplyPath } from "@/lib/utils";
 
 export default function PublicJobsPage() {
   const [jobs, setJobs] = useState<JobPosition[]>([]);
@@ -36,7 +37,8 @@ export default function PublicJobsPage() {
   }, []);
 
   const handleShare = (job: JobPosition) => {
-    const url = `${window.location.origin}/apply/${job.public_id || job.position_id}`;
+    const applyPath = getJobApplyPath(job);
+    const url = `${window.location.origin}${applyPath}`;
     if (navigator.share) {
       navigator.share({
         title: `Apply for ${job.title}`,
@@ -111,10 +113,15 @@ export default function PublicJobsPage() {
                   {job.description || "No description available."}
                 </p>
               </CardContent>
-              <CardFooter className="flex justify-between gap-3">
-                <Link href={`/jobs/${job.position_id}`} className="flex-1 sm:flex-initial">
-                  <Button className="w-full">View Details & Apply</Button>
-                </Link>
+              <CardFooter className="flex flex-wrap justify-between gap-3">
+                <div className="flex gap-2 flex-1 sm:flex-initial">
+                  <Link href={`/jobs/${job.position_id}`}>
+                    <Button variant="outline">View Details</Button>
+                  </Link>
+                  <Link href={getJobApplyPath(job)}>
+                    <Button>Apply Now</Button>
+                  </Link>
+                </div>
                 <Button
                   variant="outline"
                   size="icon"

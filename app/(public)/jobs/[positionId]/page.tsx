@@ -8,6 +8,7 @@ import { JobPosition } from "@/types/recruitment";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft } from "lucide-react";
+import { getJobApplyPath } from "@/lib/utils";
 
 export default function JobDetailsPage() {
   const params = useParams();
@@ -73,7 +74,7 @@ export default function JobDetailsPage() {
               </p>
             </div>
             {job.status === "open" && (
-              <Link href={`/jobs/${job.position_id}/apply`}>
+              <Link href={getJobApplyPath(job)}>
                 <Button size="lg" className="w-full md:w-auto">
                   Apply Now
                 </Button>
@@ -116,7 +117,7 @@ export default function JobDetailsPage() {
           <p className="text-blue-700 mb-4">
             Submit your application today and join our growing team.
           </p>
-          <Link href={`/jobs/${job.position_id}/apply`}>
+          <Link href={getJobApplyPath(job)}>
             <Button size="lg">Apply for this Position</Button>
           </Link>
         </div>
