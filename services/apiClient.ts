@@ -36,6 +36,27 @@ export interface ApiRequestOptions extends RequestInit {
   requiresAuth?: boolean;
 }
 
+export class ApiError extends Error {
+  status: number;
+  detail: string;
+
+  constructor(status: number, detail = "") {
+    super(`API request failed with status ${status}${detail ? ` - ${detail}` : ""}`);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+export function getApiErrorStatus(error: unknown): number | null {
+  if (error instanceof ApiError) return error.status;
+  if (error instanceof Error) {
+    const match = error.message.match(/status\s+(\d{3})/i);
+    return match ? Number(match[1]) : null;
+  }
+  return null;
+}
+
 function isFormData(body: BodyInit | null | undefined): body is FormData {
   return typeof FormData !== "undefined" && body instanceof FormData;
 }
@@ -67,6 +88,7 @@ export async function apiFetch<TResponse>(
 
   const response = await fetch(url, {
     ...options,
+    cache: options.cache ?? "no-store",
     headers,
   });
 
@@ -99,7 +121,7 @@ export async function apiFetch<TResponse>(
                 errDetail = await retryRes.text();
               } catch { }
               console.error("apiFetch retry error", { url, status: retryRes.status, detail: errDetail });
-              throw new Error(`API request failed with status ${retryRes.status}${errDetail ? ` - ${errDetail}` : ""}`);
+              throw new ApiError(retryRes.status, errDetail);
             }
             if (retryRes.status === 204) return undefined as TResponse;
             return (await retryRes.json()) as TResponse;
@@ -125,8 +147,7 @@ export async function apiFetch<TResponse>(
       statusText: response.statusText,
       detail: errorDetail,
     });
-    const suffix = errorDetail ? ` - ${errorDetail}` : "";
-    throw new Error(`API request failed with status ${response.status}${suffix}`);
+    throw new ApiError(response.status, errorDetail);
   }
 
   if (response.status === 204) {
