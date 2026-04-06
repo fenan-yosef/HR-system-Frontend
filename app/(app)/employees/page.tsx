@@ -296,10 +296,6 @@ export default function EmployeesPage() {
                        <span className="text-3xl font-black relative z-10">
                          {emp.first_name[0]}{emp.last_name[0]}
                        </span>
-                       <div className={cn(
-                         "absolute bottom-2 right-2 size-4 rounded-full border-2 border-background ring-2 ring-background z-20 shadow-sm",
-                         emp.status === "active" ? "bg-emerald-500" : "bg-muted"
-                       )} />
                     </div>
 
                     <h3 className="font-extrabold text-xl mb-1 line-clamp-1 group-hover:text-primary transition-colors">
@@ -323,16 +319,10 @@ export default function EmployeesPage() {
                          </div>
                        </div>
 
-                       <div className="flex gap-2">
-                         <div className="flex-1 p-2.5 rounded-xl bg-muted/30 border border-border/40 hover:bg-primary/5 hover:border-primary/20 transition-colors group/link">
-                            <Mail className="size-3.5 mx-auto text-muted-foreground group-hover/link:text-primary transition-colors" />
-                         </div>
-                         <div className="flex-1 p-2.5 rounded-xl bg-muted/30 border border-border/40 hover:bg-primary/5 hover:border-primary/20 transition-colors group/link">
-                            <Phone className="size-3.5 mx-auto text-muted-foreground group-hover/link:text-primary transition-colors" />
-                         </div>
-                         <div className="flex-1 p-2.5 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all font-black text-[10px] uppercase flex items-center justify-center">
-                            Profile
-                         </div>
+                       <div className="w-full flex items-center justify-center gap-2 pt-2 px-6">
+                         <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+                         <Users className="size-3.5 text-muted-foreground/30" />
+                         <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-border/50 to-transparent" />
                        </div>
                     </div>
                   </div>
