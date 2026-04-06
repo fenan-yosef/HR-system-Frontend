@@ -45,6 +45,10 @@ export function fetchDepartments(): Promise<PaginatedResponse<Department>> {
   return apiFetch<PaginatedResponse<Department>>("/departments/", { requiresAuth: true });
 }
 
+export function fetchDepartmentsAll(): Promise<PaginatedResponse<Department>> {
+  return apiFetch<PaginatedResponse<Department>>("/departments/?page_size=1000", { requiresAuth: true });
+}
+
 export interface FetchApplicationsParams {
   page?: number;
   search?: string;

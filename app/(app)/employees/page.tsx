@@ -1,10 +1,10 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Plus, MoreHorizontal, Users, 
-  LayoutGrid, List, Trash2, Edit2, 
-  UserCircle2, Mail, Phone, Briefcase, 
+import {
+  Plus, MoreHorizontal, Users,
+  LayoutGrid, List, Trash2, Edit2,
+  UserCircle2, Mail, Phone, Briefcase,
   Calendar, Hash, Check, X, Loader2,
   Building2, Search, Filter, ShieldCheck,
   UserCheck2,
@@ -13,21 +13,21 @@ import {
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Dialog, DialogContent, DialogHeader, 
-  DialogTitle, DialogFooter, DialogDescription 
+import {
+  Dialog, DialogContent, DialogHeader,
+  DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
-import { 
-  Field, FieldLabel, FieldGroup 
+import {
+  Field, FieldLabel, FieldGroup
 } from "@/components/ui/field";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { 
-  Employee, EmploymentType, EmployeeStatus 
+import {
+  Employee, EmploymentType, EmployeeStatus
 } from "@/types/employee";
 import { Department } from "@/types/department";
-import { 
-  fetchAllEmployees, createEmployee, 
-  updateEmployee, deleteEmployee 
+import {
+  fetchAllEmployees, createEmployee,
+  updateEmployee, deleteEmployee
 } from "@/services/employeeService";
 import { fetchDepartmentsAll } from "@/services/departmentService";
 import { cn } from "@/lib/utils";
@@ -45,7 +45,7 @@ export default function EmployeesPage() {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
@@ -97,7 +97,7 @@ export default function EmployeesPage() {
 
   const filteredEmployees = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    return employees.filter(emp => 
+    return employees.filter(emp =>
       emp.first_name.toLowerCase().includes(q) ||
       emp.last_name.toLowerCase().includes(q) ||
       emp.email.toLowerCase().includes(q) ||
@@ -186,7 +186,7 @@ export default function EmployeesPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-card p-8 rounded-3xl border border-border/50 shadow-sm relative overflow-hidden group">
         <div className="absolute top-0 right-0 size-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-primary/10 transition-colors" />
-        
+
         <div className="space-y-2 relative">
           <div className="flex items-center gap-3">
             <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
@@ -232,7 +232,7 @@ export default function EmployeesPage() {
             </Button>
           </div>
 
-          <Button 
+          <Button
             onClick={openAddModal}
             className="h-12 px-8 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all gap-2"
           >
@@ -271,17 +271,17 @@ export default function EmployeesPage() {
                 <Card className="group p-6 border-none shadow-sm hover:shadow-xl transition-all relative overflow-hidden bg-white dark:bg-card">
                   <div className="absolute top-0 right-0 p-3">
                     <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                      <Button 
-                        variant="ghost" 
-                        size="icon-sm" 
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
                         onClick={() => openEditModal(emp)}
                         className="rounded-lg hover:bg-primary/10 hover:text-primary"
                       >
                         <Edit2 className="size-3.5" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon-sm" 
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
                         onClick={() => handleDelete(emp)}
                         className="rounded-lg hover:bg-destructive/10 hover:text-destructive"
                       >
@@ -292,38 +292,38 @@ export default function EmployeesPage() {
 
                   <div className="flex flex-col items-center text-center">
                     <div className="size-24 rounded-[3rem] bg-gradient-to-br from-primary/10 to-primary/5 mb-6 flex items-center justify-center text-primary shadow-sm group-hover:rotate-6 transition-transform duration-500 border-4 border-background relative overflow-hidden">
-                       <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                       <span className="text-3xl font-black relative z-10">
-                         {emp.first_name[0]}{emp.last_name[0]}
-                       </span>
+                      <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <span className="text-3xl font-black relative z-10">
+                        {emp.first_name[0]}{emp.last_name[0]}
+                      </span>
                     </div>
 
                     <h3 className="font-extrabold text-xl mb-1 line-clamp-1 group-hover:text-primary transition-colors">
                       {emp.first_name} {emp.last_name}
                     </h3>
                     <p className="text-xs font-bold text-muted-foreground/60 mb-6 uppercase tracking-wider">
-                       {emp.position || "NO POSITION"}
+                      {emp.position || "NO POSITION"}
                     </p>
 
                     <div className="w-full space-y-3">
-                       <div className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-muted/30 border border-border/40">
-                         <div className="flex items-center gap-2 text-muted-foreground font-bold">
-                           <Building2 className="size-3.5" />
-                           {getDeptName(emp.department)}
-                         </div>
-                         <div className={cn(
-                           "px-2 py-0.5 rounded-md border text-[10px] font-black uppercase tracking-tighter",
-                           getStatusColor(emp.status)
-                         )}>
-                            {humanize(emp.status)}
-                         </div>
-                       </div>
+                      <div className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-muted/30 border border-border/40">
+                        <div className="flex items-center gap-2 text-muted-foreground font-bold">
+                          <Building2 className="size-3.5" />
+                          {getDeptName(emp.department)}
+                        </div>
+                        <div className={cn(
+                          "px-2 py-0.5 rounded-md border text-[10px] font-black uppercase tracking-tighter",
+                          getStatusColor(emp.status)
+                        )}>
+                          {humanize(emp.status)}
+                        </div>
+                      </div>
 
-                       <div className="w-full flex items-center justify-center gap-2 pt-2 px-6">
-                         <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-border/50 to-transparent" />
-                         <Users className="size-3.5 text-muted-foreground/30" />
-                         <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-border/50 to-transparent" />
-                       </div>
+                      <div className="w-full flex items-center justify-center gap-2 pt-2 px-6">
+                        <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+                        <Users className="size-3.5 text-muted-foreground/30" />
+                        <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-border/50 to-transparent" />
+                      </div>
                     </div>
                   </div>
                 </Card>
@@ -377,17 +377,17 @@ export default function EmployeesPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1.5">
-                      <Button 
-                        variant="ghost" 
-                        size="icon-sm" 
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
                         onClick={() => openEditModal(emp)}
                         className="rounded-lg hover:bg-primary/10 hover:text-primary"
                       >
                         <Edit2 className="size-3.5" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon-sm" 
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
                         onClick={() => handleDelete(emp)}
                         className="rounded-lg hover:bg-destructive/10 hover:text-destructive"
                       >
@@ -409,16 +409,16 @@ export default function EmployeesPage() {
             <div className="p-10 space-y-8 bg-card max-h-[85vh] overflow-y-auto custom-scrollbar">
               <DialogHeader>
                 <div className="flex items-center gap-3 mb-2">
-                   <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                     <UserCog className="size-5" />
-                   </div>
-                   <DialogTitle className="text-3xl font-black tracking-tight">
-                     {editingEmployee ? "Refine Associate" : "Hire Associate"}
-                   </DialogTitle>
+                  <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <UserCog className="size-5" />
+                  </div>
+                  <DialogTitle className="text-3xl font-black tracking-tight">
+                    {editingEmployee ? "Refine Associate" : "Hire Associate"}
+                  </DialogTitle>
                 </div>
                 <DialogDescription className="font-medium opacity-70">
-                  {editingEmployee 
-                    ? `Fine-tuning the profile details for ${editingEmployee.first_name}.` 
+                  {editingEmployee
+                    ? `Fine-tuning the profile details for ${editingEmployee.first_name}.`
                     : "Add a new talented professional to your organization's roster."}
                 </DialogDescription>
               </DialogHeader>
@@ -427,7 +427,7 @@ export default function EmployeesPage() {
                 <div className="grid grid-cols-2 gap-6">
                   <Field>
                     <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">First Name</FieldLabel>
-                    <Input 
+                    <Input
                       value={formData.first_name}
                       onChange={e => setFormData(p => ({ ...p, first_name: e.target.value }))}
                       required
@@ -436,7 +436,7 @@ export default function EmployeesPage() {
                   </Field>
                   <Field>
                     <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Last Name</FieldLabel>
-                    <Input 
+                    <Input
                       value={formData.last_name}
                       onChange={e => setFormData(p => ({ ...p, last_name: e.target.value }))}
                       required
@@ -448,7 +448,7 @@ export default function EmployeesPage() {
                 <div className="grid grid-cols-2 gap-6">
                   <Field>
                     <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Corporate Email</FieldLabel>
-                    <Input 
+                    <Input
                       type="email"
                       value={formData.email}
                       onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
@@ -458,7 +458,7 @@ export default function EmployeesPage() {
                   </Field>
                   <Field>
                     <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Mobile Number</FieldLabel>
-                    <Input 
+                    <Input
                       value={formData.phone}
                       onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))}
                       className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-primary/20 font-bold"
@@ -469,7 +469,7 @@ export default function EmployeesPage() {
                 <div className="grid grid-cols-3 gap-6">
                   <Field className="col-span-2">
                     <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Role / Position</FieldLabel>
-                    <Input 
+                    <Input
                       value={formData.position}
                       onChange={e => setFormData(p => ({ ...p, position: e.target.value }))}
                       placeholder="e.g. Senior Backend Engineer"
@@ -485,7 +485,7 @@ export default function EmployeesPage() {
                     >
                       <option value="">Unassigned</option>
                       {departments.map(d => (
-                         <option key={d.department_id} value={d.department_id}>{d.name}</option>
+                        <option key={d.department_id} value={d.department_id}>{d.name}</option>
                       ))}
                     </select>
                   </Field>
@@ -500,7 +500,7 @@ export default function EmployeesPage() {
                       className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-2 focus-visible:ring-primary/20 font-bold px-4 appearance-none outline-none uppercase text-xs tracking-tighter"
                     >
                       {EMPLOYMENT_TYPES.map(type => (
-                         <option key={type} value={type}>{humanize(type)}</option>
+                        <option key={type} value={type}>{humanize(type)}</option>
                       ))}
                     </select>
                   </Field>
@@ -512,13 +512,13 @@ export default function EmployeesPage() {
                       className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-2 focus-visible:ring-primary/20 font-bold px-4 appearance-none outline-none uppercase text-xs tracking-tighter"
                     >
                       {STATUS_OPTIONS.map(opt => (
-                         <option key={opt} value={opt}>{humanize(opt)}</option>
+                        <option key={opt} value={opt}>{humanize(opt)}</option>
                       ))}
                     </select>
                   </Field>
                   <Field>
                     <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Official Start Date</FieldLabel>
-                    <Input 
+                    <Input
                       type="date"
                       value={formData.hire_date}
                       onChange={e => setFormData(p => ({ ...p, hire_date: e.target.value }))}
@@ -531,16 +531,16 @@ export default function EmployeesPage() {
             </div>
 
             <DialogFooter className="p-10 pt-0 bg-card">
-              <Button 
-                type="button" 
-                variant="ghost" 
+              <Button
+                type="button"
+                variant="ghost"
                 onClick={() => setIsModalOpen(false)}
                 className="rounded-2xl font-bold h-14 px-8"
               >
-                Recall
+                Cancel
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={modalLoading}
                 className="rounded-2xl font-black h-14 px-12 shadow-xl shadow-primary/20"
               >
