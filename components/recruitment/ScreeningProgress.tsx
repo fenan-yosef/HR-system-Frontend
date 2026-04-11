@@ -45,7 +45,7 @@ export function ScreeningProgressDisplay({ progress }: ScreeningProgressDisplayP
                 <div className="space-y-2">
                     <h3 className="text-2xl font-black tracking-tight uppercase">
                         {isRunning
-                            ? "AI IS SCREENING APPLICANTS"
+                            ? progress.mode === "stale_only" ? "AI RE-EVALUATING STALE APPLICANTS" : "AI IS SCREENING APPLICANTS"
                             : progress.status === "error"
                                 ? "🤖 AI SERVICE OFFLINE"
                                 : isFailed
@@ -59,7 +59,7 @@ export function ScreeningProgressDisplay({ progress }: ScreeningProgressDisplayP
                                 : "Currently analyzing CVs against your requirements. This may take a moment."
                             : isFailed
                                 ? progress.error || "An unexpected error occurred while screening."
-                                : `All ${progress.total_count} applicants have been screened successfully.`
+                                : `All ${progress.total} applicants have been screened successfully.`
                         }
                     </p>
                 </div>
@@ -78,7 +78,7 @@ export function ScreeningProgressDisplay({ progress }: ScreeningProgressDisplayP
 
                     <div className="flex justify-between text-xs font-black uppercase tracking-widest text-muted-foreground bg-muted/30 px-4 py-2 rounded-xl border border-border/40">
                         <span>Progress: {progress.progress_percent}%</span>
-                        <span>{progress.processed_count} / {progress.total_count} PROCESSED</span>
+                        <span>{progress.current} / {progress.total} PROCESSED</span>
                     </div>
                 </div>
 

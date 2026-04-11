@@ -93,6 +93,9 @@ export default function ScreeningPage() {
                         const resultsData = await getScreeningResults(positionId);
                         setResults(resultsData);
                         toast("Screening completed successfully! 🎉", "success");
+
+                        // Update job version if done
+                        loadData();
                     } else if (progressData.status === "failed" || progressData.status === "error") {
                         clearInterval(interval);
                         toast("🤖 AI Service Offline — screening could not complete.", "error");
@@ -109,23 +112,25 @@ export default function ScreeningPage() {
         return () => {
             if (interval) clearInterval(interval);
         };
-    }, [progress?.status, positionId, toast]);
+    }, [progress?.status, positionId, toast, loadData]);
 
-    const handleStartScreening = async () => {
+    const handleStartScreening = async (mode: "full" | "stale_only" = "full") => {
         if (!positionId) return;
         try {
             setResults([]); // Clear previous results
-            const startData = await startScreening(positionId);
+            const startData = await startScreening(positionId, { mode });
 
             // Store the returned screening job ID
             screeningJobIdRef.current = startData.id;
 
             // Set initial progress to trigger polling
             setProgress({
+                job_id: positionId,
                 status: "running",
                 progress_percent: 0,
-                processed_count: 0,
-                total_count: candidatesCount,
+                current: 0,
+                total: candidatesCount,
+                mode: mode
             });
         } catch (error: any) {
             console.error("Failed to start screening:", error);
@@ -236,7 +241,7 @@ export default function ScreeningPage() {
                                 </p>
                             </div>
                             <Button
-                                onClick={handleStartScreening}
+                                onClick={() => handleStartScreening("full")}
                                 className="rounded-2xl h-14 px-8 font-black uppercase tracking-widest bg-primary shadow-xl shadow-primary/20 hover:scale-105 transition-all text-lg"
                             >
                                 Screen All Applicants

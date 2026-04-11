@@ -3,20 +3,15 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Search,
-  Download,
   Filter,
   RefreshCw,
-  Wand2,
   Loader2,
   Layers,
   AlertTriangle,
-  RotateCcw,
-  Star,
   User,
   ExternalLink,
   ChevronRight,
   TrendingUp,
-  BrainCircuit,
   AlertCircle,
   Inbox,
   CheckCircle2
@@ -55,12 +50,9 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
   const [appliedToday, setAppliedToday] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<string | number>("");
   const [startsWith, setStartsWith] = useState("");
-  const [isExporting, setIsExporting] = useState(false);
   const [sortBy, setSortBy] = useState("newest");
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
-  const [isBatchEvaluating, setIsBatchEvaluating] = useState(false);
   const [evaluatingApps, setEvaluatingApps] = useState<number[]>([]);
-  const [retryingApps, setRetryingApps] = useState<number[]>([]);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -117,17 +109,6 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
     }
   }, [initialJobPositions]);
 
-  const handleExport = async () => {
-    setIsExporting(true);
-    try {
-      await exportApplicationsCsv();
-      toast("Applications exported successfully", "success");
-    } catch (err: any) {
-      toast("Export failed: " + err.message, "error");
-    } finally {
-      setIsExporting(false);
-    }
-  };
 
   const handleResetFilters = () => {
     setSearch("");
@@ -139,31 +120,6 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
     setSortBy("newest");
   };
 
-  const handleBatchEvaluate = async () => {
-    if (selectedJobId) {
-      window.location.href = `/recruitment/job-postings/${selectedJobId}/screening`;
-    } else {
-      toast("Please select a specific job position first to run AI screening.", "warning");
-    }
-  };
-
-  const handleRetryExtraction = async (appId: number) => {
-    setRetryingApps(prev => [...prev, appId]);
-    try {
-      await retryExtraction(appId);
-      toast("Re-extraction triggered successfully.", "success");
-      loadApplications();
-    } catch (err: any) {
-      const msg = err?.message || "";
-      if (msg.includes("405") || msg.includes("404")) {
-        toast("Re-extraction endpoint not available on this backend.", "warning");
-      } else {
-        toast("Failed to retry extraction. The AI service may be offline.", "error");
-      }
-    } finally {
-      setRetryingApps(prev => prev.filter(id => id !== appId));
-    }
-  };
 
   const handleActionError = (err: any, action: string) => {
     toast(`Failed to ${action}: ${err.message}`, "error");
@@ -224,23 +180,18 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Sidebar Column */}
         <aside className="lg:col-span-1 space-y-8">
-           <ApplicationFilters
+            <ApplicationFilters
               search={search}
               status={status}
               minScore={minScore}
               appliedToday={appliedToday}
               selectedJobId={selectedJobId}
               jobPositions={localJobPositions}
-              isExporting={isExporting}
-              isBatchEvaluating={isBatchEvaluating}
-              onBatchEvaluate={handleBatchEvaluate}
-              canBatchEvaluate={canShortlist}
               onSearchChange={setSearch}
               onStatusChange={setStatus}
               onMinScoreChange={setMinScore}
               onAppliedTodayChange={setAppliedToday}
               onJobChange={setSelectedJobId}
-              onExport={handleExport}
               onReset={handleResetFilters}
               sortBy={sortBy}
               onSortByChange={setSortBy}
@@ -384,13 +335,6 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                )}
 
                                <div className="flex items-center gap-2">
-                                  <button
-                                    onClick={() => setSelectedApp(app)}
-                                    className="p-3 rounded-2xl bg-muted/50 hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
-                                    title="View AI Assessments"
-                                  >
-                                    <BrainCircuit size={18} />
-                                  </button>
                                   <a
                                     href={getMediaUrl(app.cv_path)}
                                     target="_blank"
@@ -402,18 +346,8 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                </div>
                              </div>
 
-                             {/* Actions Trigger */}
+                             {/* Actions Status */}
                              <div className="flex items-center gap-2">
-                                {canShortlist && (
-                                  <button
-                                    onClick={() => handleRetryExtraction(app.application_id)}
-                                    disabled={retryingApps.includes(app.application_id)}
-                                    className="px-4 py-2.5 rounded-xl bg-amber-500/10 text-amber-700 text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/20 transition-all flex items-center gap-2"
-                                  >
-                                    {retryingApps.includes(app.application_id) ? <Loader2 size={12} animate-spin /> : <RotateCcw size={12} />}
-                                    Re-try
-                                  </button>
-                                )}
                                 <div className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${getStatusStyle(app.status)}`}>
                                    {getStatusIcon(app.status)} {app.status.replace("_", " ")}
                                 </div>

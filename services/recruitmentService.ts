@@ -12,6 +12,8 @@ import type {
   AiEvaluation,
   ScreeningResult,
   ScreeningProgress,
+  VersionStats,
+  SuggestSkillsResponse
 } from "@/types/recruitment";
 import { apiFetch } from "@/services/apiClient";
 
@@ -122,8 +124,8 @@ export function fetchPublicJobPositions(): Promise<PaginatedResponse<JobPosition
   return apiFetch<PaginatedResponse<JobPosition>>("/job-positions-public/", { requiresAuth: false });
 }
 
-export function fetchPublicJobPosition(positionId: number): Promise<JobPosition> {
-  return apiFetch<JobPosition>(`/job-positions-public/${positionId}/`, { requiresAuth: false });
+export function fetchPublicJobPosition(publicId: string): Promise<JobPosition> {
+  return apiFetch<JobPosition>(`/recruitment/public/job/${publicId}/`, { requiresAuth: false });
 }
 
 export function createApplicant(data: CreateApplicant): Promise<ApplicantResponse> {
@@ -187,9 +189,10 @@ export function createEvaluation(data: Partial<AiEvaluation>): Promise<AiEvaluat
   });
 }
 
-export function startScreening(jobPositionId: number): Promise<{ id: number; status: string }> {
+export function startScreening(jobPositionId: number, customParams?: any): Promise<{ id: number; status: string }> {
   return apiFetch<{ id: number; status: string }>(`/recruitment/screening/start/${jobPositionId}/`, {
     method: "POST",
+    body: customParams ? JSON.stringify({ custom_params: customParams }) : undefined,
     requiresAuth: true,
   });
 }
@@ -202,6 +205,28 @@ export function getScreeningProgress(jobId: number): Promise<ScreeningProgress> 
 
 export function getScreeningResults(jobPositionId: number): Promise<ScreeningResult[]> {
   return apiFetch<ScreeningResult[]>(`/recruitment/screening/${jobPositionId}/results/`, {
+    requiresAuth: true,
+  });
+}
+
+export function getVersionStats(jobPositionId: number): Promise<VersionStats> {
+  return apiFetch<VersionStats>(`/recruitment/screening/version-stats/${jobPositionId}/`, {
+    requiresAuth: true,
+  });
+}
+
+export function reEvaluate(jobPositionId: number, customParams?: any): Promise<any> {
+  return apiFetch<any>(`/recruitment/screening/re-evaluate/${jobPositionId}/`, {
+    method: "POST",
+    body: customParams ? JSON.stringify({ custom_params: customParams }) : undefined,
+    requiresAuth: true,
+  });
+}
+
+export function suggestSkills(description: string, limit: number = 10): Promise<SuggestSkillsResponse> {
+  return apiFetch<SuggestSkillsResponse>("/job-positions/suggest-skills/", {
+    method: "POST",
+    body: JSON.stringify({ description, limit }),
     requiresAuth: true,
   });
 }

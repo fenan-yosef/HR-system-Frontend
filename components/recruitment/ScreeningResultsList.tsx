@@ -44,16 +44,16 @@ function getScoreColor(score: number) {
 export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
     const [selectedResult, setSelectedResult] = useState<ScreeningResult | null>(null);
 
-    // Sort by score descending for best candidates first
-    const sortedResults = [...results].sort((a, b) => b.overall_score - a.overall_score);
+    // Sort by final_score descending for best candidates first
+    const sortedResults = [...results].sort((a, b) => b.final_score - a.final_score);
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
-                <h3 className="text-xl font-black uppercase tracking-widest text-foreground">Screening Results</h3>
-                <div className="flex gap-3 text-[10px] font-black uppercase tracking-widest">
+                <h3 className="text-xl font-black uppercase tracking-widest text-foreground">Ranked Results</h3>
+                <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest">
                     <div className="flex items-center gap-1.5 text-emerald-600">
-                        <div className="size-2 rounded-full bg-emerald-600" /> Passed
+                        <div className="size-2 rounded-full bg-emerald-600 font-bold" /> Passed
                     </div>
                     <div className="flex items-center gap-1.5 text-red-500">
                         <div className="size-2 rounded-full bg-red-500" /> Failed
@@ -63,89 +63,90 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
 
             <div className="grid gap-4">
                 {sortedResults.map((result, idx) => {
-                    const scoreColor = getScoreColor(result.overall_score);
+                    const scoreColor = getScoreColor(result.final_score);
 
                     return (
                     <Card
-                        key={idx}
-                        className="p-6 border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] group cursor-pointer overflow-hidden relative"
+                        key={result.application_id || idx}
+                        className="p-6 border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] group cursor-pointer overflow-hidden relative border border-border/20"
                         onClick={() => setSelectedResult(result)}
                     >
                         {/* Decorative background score */}
                         <div className="absolute -right-4 -bottom-4 opacity-[0.03] text-8xl font-black italic pointer-events-none group-hover:scale-110 transition-transform duration-500">
-                            {result.overall_score.toFixed(0)}
+                            {result.final_score.toFixed(0)}
                         </div>
 
                         <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
                             {/* Score Gauge */}
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-4 min-w-[200px]">
                                 <div className={`relative size-16 shrink-0 flex items-center justify-center rounded-2xl ${scoreColor.light}`}>
                                     <div className={`absolute inset-0 rounded-2xl border-2 ${scoreColor.border}`} />
                                     {/* Score fill bar at bottom */}
                                     <div
                                         className={`absolute bottom-0 left-0 right-0 rounded-b-2xl ${scoreColor.bg} opacity-20`}
-                                        style={{ height: `${result.overall_score}%` }}
+                                        style={{ height: `${result.final_score}%` }}
                                     />
                                     <span className={`text-xl font-black relative z-10 ${scoreColor.text}`}>
-                                        {result.overall_score.toFixed(0)}
+                                        {result.final_score.toFixed(0)}
                                     </span>
                                 </div>
 
                                 <div className="space-y-1">
                                     <h4 className="text-lg font-black tracking-tight group-hover:text-primary transition-colors">{result.applicant_name}</h4>
                                     <div className="flex items-center gap-2 flex-wrap">
-                                        {/* hard_criteria_met badge */}
                                         {result.hard_criteria_met ? (
-                                            <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                                                <CheckCircle2 className="size-3" /> PASSED
+                                            <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+                                                <CheckCircle2 className="size-2.5" /> PASSED
                                             </span>
                                         ) : (
-                                            <span className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full">
-                                                <XCircle className="size-3" /> FAILED REQUIREMENTS
+                                            <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-red-500 bg-red-500/10 px-2 py-0.5 rounded-full border border-red-500/20">
+                                                <XCircle className="size-2.5" /> FAILED
                                             </span>
                                         )}
-                                        {/* Score tier label */}
-                                        <span className={`text-[10px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${scoreColor.light} ${scoreColor.text}`}>
-                                            {scoreColor.label}
+                                        <span className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 bg-muted/20 px-2 py-0.5 rounded-full">
+                                            V{result.evaluation_version}
                                         </span>
                                     </div>
+                                </div>
+                            </div>
+
+                            {/* Broken down scores */}
+                            <div className="flex items-center gap-6 border-x border-border/50 px-6">
+                                <div className="text-center">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Rule</p>
+                                    <p className="text-xs font-black">{result.rule_score.toFixed(0)}%</p>
+                                </div>
+                                <div className="text-center">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">AI</p>
+                                    <p className="text-xs font-black text-primary">{result.ai_score.toFixed(0)}%</p>
                                 </div>
                             </div>
 
                             {/* Pro/Con Insights */}
                             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                                        <CheckCircle2 className="size-3 text-emerald-500" /> Key Strengths
-                                    </p>
                                     <ul className="space-y-0.5">
                                         {result.key_strengths.slice(0, 2).map((s, i) => (
-                                            <li key={i} className="flex items-center gap-1.5 text-[11px] font-semibold">
-                                                <CheckCircle2 className="size-2.5 text-emerald-500 shrink-0" />{s}
+                                            <li key={i} className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80">
+                                                <div className="size-1.5 rounded-full bg-emerald-500 shrink-0" />{s}
                                             </li>
                                         ))}
-                                        {result.key_strengths.length > 2 && <li className="text-[10px] text-muted-foreground">+{result.key_strengths.length - 2} more</li>}
                                     </ul>
                                 </div>
                                 <div className="space-y-1">
-                                    <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                                        <AlertTriangle className="size-3 text-amber-500" /> Weaknesses
-                                    </p>
                                     <ul className="space-y-0.5">
-                                        {result.key_weaknesses.slice(0, 2).map((w, i) => (
-                                            <li key={i} className="flex items-center gap-1.5 text-[11px] font-semibold">
-                                                <AlertTriangle className="size-2.5 text-amber-500 shrink-0" />{w}
+                                        {result.key_weaknesses.slice(0, 1).map((w, i) => (
+                                            <li key={i} className="flex items-center gap-1.5 text-[11px] font-semibold text-foreground/80 italic">
+                                                <TrendingDown className="size-3 text-amber-500 shrink-0" />{w}
                                             </li>
                                         ))}
-                                        {result.key_weaknesses.length > 2 && <li className="text-[10px] text-muted-foreground">+{result.key_weaknesses.length - 2} more</li>}
                                     </ul>
                                 </div>
                             </div>
 
-                            {/* View AI Logic button */}
                             <div className="flex items-center justify-end">
-                                <Button variant="ghost" className="rounded-xl group-hover:bg-primary/5 group-hover:text-primary transition-all gap-2 font-black uppercase tracking-widest text-[10px]">
-                                    View AI Logic <ChevronRight className="size-4" />
+                                <Button variant="ghost" className="rounded-xl group-hover:bg-primary/5 group-hover:text-primary transition-all gap-2 font-black uppercase tracking-widest text-[9px] h-9">
+                                    Full Audit <ChevronRight className="size-4" />
                                 </Button>
                             </div>
                         </div>
@@ -154,70 +155,85 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                 })}
             </div>
 
-            {/* "AI Audit" Modal — Transparency (from doc) */}
             <Dialog open={!!selectedResult} onOpenChange={() => setSelectedResult(null)}>
                 <DialogContent className="max-w-3xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
                     {selectedResult && (() => {
-                        const scoreColor = getScoreColor(selectedResult.overall_score);
+                        const scoreColor = getScoreColor(selectedResult.final_score);
                         return (
                         <div className="flex flex-col h-[80vh]">
                             <div className="p-8 bg-gradient-to-br from-primary/10 to-transparent border-b border-border/50">
                                 <DialogHeader>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-2">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <div className="flex items-center gap-3">
                                             <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${selectedResult.hard_criteria_met ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500'}`}>
-                                                {selectedResult.hard_criteria_met ? "PASSED" : "FAILED REQUIREMENTS"}
+                                                {selectedResult.hard_criteria_met ? "PASSED REQUIREMENTS" : "FAILED CRITERIA"}
                                             </span>
-                                            <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${scoreColor.light} ${scoreColor.text}`}>
-                                                {scoreColor.label}
+                                            <span className="text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full bg-muted/40 text-muted-foreground">
+                                                VERSION {selectedResult.evaluation_version}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Brain className="size-4 text-primary" />
-                                            <span className={`text-xl font-black ${scoreColor.text}`}>{selectedResult.overall_score.toFixed(1)}% FIT</span>
+                                        <div className="flex items-center gap-3">
+                                            <div className="text-right">
+                                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Weighted Total</p>
+                                                <p className={`text-2xl font-black ${scoreColor.text}`}>{selectedResult.final_score.toFixed(1)}%</p>
+                                            </div>
                                         </div>
                                     </div>
-                                    <DialogTitle className="text-3xl font-black tracking-tight">{selectedResult.applicant_name}</DialogTitle>
-                                    <DialogDescription className="text-muted-foreground font-medium text-lg">
-                                        AI Screening Report — Automated Analysis
+                                    <DialogTitle className="text-4xl font-black tracking-tighter uppercase">{selectedResult.applicant_name}</DialogTitle>
+                                    <DialogDescription className="text-muted-foreground font-bold text-base mt-1 flex items-center gap-2">
+                                        <Brain className="size-4 text-primary" /> AI-Augmented Screening Audit
                                     </DialogDescription>
                                 </DialogHeader>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-8 space-y-8">
-                                {/* Explanation */}
+                            <div className="flex-1 overflow-y-auto p-8 space-y-10">
+                                {/* Score Breakdown Display */}
+                                <div className="grid grid-cols-2 gap-4">
+                                    <Card className="p-5 rounded-3xl bg-muted/20 border-border/40 space-y-2">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Rule-based Score</p>
+                                        <div className="flex items-end gap-2">
+                                            <span className="text-3xl font-black">{selectedResult.rule_score.toFixed(0)}%</span>
+                                            <span className="text-[10px] font-bold text-muted-foreground mb-1.5">HARD CRITERIA</span>
+                                        </div>
+                                    </Card>
+                                    <Card className="p-5 rounded-3xl bg-primary/5 border-primary/10 space-y-2">
+                                        <p className="text-[10px] font-black uppercase tracking-widest text-primary">LLM Reasoning Score</p>
+                                        <div className="flex items-end gap-2">
+                                            <span className="text-3xl font-black text-primary">{selectedResult.ai_score.toFixed(0)}%</span>
+                                            <span className="text-[10px] font-bold text-primary/60 mb-1.5">SEMANTIC MATCH</span>
+                                        </div>
+                                    </Card>
+                                </div>
+
                                 <section className="space-y-4">
-                                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary">
-                                        <MessageSquare className="size-4" /> AI Explanation
+                                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-foreground">
+                                        <MessageSquare className="size-4 text-primary" /> Executive Summary
                                     </div>
-                                    <div className="p-6 rounded-2xl bg-muted/30 border border-border/50 text-sm leading-relaxed font-medium">
+                                    <div className="p-6 rounded-3xl bg-muted/30 border border-border/50 text-base leading-relaxed font-medium">
                                         {selectedResult.explanation}
                                     </div>
                                 </section>
 
-                                {/* Pro/Con — two columns with bullet points */}
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <section className="space-y-4">
                                         <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-600">
-                                            <CheckCircle2 className="size-4" /> Strengths
+                                            <CheckCircle2 className="size-4" /> Strong Signals
                                         </div>
                                         <ul className="space-y-2">
                                             {selectedResult.key_strengths.map((s, i) => (
-                                                <li key={i} className="flex gap-3 text-sm font-semibold p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-                                                    <CheckCircle2 className="size-4 text-emerald-500 shrink-0 mt-0.5" />
+                                                <li key={i} className="flex gap-3 text-sm font-bold p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 border-l-4 border-l-emerald-500">
                                                     {s}
                                                 </li>
                                             ))}
                                         </ul>
                                     </section>
                                     <section className="space-y-4">
-                                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-amber-500">
-                                            <AlertTriangle className="size-4" /> Weaknesses
+                                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-rose-500">
+                                            <AlertTriangle className="size-4" /> Identified Gaps
                                         </div>
                                         <ul className="space-y-2">
                                             {selectedResult.key_weaknesses.map((w, i) => (
-                                                <li key={i} className="flex gap-3 text-sm font-semibold p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
-                                                    <AlertTriangle className="size-4 text-amber-500 shrink-0 mt-0.5" />
+                                                <li key={i} className="flex gap-3 text-sm font-bold p-4 rounded-2xl bg-rose-500/5 border border-rose-500/10 border-l-4 border-l-rose-500">
                                                     {w}
                                                 </li>
                                             ))}
@@ -225,20 +241,22 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                                     </section>
                                 </div>
 
-                                {/* Raw LLM Response — "View AI Logic" (transparency) */}
                                 <section className="space-y-4">
                                     <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground">
-                                        <FileSearch className="size-4" /> Raw AI Logic (Thought Process)
+                                        <FileSearch className="size-4" /> AI Critical Reasoning (Raw Output)
                                     </div>
-                                    <pre className="p-6 rounded-2xl bg-zinc-950 text-zinc-400 text-xs font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap max-h-96 overflow-y-auto">
+                                    <pre className="p-6 rounded-3xl bg-zinc-950 text-zinc-400 text-[11px] font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap border border-white/5">
                                         {selectedResult.raw_llm_response}
                                     </pre>
                                 </section>
                             </div>
 
-                            <div className="p-6 border-t border-border/50 bg-muted/10 flex justify-end">
-                                <Button onClick={() => setSelectedResult(null)} className="rounded-xl px-8 font-black uppercase tracking-widest">
-                                    Close Report
+                            <div className="p-6 border-t border-border/40 bg-muted/10 flex justify-end gap-3">
+                                <Button variant="ghost" onClick={() => setSelectedResult(null)} className="rounded-2xl px-8 font-black uppercase tracking-widest text-xs h-12">
+                                    Close
+                                </Button>
+                                <Button className="rounded-2xl px-10 font-black uppercase tracking-widest text-xs h-12 shadow-lg shadow-primary/20">
+                                    Approve for Interview
                                 </Button>
                             </div>
                         </div>

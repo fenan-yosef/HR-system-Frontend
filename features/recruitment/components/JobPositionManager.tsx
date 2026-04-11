@@ -11,7 +11,8 @@ import {
   fetchJobPositions,
   createJobPosition,
   fetchDepartments,
-  updateJobPosition
+  updateJobPosition,
+  suggestSkills
 } from "@/services/recruitmentService";
 import { Card } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,7 +29,9 @@ import {
   Layers,
   Share2,
   Copy,
-  Check
+  Check,
+  BrainCircuit,
+  Loader2
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -53,13 +56,52 @@ export function JobPositionManager() {
     return `${year}-${month}-${day}`;
   };
 
+  const [suggestingSkills, setSuggestingSkills] = useState(false);
+
   const [formData, setFormData] = useState<CreateJobPosition>({
     title: "",
     department: 0,
     description: "",
     status: "open",
     posted_date: getToday(),
+    min_gpa: 0,
+    min_years_experience: 0,
+    required_skills: [],
+    required_certificates: [],
+    allowed_universities: [],
+    shortlist_size: 10,
+    scoring_weights: {
+      skills: 40,
+      experience: 30,
+      education: 20,
+      certifications: 10
+    },
+    ai_config: {
+      min_pass_score: 50,
+      skip_ai_on_hard_fail: true,
+      final_score_blend: {
+        rule: 0.3,
+        ai: 0.7
+      }
+    }
   });
+
+  const handleSuggestSkills = async () => {
+    if (!formData.description || formData.description.length < 20) return;
+    try {
+      setSuggestingSkills(true);
+      const res = await suggestSkills(formData.description);
+      if (res.skills && res.skills.length > 0) {
+        // Merge with existing skills
+        const combined = Array.from(new Set([...(formData.required_skills || []), ...res.skills]));
+        setFormData(prev => ({ ...prev, required_skills: combined }));
+      }
+    } catch (err) {
+      console.error("Skill suggestion failed", err);
+    } finally {
+      setSuggestingSkills(false);
+    }
+  };
 
   useEffect(() => {
     loadInitialData();
@@ -78,8 +120,8 @@ export function JobPositionManager() {
       setDepartments(deptList);
 
       // Set default department if none selected
-      if (deptResponse.results.length > 0) {
-        setFormData(prev => ({ ...prev, department: deptResponse.results[0].department_id }));
+      if (deptList.length > 0) {
+        setFormData(prev => ({ ...prev, department: deptList[0].department_id }));
       }
     } catch (error) {
       console.error("Failed to fetch recruitment data", error);
@@ -158,6 +200,26 @@ export function JobPositionManager() {
         description: "",
         status: "open",
         posted_date: getToday(),
+        min_gpa: 0,
+        min_years_experience: 0,
+        required_skills: [],
+        required_certificates: [],
+        allowed_universities: [],
+        shortlist_size: 10,
+        scoring_weights: {
+          skills: 40,
+          experience: 30,
+          education: 20,
+          certifications: 10
+        },
+        ai_config: {
+          min_pass_score: 50,
+          skip_ai_on_hard_fail: true,
+          final_score_blend: {
+            rule: 0.3,
+            ai: 0.7
+          }
+        }
       });
     } catch (error) {
       console.error("Failed to create job position", error);
@@ -230,6 +292,17 @@ export function JobPositionManager() {
   const filteredPositions = selectedDepartmentFilter === "all"
     ? positions
     : positions.filter((position) => position.department === selectedDepartmentFilter);
+
+  const addSkill = (skill: string) => {
+    const s = skill.trim();
+    if (s && !formData.required_skills?.includes(s)) {
+      setFormData(prev => ({ ...prev, required_skills: [...(prev.required_skills || []), s] }));
+    }
+  };
+
+  const removeSkill = (skill: string) => {
+    setFormData(prev => ({ ...prev, required_skills: (prev.required_skills || []).filter(s => s !== skill) }));
+  };
 
   return (
     <div className="space-y-8">
@@ -341,7 +414,7 @@ export function JobPositionManager() {
                       <span className="hidden sm:inline font-bold text-xs uppercase tracking-widest">Share</span>
                     </button>
                     <Link
-                      href={`/recruitment/job-postings/${pos.position_id}`}
+                      href={`/hr/recruitment/job-postings/${pos.position_id}`}
                       className="hidden md:flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:underline"
                     >
                       View details <MoreVertical className="size-3" />
@@ -369,7 +442,7 @@ export function JobPositionManager() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-lg overflow-hidden rounded-3xl bg-card p-0 shadow-2xl border border-border"
+              className="relative w-full max-w-4xl overflow-hidden rounded-3xl bg-card p-0 shadow-2xl border border-border"
             >
               <div className="flex items-center justify-between p-6 border-b border-border/50 bg-muted/20">
                 <div className="flex items-center gap-3">
@@ -386,93 +459,182 @@ export function JobPositionManager() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-6">
-                <div className="grid gap-6">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Position Title</Label>
-                    <Input
-                      required
-                      placeholder="e.g. Lead Frontend Engineer"
-                      className="rounded-xl border-border/50 focus:ring-primary/20 h-12 text-base font-medium"
-                      value={formData.title}
-                      onChange={e => setFormData({ ...formData, title: e.target.value })}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6">
+              <form onSubmit={handleSubmit} className="overflow-y-auto max-h-[80vh]">
+                <div className="p-8 space-y-8">
+                  {/* Basic Info */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Department</Label>
-                      <select
+                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Position Title</Label>
+                      <Input
                         required
-                        disabled={departments.length === 0}
-                        className="w-full rounded-xl border border-border/50 bg-background h-12 px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={formData.department}
-                        onChange={e => setFormData({ ...formData, department: parseInt(e.target.value) })}
-                      >
-                        <option value="" disabled>
-                          {departments.length === 0 ? "No departments available" : "Select Department"}
-                        </option>
-                        {departments.map(dept => (
-                          <option key={dept.department_id} value={dept.department_id}>
-                            {dept.name} ({dept.code})
-                          </option>
-                        ))}
-                      </select>
+                        placeholder="e.g. Lead Frontend Engineer"
+                        className="rounded-xl border-border/50 h-11 text-base font-medium"
+                        value={formData.title}
+                        onChange={e => setFormData({ ...formData, title: e.target.value })}
+                      />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Status</Label>
-                      <select
-                        required
-                        className="w-full rounded-xl border border-border/50 bg-background h-12 px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
-                        value={formData.status}
-                        onChange={e => setFormData({ ...formData, status: e.target.value as JobPosition["status"] })}
-                      >
-                        <option value="open">Open</option>
-                        <option value="on_hold">On Hold</option>
-                        <option value="closed">Closed</option>
-                        <option value="cancelled">Cancelled</option>
-                      </select>
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Department</Label>
+                        <select
+                          required
+                          className="w-full rounded-xl border border-border/50 bg-background h-11 px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
+                          value={formData.department}
+                          onChange={e => setFormData({ ...formData, department: parseInt(e.target.value) })}
+                        >
+                          {departments.map(dept => (
+                            <option key={dept.department_id} value={dept.department_id}>{dept.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Status</Label>
+                        <select
+                          required
+                          className="w-full rounded-xl border border-border/50 bg-background h-11 px-4 text-sm font-medium focus:ring-2 focus:ring-primary/20 outline-none"
+                          value={formData.status}
+                          onChange={e => setFormData({ ...formData, status: e.target.value as any })}
+                        >
+                          <option value="open">Open</option>
+                          <option value="on_hold">On Hold</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Description</Label>
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Description</Label>
+                      <button
+                        type="button"
+                        onClick={handleSuggestSkills}
+                        disabled={suggestingSkills || !formData.description || formData.description.length < 20}
+                        className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {suggestingSkills ? <Loader2 className="size-3 animate-spin" /> : <BrainCircuit className="size-3" />}
+                        Suggest AI Skills
+                      </button>
+                    </div>
                     <textarea
                       placeholder="Describe the role responsibilities..."
-                      className="w-full rounded-xl border border-border/50 p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[120px] text-base font-medium transition-all"
+                      className="w-full rounded-xl border border-border/50 p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[100px] text-sm font-medium transition-all"
                       value={formData.description}
                       onChange={e => setFormData({ ...formData, description: e.target.value })}
                     />
                   </div>
+
+                  {/* Screening Criteria Header */}
+                  <div className="flex items-center gap-2 py-2 border-b border-border/50">
+                    <Layers className="size-4 text-primary" />
+                    <h4 className="text-xs font-black uppercase tracking-widest">Screening Requirements</h4>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Min GPA</Label>
+                      <Input
+                        type="number"
+                        step="0.1"
+                        className="rounded-xl border-border/50 h-10"
+                        value={formData.min_gpa}
+                        onChange={e => setFormData({ ...formData, min_gpa: parseFloat(e.target.value) })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Min Exp (Years)</Label>
+                      <Input
+                        type="number"
+                        className="rounded-xl border-border/50 h-10"
+                        value={formData.min_years_experience}
+                        onChange={e => setFormData({ ...formData, min_years_experience: parseInt(e.target.value) })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Shortlist Target</Label>
+                      <Input
+                        type="number"
+                        className="rounded-xl border-border/50 h-10"
+                        value={formData.shortlist_size}
+                        onChange={e => setFormData({ ...formData, shortlist_size: parseInt(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Skills Tagging */}
+                  <div className="space-y-3">
+                    <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">Keywords / Skills</Label>
+                    <div className="flex flex-wrap gap-2 min-h-[40px] p-3 rounded-2xl bg-muted/20 border border-dashed border-border/50">
+                      {formData.required_skills?.map(skill => (
+                        <span key={skill} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-wider border border-primary/20">
+                          {skill}
+                          <X className="size-3 cursor-pointer hover:text-red-500" onClick={() => removeSkill(skill)} />
+                        </span>
+                      ))}
+                      <input
+                        placeholder="+ Add skill (Press Enter)"
+                        className="bg-transparent border-none outline-none text-xs font-medium min-w-[120px]"
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addSkill((e.target as HTMLInputElement).value);
+                            (e.target as HTMLInputElement).value = '';
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Advanced Scoring Weights */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground">
+                      <Activity className="size-3" /> AI Scoring Weightage (%)
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {['skills', 'experience', 'education', 'certifications'].map((key) => (
+                        <div key={key} className="space-y-1">
+                          <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/80">{key}</Label>
+                          <Input
+                            type="number"
+                            className="h-9 rounded-lg"
+                            value={(formData.scoring_weights as any)[key]}
+                            onChange={e => setFormData({
+                              ...formData,
+                              scoring_weights: {
+                                ...formData.scoring_weights!,
+                                [key]: parseInt(e.target.value)
+                              }
+                            })}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
 
-                {createError && (
-                  <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                    {createError}
-                  </div>
-                )}
+                <div className="p-8 bg-muted/20 border-t border-border/50 space-y-6">
+                  {createError && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                      {createError}
+                    </div>
+                  )}
 
-                {departments.length === 0 && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-                    Department list is empty. Check backend departments data, then reopen this modal.
+                  <div className="flex gap-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="flex-1 rounded-xl bg-background border border-border px-4 py-3 text-xs font-black uppercase tracking-widest text-muted-foreground hover:bg-muted transition-all"
+                    >
+                      Discard
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex-[2] rounded-xl bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-98 transition-all disabled:opacity-60"
+                    >
+                      {isSubmitting ? "Creating..." : "Save & Open to Applicants"}
+                    </button>
                   </div>
-                )}
-
-                <div className="flex gap-4 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex-1 rounded-xl bg-muted px-4 py-4 text-sm font-black uppercase tracking-widest text-muted-foreground hover:bg-muted/80 transition-all"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || departments.length === 0}
-                    className="flex-[2] rounded-xl bg-primary px-4 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-98 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-                  >
-                    {isSubmitting ? "Publishing..." : "Confirm & Publish"}
-                  </button>
                 </div>
               </form>
             </motion.div>

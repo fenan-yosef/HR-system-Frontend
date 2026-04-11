@@ -32,10 +32,28 @@ export interface JobPosition {
   posted_date: string;
   closed_date: string | null;
   created_at: string;
+  criteria_version: number;
   // Screening fields
   min_gpa?: number;
+  min_years_experience?: number;
   required_skills?: string[];
   required_certificates?: string[];
+  allowed_universities?: string[];
+  shortlist_size?: number;
+  scoring_weights?: {
+    skills: number;
+    experience: number;
+    education: number;
+    certifications: number;
+  };
+  ai_config?: {
+    min_pass_score?: number;
+    skip_ai_on_hard_fail?: boolean;
+    final_score_blend?: {
+      rule: number;
+      ai: number;
+    };
+  };
 }
 
 export interface CreateJobPosition {
@@ -46,8 +64,25 @@ export interface CreateJobPosition {
   posted_date: string;
   closed_date?: string;
   min_gpa?: number;
+  min_years_experience?: number;
   required_skills?: string[];
   required_certificates?: string[];
+  allowed_universities?: string[];
+  shortlist_size?: number;
+  scoring_weights?: {
+    skills: number;
+    experience: number;
+    education: number;
+    certifications: number;
+  };
+  ai_config?: {
+    min_pass_score?: number;
+    skip_ai_on_hard_fail?: boolean;
+    final_score_blend?: {
+      rule: number;
+      ai: number;
+    };
+  };
 }
 
 export interface Department {
@@ -148,8 +183,12 @@ export interface CreateApplicant {
   full_name: string;
   email: string;
   phone: string;
-  cv_path: string;
+  upload_id?: number; // Primary CV
+  certificate_upload_ids?: number[];
+  other_upload_ids?: number[];
+  cv_path?: string; // Legacy field
   cover_letter?: string; // Optional cover letter
+  applicant_note?: string; // HR context only
   position_id?: number;
 }
 
@@ -165,22 +204,54 @@ export interface ApplicantResponse {
 }
 
 export interface ScreeningResult {
+  application_id: number;
   applicant_name: string;
-  overall_score: number;
+  rule_score: number;
+  ai_score: number;
+  final_score: number;
+  evaluation_version: number;
   status: "passed" | "failed";
   hard_criteria_met: boolean;
   explanation: string;
   key_strengths: string[];
   key_weaknesses: string[];
+  scoring_breakdown: any;
   raw_llm_response: string;
-  application_id?: number;
+  // Legacy fields (keeping for compatibility if needed during migration)
+  overall_score?: number;
 }
 
 export interface ScreeningProgress {
+  job_id: number;
   status: "pending" | "running" | "completed" | "failed" | "error";
   progress_percent: number;
-  processed_count: number;
-  total_count: number;
+  current: number;
+  total: number;
   current_applicant?: string;
+  mode: "full" | "stale_only";
   error?: string;
 }
+
+export interface VersionStats {
+  position_id: number;
+  position_title: string;
+  criteria_version: number;
+  stats: {
+    position_id: number;
+    criteria_version: number;
+    total_applications: number;
+    up_to_date_count: number;
+    stale_count: number;
+    missing_result_count: number;
+    rescreen_required_count: number;
+    is_fully_up_to_date: boolean;
+    stale_application_ids: number[];
+    missing_result_application_ids: number[];
+  };
+}
+
+export interface SuggestSkillsResponse {
+  skills: string[];
+  count: number;
+}
+

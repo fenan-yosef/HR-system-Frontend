@@ -104,7 +104,7 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
                   className="w-full flex items-center justify-between p-4 hover:bg-primary/5 transition-colors border-b border-border/30"
                >
                   <div className="flex items-center gap-3">
-                     <div className={`p-2 rounded-lg ${getScoreColor(screening.overall_score).light} ${getScoreColor(screening.overall_score).text}`}>
+                     <div className={`p-2 rounded-lg ${getScoreColor(screening.final_score).light} ${getScoreColor(screening.final_score).text}`}>
                         <Brain size={16} />
                      </div>
                      <div className="text-left">
@@ -114,7 +114,7 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
                               {screening.hard_criteria_met ? 'Passed Criteria' : 'Failed Criteria'}
                            </span>
                         </div>
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Overall Score: {screening.overall_score.toFixed(1)}%</div>
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Weighted Fit: {screening.final_score.toFixed(1)}% (V{screening.evaluation_version})</div>
                      </div>
                   </div>
                   <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-300 ${expandedSections.screening ? '' : '-rotate-90'}`} />
@@ -129,33 +129,49 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
                         className="overflow-hidden"
                      >
                         <div className="p-4 space-y-4">
+                           {/* Scores Grid */}
+                           <div className="grid grid-cols-2 gap-3">
+                              <div className="p-3 rounded-xl bg-background/50 border border-border/30 text-center">
+                                 <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">Rule Score</p>
+                                 <p className="text-lg font-black">{screening.rule_score.toFixed(0)}%</p>
+                              </div>
+                              <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center">
+                                 <p className="text-[9px] font-black uppercase text-primary mb-1">AI Match</p>
+                                 <p className="text-lg font-black text-primary">{screening.ai_score.toFixed(0)}%</p>
+                              </div>
+                           </div>
+
                            {/* Explanation */}
                            <div className="p-4 rounded-xl bg-background/50 border border-border/30">
                               <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
                                  <MessageSquare size={12} /> AI Logic Explanation
                               </p>
-                              <p className="text-sm font-medium leading-relaxed">{screening.explanation}</p>
+                              <p className="text-sm font-medium leading-relaxed italic">"{screening.explanation}"</p>
                            </div>
 
                            {/* Pros/Cons */}
                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div className="space-y-2">
-                                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1.5">
-                                    <CheckCircle2 size={12} /> Key Strengths
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1.5 border-b border-emerald-500/10 pb-1">
+                                    <CheckCircle2 size={12} /> Strong Signals
                                  </p>
-                                 <div className="flex flex-wrap gap-1.5">
+                                 <div className="flex flex-col gap-1.5">
                                     {screening.key_strengths.map((s, i) => (
-                                       <span key={i} className="px-2 py-1 rounded-lg bg-emerald-500/5 text-emerald-600 text-[10px] font-bold border border-emerald-500/10">{s}</span>
+                                       <div key={i} className="text-[11px] font-semibold text-foreground/80 flex items-start gap-1.5">
+                                          <div className="size-1 rounded-full bg-emerald-500 mt-1.5 shrink-0" /> {s}
+                                       </div>
                                     ))}
                                  </div>
                               </div>
                               <div className="space-y-2">
-                                 <p className="text-[10px] font-black uppercase tracking-widest text-red-500 flex items-center gap-1.5">
-                                    <AlertTriangle size={12} /> Weaknesses
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-1.5 border-b border-amber-500/10 pb-1">
+                                    <AlertTriangle size={12} /> Identified Gaps
                                  </p>
-                                 <div className="flex flex-wrap gap-1.5">
+                                 <div className="flex flex-col gap-1.5">
                                     {screening.key_weaknesses.map((w, i) => (
-                                       <span key={i} className="px-2 py-1 rounded-lg bg-red-500/5 text-red-500 text-[10px] font-bold border border-red-500/10">{w}</span>
+                                       <div key={i} className="text-[11px] font-semibold text-foreground/80 flex items-start gap-1.5">
+                                          <div className="size-1 rounded-full bg-amber-500 mt-1.5 shrink-0" /> {w}
+                                       </div>
                                     ))}
                                  </div>
                               </div>
