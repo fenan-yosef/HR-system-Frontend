@@ -16,11 +16,22 @@ import {
   TrendingUp,
   BrainCircuit,
   Search,
-  BookOpen
+  BookOpen,
+  XCircle,
+  AlertTriangle,
+  FileSearch,
+  Brain
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Application } from "@/types/recruitment";
+import type { Application, ScreeningResult } from "@/types/recruitment";
 import { getMediaUrl } from "@/services/apiClient";
+
+function getScoreColor(score: number) {
+  if (score >= 80) return { text: "text-emerald-600", light: "bg-emerald-500/10", border: "border-emerald-500/20", label: "Strong Fit" };
+  if (score >= 60) return { text: "text-teal-600", light: "bg-teal-500/10", border: "border-teal-500/20", label: "Qualified" };
+  if (score >= 40) return { text: "text-amber-600", light: "bg-amber-500/10", border: "border-amber-500/20", label: "Needs Review" };
+  return { text: "text-red-500", light: "bg-red-500/10", border: "border-red-500/20", label: "Low Match" };
+}
 
 interface EvaluationDetailsModalProps {
   application: Application;
@@ -29,14 +40,18 @@ interface EvaluationDetailsModalProps {
 
 export function EvaluationDetailsModal({ application, onClose }: EvaluationDetailsModalProps) {
   const evalData = application.evaluation;
+  const screening = application.screening_result;
+  
   const [activeTab, setActiveTab] = useState<"matched" | "missing">("matched");
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     summary: true,
     skills: true,
-    questions: true
+    questions: true,
+    screening: true,
+    rawLogic: false
   });
   
-  if (!evalData) return null;
+  if (!evalData && !screening) return null;
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
@@ -81,7 +96,80 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
           
-          {/* Summary Section */}
+          {/* New AI Screening Results Section */}
+          {screening && (
+            <section className="border border-border/50 rounded-2xl overflow-hidden bg-gradient-to-br from-primary/5 to-transparent">
+               <button 
+                  onClick={() => toggleSection('screening')}
+                  className="w-full flex items-center justify-between p-4 hover:bg-primary/5 transition-colors border-b border-border/30"
+               >
+                  <div className="flex items-center gap-3">
+                     <div className={`p-2 rounded-lg ${getScoreColor(screening.overall_score).light} ${getScoreColor(screening.overall_score).text}`}>
+                        <Brain size={16} />
+                     </div>
+                     <div className="text-left">
+                        <div className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                           AI Screening Results
+                           <span className={`px-2 py-0.5 rounded-full text-[10px] ${screening.hard_criteria_met ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500'}`}>
+                              {screening.hard_criteria_met ? 'Passed Criteria' : 'Failed Criteria'}
+                           </span>
+                        </div>
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Overall Score: {screening.overall_score.toFixed(1)}%</div>
+                     </div>
+                  </div>
+                  <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-300 ${expandedSections.screening ? '' : '-rotate-90'}`} />
+               </button>
+               
+               <AnimatePresence>
+                  {expandedSections.screening && (
+                     <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                     >
+                        <div className="p-4 space-y-4">
+                           {/* Explanation */}
+                           <div className="p-4 rounded-xl bg-background/50 border border-border/30">
+                              <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                                 <MessageSquare size={12} /> AI Logic Explanation
+                              </p>
+                              <p className="text-sm font-medium leading-relaxed">{screening.explanation}</p>
+                           </div>
+
+                           {/* Pros/Cons */}
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1.5">
+                                    <CheckCircle2 size={12} /> Key Strengths
+                                 </p>
+                                 <div className="flex flex-wrap gap-1.5">
+                                    {screening.key_strengths.map((s, i) => (
+                                       <span key={i} className="px-2 py-1 rounded-lg bg-emerald-500/5 text-emerald-600 text-[10px] font-bold border border-emerald-500/10">{s}</span>
+                                    ))}
+                                 </div>
+                              </div>
+                              <div className="space-y-2">
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-red-500 flex items-center gap-1.5">
+                                    <AlertTriangle size={12} /> Weaknesses
+                                 </p>
+                                 <div className="flex flex-wrap gap-1.5">
+                                    {screening.key_weaknesses.map((w, i) => (
+                                       <span key={i} className="px-2 py-1 rounded-lg bg-red-500/5 text-red-500 text-[10px] font-bold border border-red-500/10">{w}</span>
+                                    ))}
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     </motion.div>
+                  )}
+               </AnimatePresence>
+            </section>
+          )}
+
+          {/* Existing AiEvaluation fields */}
+          {evalData && (
+            <>
           <section className="border border-border/50 rounded-2xl overflow-hidden bg-muted/5">
              <button 
                 onClick={() => toggleSection('summary')}
@@ -245,15 +333,49 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
                 )}
              </AnimatePresence>
           </section>
+            </>
+          )}
+
+          {/* AI Audit Section (Transparency) */}
+          {screening && (
+            <section className="border border-border/50 rounded-2xl overflow-hidden bg-zinc-950">
+               <button 
+                  onClick={() => toggleSection('rawLogic')}
+                  className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+               >
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-zinc-400">
+                     <FileSearch size={14} />
+                     <span>AI Audit (Raw LLM Response)</span>
+                  </div>
+                  <ChevronDown size={16} className={`text-zinc-500 transition-transform duration-300 ${expandedSections.rawLogic ? '' : '-rotate-90'}`} />
+               </button>
+               <AnimatePresence>
+                  {expandedSections.rawLogic && (
+                     <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                     >
+                        <div className="p-4 pt-0">
+                           <pre className="p-4 rounded-xl bg-black text-zinc-500 text-[10px] font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap max-h-48">
+                              {screening.raw_llm_response}
+                           </pre>
+                        </div>
+                     </motion.div>
+                  )}
+               </AnimatePresence>
+            </section>
+          )}
 
           {/* Clustering & Meta */}
           <section className="flex flex-wrap gap-4 items-center justify-between pt-4 border-t border-border/50">
              <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl shadow-sm">
                    <Layers size={14} className="text-blue-400" />
-                   <span className="text-[10px] font-black uppercase">Cluster #{evalData.cluster_id || "N/A"}</span>
+                   <span className="text-[10px] font-black uppercase">Cluster #{evalData?.cluster_id || "N/A"}</span>
                 </div>
-                {evalData.ai_rank && (
+                {evalData?.ai_rank && (
                    <div className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100">
                       Top Rank {evalData.ai_rank}
                    </div>

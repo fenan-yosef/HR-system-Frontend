@@ -10,6 +10,8 @@ import type {
   CreateApplicant,
   ApplicantResponse,
   AiEvaluation,
+  ScreeningResult,
+  ScreeningProgress,
 } from "@/types/recruitment";
 import { apiFetch } from "@/services/apiClient";
 
@@ -54,6 +56,8 @@ export interface FetchApplicationsParams {
   search?: string;
   status?: string;
   min_score?: number;
+  max_score?: number;
+  ordering?: string;
   starts_with?: string;
   applied_today?: boolean;
   position_id?: number | string;
@@ -64,7 +68,9 @@ export function fetchApplications(params: FetchApplicationsParams = {}): Promise
   if (params.page) query.append("page", params.page.toString());
   if (params.search) query.append("search", params.search);
   if (params.status) query.append("status", params.status);
-  if (params.min_score) query.append("min_score", params.min_score.toString());
+  if (params.min_score !== undefined) query.append("min_score", params.min_score.toString());
+  if (params.max_score !== undefined) query.append("max_score", params.max_score.toString());
+  if (params.ordering) query.append("ordering", params.ordering);
   if (params.starts_with) query.append("starts_with", params.starts_with);
   if (params.applied_today) query.append("applied_today", "true");
   if (params.position_id) query.append("position_id", params.position_id.toString());
@@ -72,6 +78,10 @@ export function fetchApplications(params: FetchApplicationsParams = {}): Promise
   const queryString = query.toString();
   const endpoint = `/applicant-applications/${queryString ? "?" + queryString : ""}`;
   return apiFetch<PaginatedResponse<Application>>(endpoint, { requiresAuth: true });
+}
+
+export function fetchApplication(applicationId: number): Promise<Application> {
+  return apiFetch<Application>(`/applicant-applications/${applicationId}/`, { requiresAuth: true });
 }
 
 export function fetchApplicationMetrics(): Promise<ApplicationMetrics> {
@@ -105,13 +115,8 @@ export function triggerShortlist(applicationId: number): Promise<AiEvaluation> {
   });
 }
 
-export function batchEvaluateApplications(positionId?: number): Promise<{ evaluated: number }> {
-  return apiFetch<{ evaluated: number }>("/applicant-applications/batch-evaluate/", {
-    method: "POST",
-    body: positionId ? JSON.stringify({ position_id: positionId }) : undefined,
-    requiresAuth: true,
-  });
-}
+// batchEvaluateApplications removed — backend returns 405.
+// Use startScreening + polling instead.
 
 export function fetchPublicJobPositions(): Promise<PaginatedResponse<JobPosition>> {
   return apiFetch<PaginatedResponse<JobPosition>>("/job-positions-public/", { requiresAuth: false });
@@ -178,6 +183,32 @@ export function createEvaluation(data: Partial<AiEvaluation>): Promise<AiEvaluat
   return apiFetch<AiEvaluation>("/recruitment/evaluations/", {
     method: "POST",
     body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
+export function startScreening(jobPositionId: number): Promise<{ id: number; status: string }> {
+  return apiFetch<{ id: number; status: string }>(`/recruitment/screening/start/${jobPositionId}/`, {
+    method: "POST",
+    requiresAuth: true,
+  });
+}
+
+export function getScreeningProgress(jobId: number): Promise<ScreeningProgress> {
+  return apiFetch<ScreeningProgress>(`/recruitment/screening/progress/${jobId}/`, {
+    requiresAuth: true,
+  });
+}
+
+export function getScreeningResults(jobPositionId: number): Promise<ScreeningResult[]> {
+  return apiFetch<ScreeningResult[]>(`/recruitment/screening/${jobPositionId}/results/`, {
+    requiresAuth: true,
+  });
+}
+
+export function retryExtraction(applicationId: number): Promise<any> {
+  return apiFetch<any>(`/applicant-applications/${applicationId}/retry-extraction/`, {
+    method: "POST",
     requiresAuth: true,
   });
 }

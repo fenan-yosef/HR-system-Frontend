@@ -1,131 +1,60 @@
-notes to send to front end for a specific implementation
+# Frontend Integration Guide — AI Screening Dashboard
 
-## New AI Features for Frontend Display
+This guide explains the **intent and logic** behind the screening UI, and exactly how the frontend should implement these features.
 
-The AI evaluation now includes additional features that the frontend should display to enhance user experience:
+---
 
-### 1. Resume Summary
-- **Field**: `summary` (string)
-- **Display**: Show a concise summary of the candidate's resume in the evaluation details.
-- **UI Suggestion**: Collapsible section titled "Resume Summary" with the text.
+## 🚀 1. The Async Screening Workflow
+AI screening is an "Asynchronous Task" because LLMs take time. Your frontend must handle this without freezing the UI or assuming immediate results.
 
-### 2. Skill Gaps Analysis
-- **Field**: `skill_gaps` (object with keys: matched_skills, missing_skills, gaps)
-- **Display**: 
-  - List of matched skills (green checkmarks).
-  - List of missing skills (red warnings).
-  - Suggestions for gaps (e.g., "Consider online courses for Kubernetes").
-- **UI Suggestion**: Tabs or sections: "Matched Skills", "Missing Skills", "Improvement Suggestions".
+### Step-by-Step Logic:
+1.  **Trigger (The "Start" Button):**
+    -   Admin clicks "Screen All Applicants" in a Job View.
+    -   Frontend calls `POST /api/recruitment/screening/start/{job_position_id}/`.
+    -   **Front-end Note:** Store the returned `id` (Screening Job ID) in your local state (e.g., Redux, Vuex, or LocalState).
+2.  **Polling (The Progress Bar):**
+    -   Use a `setInterval` (or a React `useEffect` with Cleanup) to call `GET /api/recruitment/screening/progress/{job_id}/` every 2 seconds.
+    -   **UI Logic:**
+        -   Display a loading bar or circular progress using `progress_percent`.
+        -   Show a "Live Status" label: "Analyzing: [current_applicant]..." to show work is active.
+3.  **Completion:**
+    -   When `status === "completed"`, clear your interval timer.
+    -   Trigger a data refresh or navigate the user to the "Results" tab.
 
-### 3. Interview Questions
-- **Field**: `interview_questions` (array of strings)
-- **Display**: List of generated interview questions tailored to the candidate.
-- **UI Suggestion**: Button to "Generate Interview Questions" or display them in the evaluation panel.
+---
 
-### 4. Clustering
-- **Field**: `cluster_id` (integer)
-- **Display**: Show the cluster group the candidate belongs to for batch processing.
-- **UI Suggestion**: Badge or tag showing "Cluster X" for grouping similar candidates.
+## 📊 2. Building the "Screening Report" UI
+Don't just show a list of names. Use the rich AI data to provide "Decision Support."
 
-### 5. Enhanced Evaluation Details
-- All existing fields remain, plus the new ones.
-- Ensure the evaluation API returns these fields in the response.
+### The Score Gauge
+-   **Field:** `overall_score` (0-100).
+-   **Note:** Use a **color-graded scale** for instant visual sorting:
+    -   **80-100:** Dark Green (Strong Fit)
+    -   **60-79:** Light Green/Blue (Qualified)
+    -   **40-59:** Amber (Needs Review)
+    -   **0-39:** Red (Low Match)
 
-### API Endpoints
-- GET /api/recruitment/evaluations/ - Includes all new fields.
-- POST /api/recruitment/evaluations/ - For creating evaluations with new data.
+### The Pro/Con Insights Panel
+-   **Fields:** `key_strengths` (array), `key_weaknesses` (array).
+-   **Note:** Display these as two columns with bullet points. This is the #1 feature HR uses to decide who to call. Use a checkmark icon for strengths and a warning icon for weaknesses.
 
-### Frontend Implementation Notes
-- Update the evaluation display components to show the new fields.
-- Add interactive elements for skill gaps (e.g., links to learning resources).
-- Ensure mobile responsiveness for the new sections.
-- Add loading states for AI-generated content.
+### The "AI Audit" Modal (Transparency)
+-   **Field:** `raw_llm_response`.
+-   **Note:** If HR questions a score, provide a "View AI Logic" button. This opens a modal showing the raw text response from the model. This builds trust by showing the AI's "thought process."
 
-## API Payloads and Responses
+---
 
-### Per Application Evaluation
-**Endpoint**: POST /api/recruitment/evaluations/
-**Request Payload**:
-```json
-{
-  "application_id": 123
-}
-```
-**Response**:
-```json
-{
-  "evaluation_id": 456,
-  "application_id": 123,
-  "skill_score": 85.5,
-  "experience_score": 78.0,
-  "matching_percentage": 82.0,
-  "semantic_score": 0.85,
-  "keyword_ratio": 0.75,
-  "embedding_model_name": "all-mpnet-base-v2",
-  "matched_keywords": ["python", "machine learning"],
-  "missing_keywords": ["kubernetes", "docker"],
-  "summary": "Experienced Python developer with machine learning skills...",
-  "skill_gaps": {
-    "matched_skills": ["python", "machine learning"],
-    "missing_skills": ["kubernetes", "docker"],
-    "gaps": [
-      {"skill": "kubernetes", "suggestion": "Consider online courses for Kubernetes"}
-    ]
-  },
-  "interview_questions": [
-    "Can you explain your experience with Python?",
-    "Describe a machine learning project you've worked on."
-  ],
-  "cluster_id": 2,
-  "ai_rank": 1,
-  "notes": "Strong fit...",
-  "evaluated_at": "2026-03-16T12:00:00Z"
-}
-```
+## 📂 3. Managing the Applications Page
+This is the central hub. Instead of local sorting, use the API's powerful query params.
 
-### Batch Evaluation
-**Endpoint**: POST /api/recruitment/evaluations/batch/
-**Request Payload**:
-```json
-{
-  "application_ids": [123, 124, 125]
-}
-```
-**Response**:
-```json
-[
-  {
-    "evaluation_id": 456,
-    "application_id": 123,
-    "skill_score": 85.5,
-    "experience_score": 78.0,
-    "matching_percentage": 82.0,
-    "semantic_score": 0.85,
-    "keyword_ratio": 0.75,
-    "embedding_model_name": "all-mpnet-base-v2",
-    "matched_keywords": ["python", "machine learning"],
-    "missing_keywords": ["kubernetes", "docker"],
-    "summary": "Experienced Python developer with machine learning skills...",
-    "skill_gaps": {
-      "matched_skills": ["python", "machine learning"],
-      "missing_skills": ["kubernetes", "docker"],
-      "gaps": [
-        {"skill": "kubernetes", "suggestion": "Consider online courses for Kubernetes"}
-      ]
-    },
-    "interview_questions": [
-      "Can you explain your experience with Python?",
-      "Describe a machine learning project you've worked on."
-    ],
-    "cluster_id": 2,
-    "ai_rank": 1,
-    "notes": "Strong fit...",
-    "evaluated_at": "2026-03-16T12:00:00Z"
-  },
-  // Similar for other applications
-]
-```
+### Implementation Tips:
+-   **Server-Side Sorting:** To show top-ranking candidates first, always include `ordering=-screening_result__overall_score` (or similar) in your list GET call.
+-   **Filter Sidebar:** Implement a sidebar with sliders for `Min Score` (e.g., 0 to 100) that updates the `min_score` query param in real-time.
+-   **Status Badges:** Map `hard_criteria_met` to a clear visual badge. If `false`, the candidate should be visually de-prioritized or marked as "Failed Requirements."
 
-### GET Evaluations
-**Endpoint**: GET /api/recruitment/evaluations/
-**Response**: Array of evaluation objects as above.
+---
+
+## 💡 Error Handling & UX
+-   **Offline AI:** If the AI service is offline, the status will go to `error`. Show a "🤖 AI Service Offline" toast to the user.
+-   **Retry Logic:** If a specific applicant fails screening (e.g., bad PDF), allow the HR user to click a "Re-try Extraction" button on that specific row.
+-   **Empty States:** If no screening has been run yet, show a clear "Click to analyze applicants" hero button instead of an empty table.

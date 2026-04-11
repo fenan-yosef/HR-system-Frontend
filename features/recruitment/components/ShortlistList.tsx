@@ -19,7 +19,6 @@ import {
   inviteToInterview,
   hireApplicant,
   fetchApplicationMetrics,
-  batchEvaluateApplications,
 } from "@/services/recruitmentService";
 import {
   ShortlistEntry,
@@ -50,18 +49,9 @@ export function ShortlistList() {
   const handleGenerateReport = async () => {
     try {
       setIsGeneratingReport(true);
-      const report = await batchEvaluateApplications();
-      window.alert(
-        `Batch evaluation complete. Evaluated ${report.evaluated ?? 0} applications.`,
-      );
-      await loadShortlistPageData();
-    } catch (error) {
-      const status = getApiErrorStatus(error);
-      if (status === 403) {
-        window.alert("You do not have permission to run batch evaluation.");
-      } else {
-        window.alert("Could not generate report at this time.");
-      }
+      // batchEvaluateApplications was removed (405 from backend).
+      // Redirect to screening instead.
+      window.alert("Batch evaluation has been replaced by the new AI Screening workflow. Please use the screening page per job position.");
     } finally {
       setIsGeneratingReport(false);
     }

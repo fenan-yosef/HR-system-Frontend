@@ -32,6 +32,10 @@ export interface JobPosition {
   posted_date: string;
   closed_date: string | null;
   created_at: string;
+  // Screening fields
+  min_gpa?: number;
+  required_skills?: string[];
+  required_certificates?: string[];
 }
 
 export interface CreateJobPosition {
@@ -41,6 +45,9 @@ export interface CreateJobPosition {
   status?: JobStatus;
   posted_date: string;
   closed_date?: string;
+  min_gpa?: number;
+  required_skills?: string[];
+  required_certificates?: string[];
 }
 
 export interface Department {
@@ -105,6 +112,12 @@ export interface Application {
     submitted_at: string;
   };
   evaluation?: AiEvaluation;
+  extracted_resume?: {
+    has_json: boolean;
+    raw_llm_response: string;
+    extracted_json: any;
+  };
+  screening_result?: ScreeningResult;
   status: string;
   submitted_at: string;
   created_at: string;
@@ -149,4 +162,25 @@ export interface ApplicantResponse {
   submitted_at: string;
   tracking_code: string;
   tracking_code_sent_at: string;
+}
+
+export interface ScreeningResult {
+  applicant_name: string;
+  overall_score: number;
+  status: "passed" | "failed";
+  hard_criteria_met: boolean;
+  explanation: string;
+  key_strengths: string[];
+  key_weaknesses: string[];
+  raw_llm_response: string;
+  application_id?: number;
+}
+
+export interface ScreeningProgress {
+  status: "pending" | "running" | "completed" | "failed" | "error";
+  progress_percent: number;
+  processed_count: number;
+  total_count: number;
+  current_applicant?: string;
+  error?: string;
 }
