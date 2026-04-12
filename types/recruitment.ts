@@ -154,6 +154,7 @@ export interface Application {
   };
   screening_result?: ScreeningResult;
   status: string;
+  applicant_note?: string;
   submitted_at: string;
   created_at: string;
   updated_at: string;

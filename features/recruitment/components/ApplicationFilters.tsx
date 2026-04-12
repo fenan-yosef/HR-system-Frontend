@@ -2,7 +2,18 @@
 
 import React from "react";
 import { Input } from "@/components/ui/input";
-import { Search, X, Loader2, CalendarCheck, Filter, SlidersHorizontal, Trash2, Wand2, Download } from "lucide-react";
+import { 
+  Search, 
+  X, 
+  Loader2, 
+  CalendarCheck, 
+  Filter, 
+  SlidersHorizontal, 
+  Trash2, 
+  Wand2, 
+  Download 
+} from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -94,7 +105,8 @@ export function ApplicationFilters({
               ) : (
                 <Wand2 className="size-4" />
               )}
-              {isBatchEvaluating ? "Navigating..." : "Screen All Applicants"}
+              {isBatchEvaluating ? "Loading..." : "Screen All Applicants"}
+
             </Button>
           </div>
         )}
