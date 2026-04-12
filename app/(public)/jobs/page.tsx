@@ -12,13 +12,10 @@ import { Department } from "@/types/department";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
-  Share2, Briefcase, Globe,
-  Clock, ArrowRight,
-  Sparkles, Search, Laptop,
-  Users, Filter
+  Share2, Briefcase, ArrowRight,
+  Search, Users, Filter
 } from "lucide-react";
 import { getJobApplyPath } from "@/lib/utils";
-import { cn } from "@/lib/utils";
 
 export default function PublicJobsPage() {
   const [jobs, setJobs] = useState<JobPosition[]>([]);
@@ -103,8 +100,6 @@ export default function PublicJobsPage() {
                <h1 className="text-xl font-black tracking-tight">Careers</h1>
                <div className="flex items-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
                  <span className="flex items-center gap-1"><Users size={10} /> {jobs.length} Open Roles</span>
-                 <span className="opacity-20">|</span>
-                 <span className="flex items-center gap-1"><Globe size={10} /> Remote Friendly</span>
                </div>
              </div>
           </div>
@@ -139,28 +134,7 @@ export default function PublicJobsPage() {
       </header>
 
       <main className="max-w-7xl mx-auto px-6 md:px-12 py-10 space-y-10">
-        {/* Statistics/Badges Bar */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-           {[
-             { label: "Engineering", count: jobs.filter(j => getDeptName(j.department).toLowerCase().includes('eng')).length, icon: Laptop, color: "blue" },
-             { label: "Design", count: jobs.filter(j => getDeptName(j.department).toLowerCase().includes('design')).length, icon: Sparkles, color: "violet" },
-             { label: "Operations", count: jobs.filter(j => getDeptName(j.department).toLowerCase().includes('op')).length, icon: Globe, color: "emerald" },
-             { label: "Active Now", count: filteredJobs.length, icon: Clock, color: "amber" }
-           ].map((stat, i) => (
-             <div key={i} className="p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-border/40 shadow-sm flex flex-col gap-1">
-               <div className={cn("size-8 rounded-lg flex items-center justify-center mb-1", 
-                 stat.color === 'blue' ? 'bg-blue-500/10 text-blue-600' :
-                 stat.color === 'violet' ? 'bg-violet-500/10 text-violet-600' :
-                 stat.color === 'emerald' ? 'bg-emerald-500/10 text-emerald-600' :
-                 'bg-amber-500/10 text-amber-600'
-               )}>
-                 <stat.icon size={16} />
-               </div>
-               <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{stat.label}</span>
-               <span className="text-xl font-black">{stat.count}</span>
-             </div>
-           ))}
-        </section>
+        {/* Removed non-API statistics bar to keep UI focused on API-driven job fields */}
 
         {/* Jobs Feed */}
         <div className="space-y-6">
@@ -197,15 +171,9 @@ export default function PublicJobsPage() {
                           <div className="flex-1 space-y-4">
                             <div className="space-y-2">
                                <div className="flex flex-wrap items-center gap-2">
-                                 <span className="px-2.5 py-1 rounded-lg bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/10">
-                                   {getDeptName(job.department)}
-                                 </span>
-                                 <span className="px-2.5 py-1 rounded-lg bg-orange-500/5 text-orange-600 text-[10px] font-black uppercase tracking-widest border border-orange-500/10 flex items-center gap-1">
-                                   <Clock size={10} /> Full-time
-                                 </span>
-                                 <span className="px-2.5 py-1 rounded-lg bg-emerald-500/5 text-emerald-600 text-[10px] font-black uppercase tracking-widest border border-emerald-500/10 flex items-center gap-1">
-                                   <Globe size={10} /> Remote OK
-                                 </span>
+                                   <span className="px-2.5 py-1 rounded-lg bg-primary/5 text-primary text-[10px] font-black uppercase tracking-widest border border-primary/10">
+                                     {getDeptName(job.department)}
+                                   </span>
                                </div>
                                <Link href={`/jobs/${job.position_id}`}>
                                  <h3 className="text-2xl font-black group-hover:text-primary transition-colors tracking-tight leading-tight">
@@ -267,27 +235,7 @@ export default function PublicJobsPage() {
           </div>
         </div>
 
-        {/* Culture / Newsletter CTA */}
-        <section className="p-10 md:p-16 rounded-[3rem] bg-zinc-950 text-white overflow-hidden relative group">
-           <div className="absolute top-0 right-0 size-80 bg-primary/20 rounded-full blur-[100px] -mr-40 -mt-40 group-hover:bg-primary/30 transition-all duration-700" />
-           <div className="relative z-10 space-y-6 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white/80 text-[10px] font-black uppercase tracking-widest">
-                <Users size={12} /> Join the Talent Network
-              </div>
-              <h2 className="text-4xl md:text-5xl font-black leading-[1.1] tracking-tight">Not found the right role yet?</h2>
-              <p className="text-white/60 font-medium text-lg leading-relaxed">
-                Connect with our team to stay updated on future opportunities that match your expertise and passion.
-              </p>
-              <div className="pt-4 flex flex-col sm:flex-row gap-4">
-                 <Button className="h-14 px-8 rounded-2xl bg-white text-black font-black uppercase text-xs tracking-widest hover:bg-white/90 transition-all">
-                   Submit Resume
-                 </Button>
-                 <Button variant="outline" className="h-14 px-8 rounded-2xl bg-transparent border-white/20 text-white font-black uppercase text-xs tracking-widest hover:bg-white/10 transition-all">
-                   Follow us on LinkedIn
-                 </Button>
-              </div>
-           </div>
-        </section>
+        {/* Culture / Newsletter CTA removed per request to keep only API-driven fields */}
       </main>
 
       <footer className="py-12 border-t border-border/40 text-center">
