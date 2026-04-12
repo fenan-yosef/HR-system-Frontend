@@ -230,7 +230,8 @@ export default function ApplicationDetailPage() {
                   <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 space-y-3">
                     <div className="flex items-center justify-between">
                        <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">AI MATCH SCORE</span>
-                       <span className="text-xl font-black text-emerald-600">{(app.screening_result.final_score || 0).toFixed(0)}%</span>
+                       <span className="text-xl font-black text-emerald-600">{Number(app.screening_result.final_score || 0).toFixed(0)}%</span>
+
                     </div>
                     <div className="h-2 bg-emerald-500/10 rounded-full overflow-hidden">
                        <motion.div 
@@ -414,7 +415,7 @@ export default function ApplicationDetailPage() {
                                 </div>
                                 <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
                                    <p className="text-[9px] font-black uppercase text-primary mb-1">AI Intuition</p>
-                                   <p className="text-xl font-black text-primary">{app.screening_result.ai_score}%</p>
+                                   <p className="text-xl font-black text-primary">{Number(app.screening_result.ai_score || 0).toFixed(0)}%</p>
                                 </div>
                              </div>
                              

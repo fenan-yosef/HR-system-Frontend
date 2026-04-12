@@ -94,7 +94,8 @@ export function JobPositionManager() {
     try {
       setSuggestingSkills(true);
       // Manual fresh pass (do not use cache)
-      const res = await suggestSkills(formData.description, 12, undefined, false);
+      const res = await suggestSkills(formData.description || "", 12, undefined, false);
+
       if (res.skills && res.skills.length > 0) {
         // Merge with existing skills
         const combined = Array.from(new Set([...(formData.required_skills || []), ...res.skills]));
@@ -122,7 +123,8 @@ export function JobPositionManager() {
     suggestionTimerRef.current = window.setTimeout(async () => {
       try {
         setSuggestionsLoading(true);
-        const res = await suggestSkills(formData.description, 12, undefined, true);
+        const res = await suggestSkills(formData.description || "", 12, undefined, true);
+
         setLiveSuggestions(res.skills || []);
       } catch (e) {
         console.error("Live suggestion failed", e);
