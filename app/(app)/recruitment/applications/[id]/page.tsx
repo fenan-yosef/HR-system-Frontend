@@ -106,6 +106,13 @@ export default function ApplicationDetailPage() {
     );
   }
 
+  function formatBytes(bytes?: number) {
+    if (!bytes || bytes <= 0) return "0 B";
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+  }
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "hired": return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
@@ -214,31 +221,72 @@ export default function ApplicationDetailPage() {
                 <FileText size={14} /> Documents
               </h3>
               <div className="space-y-3">
-                <a
-                  href={getMediaUrl(app.cv_path)}
-                  target="_blank"
-                  className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border-2 border-dashed border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
-                >
-                  <div className="flex items-center gap-3">
-                    <FileText className="size-5 text-red-500" />
-                    <span className="font-bold text-sm">Main Resume / CV</span>
-                  </div>
-                  <Download className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                </a>
-                
+                {/* Prefer applicant.documents if provided by API */}
+                {((app as any)?.applicant?.documents && (app as any).applicant.documents.length > 0) ? (
+                  (app as any).applicant.documents.map((doc: any) => (
+                    <a
+                      key={doc.upload_id || doc.file_path}
+                      href={doc.file_url || getMediaUrl(doc.file_path)}
+                      target="_blank"
+                      className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="size-5 text-red-500" />
+                        <div className="text-left">
+                          <div className="font-bold text-sm truncate">{doc.original_name}</div>
+                          <div className="text-[11px] text-muted-foreground">{doc.document_type} • {formatBytes(doc.size_bytes)} • {new Date(doc.uploaded_at).toLocaleString()}</div>
+                        </div>
+                      </div>
+                      <Download className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </a>
+                  ))
+                ) : (
+                  <>
+                    <a
+                      href={getMediaUrl(app.cv_path)}
+                      target="_blank"
+                      className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border-2 border-dashed border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <FileText className="size-5 text-red-500" />
+                        <span className="font-bold text-sm">Main Resume / CV</span>
+                      </div>
+                      <Download className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                    </a>
+                    {app.certificate_paths && app.certificate_paths.map((p, i) => (
+                      <a key={`cert-${i}`} href={getMediaUrl(p)} target="_blank" className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group">
+                        <div className="flex items-center gap-3">
+                          <FileText className="size-5 text-amber-500" />
+                          <span className="font-bold text-sm">Certificate #{i+1}</span>
+                        </div>
+                        <Download className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                      </a>
+                    ))}
+                  </>
+                )}
+
+                {/* Compact AI match summary in the documents area for quick glance */}
                 {app.screening_result && (
                   <div className="p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/10 space-y-3">
                     <div className="flex items-center justify-between">
-                       <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">AI MATCH SCORE</span>
-                       <span className="text-xl font-black text-emerald-600">{Number(app.screening_result.final_score || 0).toFixed(0)}%</span>
+                       <div className="flex items-center gap-3">
+                         <span className="text-[10px] font-black uppercase text-emerald-600 tracking-widest">AI MATCH SCORE</span>
+                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600">V{app.screening_result.evaluation_version}</span>
+                       </div>
+                       <span className="text-2xl font-black text-emerald-600">{Number(app.screening_result.final_score || 0).toFixed(0)}%</span>
 
                     </div>
                     <div className="h-2 bg-emerald-500/10 rounded-full overflow-hidden">
                        <motion.div 
                          initial={{ width: 0 }}
-                         animate={{ width: `${app.screening_result.final_score}%` }}
+                         animate={{ width: `${Number(app.screening_result.final_score || 0)}%` }}
                          className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
                        />
+                    </div>
+                    <div className="flex items-center gap-4 text-xs font-black uppercase tracking-widest pt-2">
+                      <div className="flex items-center gap-2"><span className="text-muted-foreground">Rule</span><span className="font-black">{Number(app.screening_result.rule_score || 0).toFixed(0)}%</span></div>
+                      <div className="flex items-center gap-2"><span className="text-muted-foreground">AI</span><span className="font-black">{Number(app.screening_result.ai_score || 0).toFixed(0)}%</span></div>
+                      <div className="flex items-center gap-2"><span className="text-muted-foreground">Status</span><span className="font-black">{app.screening_result.status}</span></div>
                     </div>
                   </div>
                 )}
@@ -290,22 +338,56 @@ export default function ApplicationDetailPage() {
                 <div className="space-y-8">
                   {/* AI Summary Section */}
                   {(app.evaluation?.summary || app.screening_result?.explanation) && (
-                    <section className="p-8 rounded-[2.5rem] bg-gradient-to-br from-violet-600/5 to-primary/5 border border-primary/10 space-y-4">
-                       <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-violet-600">
-                          <Brain size={16} /> AI Snapshot Analysis
-                       </div>
-                       <p className="text-lg font-bold leading-relaxed tracking-tight">
-                         "{app.evaluation?.summary || app.screening_result?.explanation}"
-                       </p>
-                       <div className="flex flex-wrap gap-2 pt-2">
-                          {app.screening_result?.key_strengths.slice(0, 3).map((s, i) => (
-                            <span key={i} className="px-3 py-1 bg-emerald-500/10 text-emerald-700 text-[10px] font-black uppercase rounded-lg border border-emerald-500/10">
-                              + {s}
-                            </span>
-                          ))}
-                       </div>
-                    </section>
-                  )}
+                        <section className="p-8 rounded-[2.5rem] bg-gradient-to-br from-violet-600/5 to-primary/5 border border-primary/10 space-y-4">
+                           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-violet-600">
+                              <Brain size={16} /> AI Snapshot Analysis
+                           </div>
+
+                           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <div className="p-4 rounded-2xl bg-background/50 border border-border/30">
+                               <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Weighted Total</p>
+                               <div className="flex items-baseline gap-3">
+                                 <span className="text-3xl font-black">{app.screening_result ? Number(app.screening_result.final_score || 0).toFixed(0) : (app.evaluation?.matching_percentage || 0)}%</span>
+                                 <span className="text-xs font-bold text-muted-foreground">V{app.screening_result?.evaluation_version || ''}</span>
+                               </div>
+                               <p className="text-xs text-muted-foreground mt-2">{app.screening_result?.status?.toUpperCase()}</p>
+                             </div>
+
+                             <div className="p-4 rounded-2xl bg-background/50 border border-border/30">
+                               <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Breakdown</p>
+                               <div className="flex gap-4">
+                                 <div>
+                                   <p className="text-xs font-black text-muted-foreground">Rule</p>
+                                   <p className="text-lg font-black">{app.screening_result ? Number(app.screening_result.rule_score || 0).toFixed(0) : 'N/A'}%</p>
+                                 </div>
+                                 <div>
+                                   <p className="text-xs font-black text-muted-foreground">AI</p>
+                                   <p className="text-lg font-black text-primary">{app.screening_result ? Number(app.screening_result.ai_score || 0).toFixed(0) : 'N/A'}%</p>
+                                 </div>
+                               </div>
+                               <p className="text-xs text-muted-foreground mt-3">Model: {app.screening_result?.screening_model || '—'}</p>
+                             </div>
+
+                             <div className="p-4 rounded-2xl bg-background/50 border border-border/30">
+                               <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Meta</p>
+                               <p className="text-sm font-black">Recommendation: <span className="font-bold">{(app.screening_result?.scoring_breakdown?.recommendation || '').toUpperCase() || (app.evaluation?.fit_label || '—')}</span></p>
+                               <p className="text-xs text-muted-foreground mt-2">Screened: {app.screening_result?.screened_at ? new Date(app.screening_result.screened_at).toLocaleString() : '—'}</p>
+                             </div>
+                           </div>
+
+                           <p className="text-lg font-bold leading-relaxed tracking-tight mt-4">
+                             "{app.evaluation?.summary || app.screening_result?.explanation}"
+                           </p>
+
+                           <div className="flex flex-wrap gap-2 pt-2">
+                              {app.screening_result?.key_strengths.slice(0, 3).map((s, i) => (
+                                <span key={i} className="px-3 py-1 bg-emerald-500/10 text-emerald-700 text-[10px] font-black uppercase rounded-lg border border-emerald-500/10">
+                                  + {s}
+                                </span>
+                              ))}
+                           </div>
+                        </section>
+                      )}
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {/* Skills Breakdown */}
@@ -408,23 +490,57 @@ export default function ApplicationDetailPage() {
                              <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
                                 <ShieldCheck size={14} /> Full Evaluation
                              </h3>
-                             <div className="grid grid-cols-2 gap-4">
-                                <div className="p-4 rounded-2xl bg-muted/20 border border-border/30">
-                                   <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">Rule Score</p>
-                                   <p className="text-xl font-black">{app.screening_result.rule_score}%</p>
+                             <div className="grid grid-cols-1 gap-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="p-4 rounded-2xl bg-muted/20 border border-border/30">
+                                     <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">Rule Score</p>
+                                     <p className="text-xl font-black">{Number(app.screening_result.rule_score || 0).toFixed(0)}%</p>
+                                  </div>
+                                  <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                                     <p className="text-[9px] font-black uppercase text-primary mb-1">AI Intuition</p>
+                                     <p className="text-xl font-black text-primary">{Number(app.screening_result.ai_score || 0).toFixed(0)}%</p>
+                                  </div>
                                 </div>
-                                <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                                   <p className="text-[9px] font-black uppercase text-primary mb-1">AI Intuition</p>
-                                   <p className="text-xl font-black text-primary">{Number(app.screening_result.ai_score || 0).toFixed(0)}%</p>
-                                </div>
-                             </div>
-                             
-                             <div className="pt-4 space-y-4">
-                                <div className="space-y-2">
+
+                                <div className="p-4 rounded-2xl bg-background/50 border border-border/30">
                                    <p className="text-[10px] font-black uppercase text-foreground">Scoring Explanation</p>
                                    <p className="text-sm font-medium leading-relaxed text-muted-foreground">
                                      {app.screening_result.explanation}
                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="p-4 rounded-2xl bg-muted/10 border border-border/30">
+                                    <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">AI Breakdown (categories)</p>
+                                    {app.screening_result.scoring_breakdown?.ai ? (
+                                      <div className="space-y-2 text-sm font-medium">
+                                        {Object.entries(app.screening_result.scoring_breakdown.ai).map(([k, v]) => (
+                                          <div key={k} className="flex items-center justify-between">
+                                            <div className="text-muted-foreground text-xs uppercase">{k.replace(/_/g, ' ')}</div>
+                                            <div className="font-black">{String(v)}</div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="text-sm text-muted-foreground">No AI breakdown available.</div>
+                                    )}
+                                  </div>
+
+                                  <div className="p-4 rounded-2xl bg-muted/10 border border-border/30">
+                                    <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Rule Breakdown</p>
+                                    {app.screening_result.scoring_breakdown?.rule ? (
+                                      <div className="space-y-2 text-sm font-medium">
+                                        {Object.entries(app.screening_result.scoring_breakdown.rule).map(([k, v]) => (
+                                          <div key={k} className="flex items-center justify-between">
+                                            <div className="text-muted-foreground text-xs uppercase">{k.replace(/_/g, ' ')}</div>
+                                            <div className="font-black">{String(v)}</div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    ) : (
+                                      <div className="text-sm text-muted-foreground">No rule breakdown available.</div>
+                                    )}
+                                  </div>
                                 </div>
                              </div>
                           </div>

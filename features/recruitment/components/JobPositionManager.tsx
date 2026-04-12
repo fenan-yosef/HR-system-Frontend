@@ -438,6 +438,20 @@ export function JobPositionManager() {
                           <Calendar className="size-3.5" /> Posted {new Date(pos.posted_date).toLocaleDateString()}
                         </span>
                       </div>
+                          {pos.required_skills && pos.required_skills.length > 0 && (
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              {pos.required_skills.slice(0, 8).map((s) => (
+                                <span key={s} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-wider border border-primary/20">{s}</span>
+                              ))}
+                            </div>
+                          )}
+
+                          <div className="mt-2 text-xs text-muted-foreground flex gap-4">
+                            <span>Shortlist: <strong className="text-foreground">{pos.shortlist_size ?? '—'}</strong></span>
+                            {pos.min_years_experience ? <span>Min Exp: <strong className="text-foreground">{pos.min_years_experience} yrs</strong></span> : null}
+                            {pos.ai_config?.min_pass_score ? <span>Pass: <strong className="text-foreground">{pos.ai_config.min_pass_score}%</strong></span> : null}
+                            <span>V{pos.criteria_version}</span>
+                          </div>
                     </div>
                   </div>
 

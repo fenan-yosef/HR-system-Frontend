@@ -382,7 +382,9 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                 </div>
               </div>
 
-              {Object.entries(jobGroups).map(([jobTitle, jobApps]) => (
+              {Object.entries(jobGroups).map(([jobTitle, jobApps]) => {
+                const jobSkills = (jobApps?.[0]?.position as any)?.required_skills || [];
+                return (
                 <div key={jobTitle} className="space-y-6">
                   <div className="flex items-center gap-4">
                     <span className="text-xl font-black tracking-tight">{jobTitle}</span>
@@ -391,6 +393,14 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                       {jobApps.length} APPS
                     </span>
                   </div>
+
+                  {jobSkills.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {jobSkills.slice(0, 8).map((s: string) => (
+                        <span key={s} className="px-3 py-1 rounded-full bg-muted/10 text-muted-foreground text-[10px] font-black uppercase">{s}</span>
+                      ))}
+                    </div>
+                  )}
 
                   <div className="grid gap-4">
                     {jobApps.map((app) => (
@@ -423,6 +433,14 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                   <span>{app.email}</span>
                                   <span className="opacity-30">•</span>
                                   <span>{new Date(app.submitted_at).toLocaleDateString()}</span>
+                                </div>
+                                {/* Quick strengths / keywords */}
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {((app.screening_result?.key_strengths as string[]) || app.evaluation?.matched_keywords || [])
+                                    .slice(0, 3)
+                                    .map((s, idx) => (
+                                      <span key={`${s}-${idx}`} className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black">{s}</span>
+                                    ))}
                                 </div>
                               </div>
                             </div>
@@ -493,7 +511,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                     ))}
                   </div>
                 </div>
-              ))}
+              );})}
             </div>
           )}
         </div>

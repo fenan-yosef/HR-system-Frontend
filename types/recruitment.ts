@@ -145,7 +145,16 @@ export interface Application {
     phone: string;
     cv_path: string;
     submitted_at: string;
+    documents?: Array<{
+      document_id: number;
+      document_type: string;
+      size_bytes?: number;
+      uploaded_at: string;
+      file_path?: string;
+    }>;
   };
+  // Optional legacy list of certificate file paths
+  certificate_paths?: string[];
   evaluation?: AiEvaluation;
   extracted_resume?: {
     has_json: boolean;
@@ -216,8 +225,20 @@ export interface ScreeningResult {
   explanation: string;
   key_strengths: string[];
   key_weaknesses: string[];
-  scoring_breakdown: any;
+  scoring_breakdown: {
+    ai?: Record<string, any>;
+    rule?: Record<string, any>;
+    blend?: {
+      rule?: number;
+      ai?: number;
+    };
+    recommendation?: string;
+    [key: string]: any;
+  };
   raw_llm_response: string;
+  // Additional metadata
+  screening_model?: string;
+  screened_at?: string;
   // Legacy fields (keeping for compatibility if needed during migration)
   overall_score?: number;
 }
