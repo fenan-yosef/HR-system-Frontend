@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   JobPosition,
   CreateJobPosition,
@@ -57,6 +57,9 @@ export function JobPositionManager() {
   };
 
   const [suggestingSkills, setSuggestingSkills] = useState(false);
+  const [liveSuggestions, setLiveSuggestions] = useState<string[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const suggestionTimerRef = useRef<number | null>(null);
 
   const [formData, setFormData] = useState<CreateJobPosition>({
     title: "",
@@ -90,7 +93,8 @@ export function JobPositionManager() {
     if (!formData.description || formData.description.length < 20) return;
     try {
       setSuggestingSkills(true);
-      const res = await suggestSkills(formData.description);
+      // Manual fresh pass (do not use cache)
+      const res = await suggestSkills(formData.description, 12, undefined, false);
       if (res.skills && res.skills.length > 0) {
         // Merge with existing skills
         const combined = Array.from(new Set([...(formData.required_skills || []), ...res.skills]));
@@ -102,6 +106,37 @@ export function JobPositionManager() {
       setSuggestingSkills(false);
     }
   };
+
+  // Debounced live suggestions while typing (use cache by default)
+  useEffect(() => {
+    if (!formData.description || formData.description.length < 20) {
+      setLiveSuggestions([]);
+      return;
+    }
+
+    // Clear previous timer
+    if (suggestionTimerRef.current) {
+      window.clearTimeout(suggestionTimerRef.current as number);
+    }
+
+    suggestionTimerRef.current = window.setTimeout(async () => {
+      try {
+        setSuggestionsLoading(true);
+        const res = await suggestSkills(formData.description, 12, undefined, true);
+        setLiveSuggestions(res.skills || []);
+      } catch (e) {
+        console.error("Live suggestion failed", e);
+      } finally {
+        setSuggestionsLoading(false);
+      }
+    }, 500);
+
+    return () => {
+      if (suggestionTimerRef.current) {
+        window.clearTimeout(suggestionTimerRef.current as number);
+      }
+    };
+  }, [formData.description]);
 
   useEffect(() => {
     loadInitialData();
@@ -523,6 +558,35 @@ export function JobPositionManager() {
                       onChange={e => setFormData({ ...formData, description: e.target.value })}
                     />
                   </div>
+
+                  {/* Live Suggestion Chips */}
+                  {formData.description && formData.description.length >= 20 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="text-xs font-black uppercase tracking-widest text-muted-foreground">Suggested Skills</div>
+                        <div className="text-[10px] text-muted-foreground">Debounced live suggestions</div>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {suggestionsLoading ? (
+                          <div className="text-sm text-muted-foreground">Loading suggestions...</div>
+                        ) : liveSuggestions.length === 0 ? (
+                          <div className="text-sm text-muted-foreground">No suggestions yet. Type more to get AI suggestions.</div>
+                        ) : (
+                          liveSuggestions.map(s => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => addSkill(s)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${formData.required_skills?.includes(s) ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted/20 text-muted-foreground border border-border/30'} text-[10px] font-black uppercase tracking-wider`}
+                            >
+                              {s}
+                              {!formData.required_skills?.includes(s) && <Plus className="size-3" />}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Screening Criteria Header */}
                   <div className="flex items-center gap-2 py-2 border-b border-border/50">

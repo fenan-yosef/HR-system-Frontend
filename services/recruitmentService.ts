@@ -223,10 +223,25 @@ export function reEvaluate(jobPositionId: number, customParams?: any): Promise<a
   });
 }
 
-export function suggestSkills(description: string, limit: number = 10): Promise<SuggestSkillsResponse> {
+export function suggestSkills(
+  description: string,
+  limit: number = 10,
+  position_id?: number,
+  use_cache: boolean = true,
+): Promise<SuggestSkillsResponse> {
+  const body: any = { description, limit };
+  if (position_id !== undefined) body.position_id = position_id;
+  if (use_cache !== undefined) body.use_cache = use_cache;
+
   return apiFetch<SuggestSkillsResponse>("/job-positions/suggest-skills/", {
     method: "POST",
-    body: JSON.stringify({ description, limit }),
+    body: JSON.stringify(body),
+    requiresAuth: true,
+  });
+}
+
+export function getSkillSuggestions(positionId: number): Promise<SuggestSkillsResponse> {
+  return apiFetch<SuggestSkillsResponse>(`/job-positions/${positionId}/skill-suggestions/`, {
     requiresAuth: true,
   });
 }

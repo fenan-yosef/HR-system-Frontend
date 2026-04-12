@@ -254,5 +254,7 @@ export interface VersionStats {
 export interface SuggestSkillsResponse {
   skills: string[];
   count: number;
+  source?: string;
+  position_id?: number;
 }
 

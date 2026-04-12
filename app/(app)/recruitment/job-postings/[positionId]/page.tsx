@@ -11,6 +11,7 @@ import {
     fetchJobPosition,
     fetchApplications,
     updateJobPosition,
+    getSkillSuggestions,
 } from "@/services/recruitmentService";
 import { getMediaUrl, apiDownload } from "@/services/apiClient";
 import { Card } from "@/components/ui/card";
@@ -46,6 +47,9 @@ export default function JobDetailsPage() {
     const positionId = Number(params.positionId);
 
     const [job, setJob] = useState<JobPosition | null>(null);
+    const [skillSuggestions, setSkillSuggestions] = useState<string[]>([]);
+    const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+    const [selectedSuggestionChips, setSelectedSuggestionChips] = useState<string[]>([]);
     const [candidates, setCandidates] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -119,6 +123,17 @@ export default function JobDetailsPage() {
 
             setCandidates(relatedApps);
             setLoading(false);
+            // Load saved skill suggestions for this job (if any)
+            try {
+                setLoadingSuggestions(true);
+                getSkillSuggestions(positionId).then(res => {
+                    setSkillSuggestions(res.skills || []);
+                }).catch(() => {
+                    setSkillSuggestions([]);
+                }).finally(() => setLoadingSuggestions(false));
+            } catch (e) {
+                setLoadingSuggestions(false);
+            }
         });
     }, [positionId]);
 
@@ -282,6 +297,71 @@ export default function JobDetailsPage() {
                                     </div>
                                 </div>
                             )}
+
+                            {/* Skill Suggestions Card */}
+                            <div className="pt-4">
+                                <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Suggested Skills</h4>
+                                <div className="mt-2 p-3 rounded-2xl bg-muted/10 border border-border/40">
+                                    {loadingSuggestions ? (
+                                        <div className="text-sm text-muted-foreground">Loading suggestions…</div>
+                                    ) : skillSuggestions.length === 0 ? (
+                                        <div className="text-sm text-muted-foreground">No saved suggestions for this position.</div>
+                                    ) : (
+                                        <div className="flex flex-wrap gap-2">
+                                            {skillSuggestions.map(s => {
+                                                const selected = selectedSuggestionChips.includes(s);
+                                                return (
+                                                    <button
+                                                        key={s}
+                                                        onClick={() => setSelectedSuggestionChips(prev => prev.includes(s) ? prev.filter(x => x !== s) : [...prev, s])}
+                                                        className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${selected ? 'bg-primary text-white border-primary' : 'bg-background text-muted-foreground border-border/30'}`}>
+                                                        {s}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {skillSuggestions.length > 0 && (
+                                        <div className="mt-3 flex gap-2">
+                                            <button
+                                                onClick={async () => {
+                                                    if (!job) return;
+                                                    if (selectedSuggestionChips.length === 0) return;
+                                                    try {
+                                                        const merged = Array.from(new Set([...(job.required_skills || []), ...selectedSuggestionChips]));
+                                                        const updated = await updateJobPosition(job.position_id, { required_skills: merged });
+                                                        setJob(updated);
+                                                        setSelectedSuggestionChips([]);
+                                                    } catch (e) {
+                                                        console.error('Failed to add suggested skills', e);
+                                                    }
+                                                }}
+                                                className="px-4 py-2 rounded-xl bg-primary text-primary-foreground font-black uppercase tracking-widest"
+                                            >
+                                                Add Selected to Job
+                                            </button>
+                                            <button
+                                                onClick={async () => {
+                                                    // Refresh suggestions from server
+                                                    try {
+                                                        setLoadingSuggestions(true);
+                                                        const res = await getSkillSuggestions(positionId);
+                                                        setSkillSuggestions(res.skills || []);
+                                                    } catch (e) {
+                                                        console.error('Failed to refresh suggestions', e);
+                                                    } finally {
+                                                        setLoadingSuggestions(false);
+                                                    }
+                                                }}
+                                                className="px-4 py-2 rounded-xl bg-muted/20 text-muted-foreground font-black uppercase tracking-widest"
+                                            >
+                                                Refresh
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     </Card>
                 </div>

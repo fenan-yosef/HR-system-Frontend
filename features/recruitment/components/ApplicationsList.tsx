@@ -435,7 +435,8 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                   (app.screening_result?.overall_score || 0) >= 60 ? 'text-teal-600' :
                                     (app.screening_result?.overall_score || 0) >= 40 ? 'text-amber-600' : 'text-red-500'
                                   }`}>
-                                  {(app.screening_result?.overall_score || app.evaluation?.matching_percentage || 0).toFixed(0)}%
+                                  {Number(app.screening_result?.overall_score || app.evaluation?.matching_percentage || 0).toFixed(0)}%
+
                                 </span>
                               </div>
 
