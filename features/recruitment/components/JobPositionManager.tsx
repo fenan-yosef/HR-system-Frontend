@@ -12,7 +12,8 @@ import {
   createJobPosition,
   fetchDepartments,
   updateJobPosition,
-  suggestSkills
+  suggestSkills,
+  updateCustomApplicationFields
 } from "@/services/recruitmentService";
 import { Card } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,10 +32,30 @@ import {
   Copy,
   Check,
   BrainCircuit,
-  Loader2
+  Loader2,
+  Trash2,
+  Settings2,
+  GripVertical
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CustomApplicationField, CustomFieldType } from "@/types/recruitment";
+
+const FIELD_TYPES: { label: string; value: CustomFieldType }[] = [
+  { label: "Short Text", value: "short_text" },
+  { label: "Long Text", value: "long_text" },
+  { label: "Number", value: "number" },
+  { label: "Integer", value: "integer" },
+  { label: "Boolean", value: "boolean" },
+  { label: "Select (Dropdown)", value: "select" },
+  { label: "Multi Select", value: "multi_select" },
+  { label: "Date", value: "date" },
+  { label: "File", value: "file" },
+  { label: "File List", value: "file_list" },
+  { label: "Email", value: "email" },
+  { label: "URL", value: "url" },
+  { label: "Phone", value: "phone" },
+];
 
 export function JobPositionManager() {
   const [positions, setPositions] = useState<JobPosition[]>([]);
@@ -88,6 +109,31 @@ export function JobPositionManager() {
       }
     }
   });
+
+  const [customFields, setCustomFields] = useState<CustomApplicationField[]>([]);
+
+  const addCustomField = () => {
+    const newField: CustomApplicationField = {
+      label: "",
+      type: "short_text",
+      required: false,
+      include_in_ai: true,
+      order: customFields.length + 1,
+    };
+    setCustomFields([...customFields, newField]);
+  };
+
+  const removeCustomField = (index: number) => {
+    const newFields = [...customFields];
+    newFields.splice(index, 1);
+    setCustomFields(newFields);
+  };
+
+  const updateCustomField = (index: number, updates: Partial<CustomApplicationField>) => {
+    const newFields = [...customFields];
+    newFields[index] = { ...newFields[index], ...updates };
+    setCustomFields(newFields);
+  };
 
   const handleSuggestSkills = async () => {
     if (!formData.description || formData.description.length < 20) return;
@@ -222,15 +268,28 @@ export function JobPositionManager() {
       setIsSubmitting(true);
 
       // Ensure posted_date is always today's date when sending
-      await createJobPosition({
+      const createdJob = await createJobPosition({
         ...formData,
         title: normalizedTitle,
         description: normalizedDescription || undefined,
         posted_date: getToday()
       });
 
+      // If we have custom fields, save them now
+      if (customFields.length > 0 && createdJob.position_id) {
+        try {
+          await updateCustomApplicationFields(createdJob.position_id, {
+            custom_application_fields: customFields
+          });
+        } catch (err) {
+          console.error("Failed to save custom fields for new job", err);
+          // We don't block the whole flow, but maybe show a warning later
+        }
+      }
+
       setIsModalOpen(false);
       await loadPositions();
+      setCustomFields([]);
       setFormData({
         title: "",
         department: departments[0]?.department_id || 0,
@@ -690,6 +749,104 @@ export function JobPositionManager() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Custom Application Fields Section */}
+                  <div className="space-y-4 pt-4 border-t border-border/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Settings2 className="size-4 text-primary" />
+                        <h4 className="text-xs font-black uppercase tracking-widest">Custom Application Fields</h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addCustomField}
+                        className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
+                      >
+                        <Plus className="size-3" /> Add Field
+                      </button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {customFields.length === 0 ? (
+                        <p className="text-[10px] text-muted-foreground italic text-center py-4 border border-dashed rounded-xl">
+                          No custom fields added. Default fields (Name, Email, Phone, CV) are always included.
+                        </p>
+                      ) : (
+                        customFields.map((field, idx) => (
+                          <div key={idx} className="p-4 rounded-2xl bg-muted/20 border border-border/50 space-y-4 relative group/field">
+                            <button
+                              type="button"
+                              onClick={() => removeCustomField(idx)}
+                              className="absolute top-2 right-2 p-1.5 text-muted-foreground hover:text-destructive opacity-0 group-hover/field:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Label</Label>
+                                <Input
+                                  value={field.label}
+                                  onChange={e => updateCustomField(idx, { label: e.target.value })}
+                                  placeholder="e.g. Expected Salary"
+                                  className="h-9 rounded-xl text-xs"
+                                />
+                              </div>
+                              <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Type</Label>
+                                <select
+                                  value={field.type}
+                                  onChange={(e) => updateCustomField(idx, { type: e.target.value as CustomFieldType })}
+                                  className="flex h-9 w-full rounded-xl border border-border/50 bg-background px-3 py-1 text-xs font-medium focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                >
+                                  {FIELD_TYPES.map(t => (
+                                    <option key={t.value} value={t.value}>{t.label}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-6">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  id={`req-new-${idx}`}
+                                  checked={field.required}
+                                  onChange={e => updateCustomField(idx, { required: e.target.checked })}
+                                  className="h-4 w-4 rounded border-border/50 text-primary focus:ring-primary/20"
+                                />
+                                <Label htmlFor={`req-new-${idx}`} className="text-[10px] font-black uppercase tracking-widest cursor-pointer">Required</Label>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  id={`ai-new-${idx}`}
+                                  checked={field.include_in_ai}
+                                  onChange={e => updateCustomField(idx, { include_in_ai: e.target.checked })}
+                                  className="h-4 w-4 rounded border-border/50 text-primary focus:ring-primary/20"
+                                />
+                                <Label htmlFor={`ai-new-${idx}`} className="flex items-center text-[10px] font-black uppercase tracking-widest cursor-pointer">
+                                  AI Screening <BrainCircuit className="size-3 ml-1 text-primary" />
+                                </Label>
+                              </div>
+                            </div>
+
+                            {(field.type === "select" || field.type === "multi_select") && (
+                              <div className="space-y-1.5">
+                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Options (comma separated)</Label>
+                                <Input
+                                  value={field.options?.join(", ") || ""}
+                                  onChange={e => updateCustomField(idx, { options: e.target.value.split(",").map(s => s.trim()).filter(Boolean) })}
+                                  placeholder="Red, Blue, Green"
+                                  className="h-9 rounded-xl text-xs"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
 
                 <div className="p-8 bg-muted/20 border-t border-border/50 space-y-6">
@@ -712,7 +869,7 @@ export function JobPositionManager() {
                       disabled={isSubmitting}
                       className="flex-[2] rounded-xl bg-primary px-4 py-3 text-xs font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-98 transition-all disabled:opacity-60"
                     >
-                      {isSubmitting ? "Creating..." : "Save & Open to Applicants"}
+                      {isSubmitting ? "Creating..." : "Publish"}
                     </button>
                   </div>
                 </div>

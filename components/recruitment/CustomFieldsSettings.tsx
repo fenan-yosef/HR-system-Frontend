@@ -12,14 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
 import { 
   Plus, 
   Trash2, 
@@ -160,37 +152,35 @@ export function CustomFieldsSettings({ positionId }: CustomFieldsSettingsProps) 
 
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Type</Label>
-                  <Select 
-                    value={field.type} 
-                    onValueChange={(val: CustomFieldType) => updateField(index, { type: val })}
+                  <select
+                    value={field.type}
+                    onChange={(e) => updateField(index, { type: e.target.value as CustomFieldType })}
+                    className="flex h-9 w-full rounded-xl border border-border/50 bg-background px-3 py-1 text-xs font-medium focus:ring-2 focus:ring-primary/20 outline-none transition-all"
                   >
-                    <SelectTrigger className="h-9 rounded-xl border-border/50 text-xs">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FIELD_TYPES.map((type) => (
-                        <SelectItem key={type.value} value={type.value} className="text-xs">
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    {FIELD_TYPES.map(t => (
+                      <option key={t.value} value={t.value}>{t.label}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="flex items-center gap-6 pt-5">
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`req-${index}`} 
-                      checked={field.required} 
-                      onCheckedChange={(checked) => updateField(index, { required: !!checked })}
+                    <input
+                      type="checkbox"
+                      id={`req-${index}`}
+                      checked={field.required}
+                      onChange={e => updateField(index, { required: e.target.checked })}
+                      className="h-4 w-4 rounded border-border/50 text-primary focus:ring-primary/20"
                     />
                     <Label htmlFor={`req-${index}`} className="text-[10px] font-black uppercase tracking-widest cursor-pointer">Required</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Checkbox 
-                      id={`ai-${index}`} 
-                      checked={field.include_in_ai} 
-                      onCheckedChange={(checked) => updateField(index, { include_in_ai: !!checked })}
+                    <input
+                      type="checkbox"
+                      id={`ai-${index}`}
+                      checked={field.include_in_ai}
+                      onChange={e => updateField(index, { include_in_ai: e.target.checked })}
+                      className="h-4 w-4 rounded border-border/50 text-primary focus:ring-primary/20"
                     />
                     <Label htmlFor={`ai-${index}`} className="flex items-center text-[10px] font-black uppercase tracking-widest cursor-pointer">
                       AI <BrainCircuit className="w-3 h-3 ml-1 text-primary" />
