@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Input } from "@/components/ui/input";
-import { Search, X, Loader2, CalendarCheck, Filter, SlidersHorizontal, Trash2 } from "lucide-react";
+import { Search, X, Loader2, CalendarCheck, Filter, SlidersHorizontal, Trash2, Wand2, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
@@ -13,11 +13,16 @@ interface ApplicationFiltersProps {
   appliedToday: boolean;
   selectedJobId: string | number;
   jobPositions: { position_id: number; title: string }[];
+  isExporting: boolean;
+  isBatchEvaluating?: boolean;
+  onBatchEvaluate?: () => void;
+  canBatchEvaluate?: boolean;
   onSearchChange: (value: string) => void;
   onStatusChange: (value: string) => void;
   onMinScoreChange: (value: number) => void;
   onAppliedTodayChange: (value: boolean) => void;
   onJobChange: (value: string) => void;
+  onExport: () => void;
   onReset: () => void;
   sortBy: string;
   onSortByChange: (val: string) => void;
@@ -30,11 +35,16 @@ export function ApplicationFilters({
   appliedToday,
   selectedJobId,
   jobPositions = [],
+  isExporting,
+  isBatchEvaluating,
+  onBatchEvaluate,
+  canBatchEvaluate,
   onSearchChange,
   onStatusChange,
   onMinScoreChange,
   onAppliedTodayChange,
   onJobChange,
+  onExport,
   onReset,
   sortBy,
   onSortByChange,
@@ -69,6 +79,25 @@ export function ApplicationFilters({
             </button>
           )}
         </div>
+
+        {/* Global Evaluation Trigger */}
+        {canBatchEvaluate && (
+          <div className="space-y-2">
+            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AI Intelligence</Label>
+            <Button
+              className="w-full h-11 rounded-xl font-bold flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all active:scale-95"
+              onClick={onBatchEvaluate}
+              disabled={isBatchEvaluating}
+            >
+              {isBatchEvaluating ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Wand2 className="size-4" />
+              )}
+              {isBatchEvaluating ? "Navigating..." : "Screen All Applicants"}
+            </Button>
+          </div>
+        )}
 
         <div className="space-y-4">
           <div className="space-y-2">
@@ -125,8 +154,8 @@ export function ApplicationFilters({
             <button
               onClick={() => onAppliedTodayChange(!appliedToday)}
               className={`w-full h-11 px-4 rounded-xl text-xs font-bold flex items-center justify-between gap-2 transition-all ${appliedToday
-                  ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                  : "bg-background border border-border/50 shadow-sm text-muted-foreground hover:bg-muted/50"
+                ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                : "bg-background border border-border/50 shadow-sm text-muted-foreground hover:bg-muted/50"
                 }`}
             >
               <div className="flex items-center gap-2">
@@ -164,6 +193,20 @@ export function ApplicationFilters({
           </div>
         </div>
 
+        <div className="pt-4 space-y-3">
+          <Button
+            className="w-full h-11 rounded-xl font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2 transition-all active:scale-95"
+            onClick={onExport}
+            disabled={isExporting}
+          >
+            {isExporting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Download className="size-4" />
+            )}
+            {isExporting ? "Exporting..." : "Export CSV"}
+          </Button>
+        </div>
       </Card>
     </div>
   );
