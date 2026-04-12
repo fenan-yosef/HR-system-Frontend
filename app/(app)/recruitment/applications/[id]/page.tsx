@@ -46,6 +46,9 @@ export default function ApplicationDetailPage() {
   const [app, setApp] = useState<Application | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "resume" | "ai">("overview");
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState<string | null>(null);
+  const [previewType, setPreviewType] = useState<'pdf' | 'image' | 'other' | null>(null);
 
   const loadApplication = useCallback(async () => {
     try {
@@ -59,6 +62,30 @@ export default function ApplicationDetailPage() {
       setIsLoading(false);
     }
   }, [applicationId, toast]);
+
+  const closePreview = useCallback(() => {
+    setPreviewUrl(null);
+    setPreviewName(null);
+    setPreviewType(null);
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closePreview();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [closePreview]);
+
+  const openPreview = (url: string, name?: string) => {
+    if (!url) return;
+    setPreviewUrl(url);
+    setPreviewName(name || url.split("/").pop() || "file");
+    const ext = (url.split(".").pop() || "").toLowerCase();
+    if (ext === "pdf") setPreviewType('pdf');
+    else if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext)) setPreviewType('image');
+    else setPreviewType('other');
+  };
 
   useEffect(() => {
     if (applicationId) {
@@ -220,47 +247,53 @@ export default function ApplicationDetailPage() {
               <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
                 <FileText size={14} /> Documents
               </h3>
-              <div className="space-y-3">
+                  <div className="space-y-3">
                 {/* Prefer applicant.documents if provided by API */}
                 {((app as any)?.applicant?.documents && (app as any).applicant.documents.length > 0) ? (
-                  (app as any).applicant.documents.map((doc: any) => (
-                    <a
-                      key={doc.upload_id || doc.file_path}
-                      href={doc.file_url || getMediaUrl(doc.file_path)}
-                      target="_blank"
-                      className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <FileText className="size-5 text-red-500" />
-                        <div className="text-left">
-                          <div className="font-bold text-sm truncate">{doc.original_name}</div>
-                          <div className="text-[11px] text-muted-foreground">{doc.document_type} • {formatBytes(doc.size_bytes)} • {new Date(doc.uploaded_at).toLocaleString()}</div>
+                  (app as any).applicant.documents.map((doc: any) => {
+                    const url = doc.file_url || getMediaUrl(doc.file_path);
+                    return (
+                      <div
+                        key={doc.upload_id || doc.file_path}
+                        className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <FileText className="size-5 text-red-500" />
+                          <div className="text-left">
+                            <div className="font-bold text-sm truncate">{doc.original_name}</div>
+                            <div className="text-[11px] text-muted-foreground">{doc.document_type} • {formatBytes(doc.size_bytes)} • {new Date(doc.uploaded_at).toLocaleString()}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => openPreview(url, doc.original_name)} className="text-xs font-black uppercase tracking-widest px-3 py-2 rounded-lg bg-muted/10 hover:bg-muted/20">Preview</button>
+                          <a href={url} target="_blank" rel="noreferrer" className="text-muted-foreground group-hover:text-primary transition-colors"><Download className="size-4" /></a>
                         </div>
                       </div>
-                      <Download className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </a>
-                  ))
+                    );
+                  })
                 ) : (
                   <>
-                    <a
-                      href={getMediaUrl(app.cv_path)}
-                      target="_blank"
-                      className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border-2 border-dashed border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
-                    >
+                    <div className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border-2 border-dashed border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group">
                       <div className="flex items-center gap-3">
                         <FileText className="size-5 text-red-500" />
                         <span className="font-bold text-sm">Main Resume / CV</span>
                       </div>
-                      <Download className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                    </a>
+                      <div className="flex items-center gap-3">
+                        <button onClick={() => openPreview(getMediaUrl(app.cv_path), 'Resume')} className="text-xs font-black uppercase tracking-widest px-3 py-2 rounded-lg bg-muted/10 hover:bg-muted/20">Preview</button>
+                        <a href={getMediaUrl(app.cv_path)} target="_blank" rel="noreferrer" className="text-muted-foreground group-hover:text-primary transition-colors"><Download className="size-4" /></a>
+                      </div>
+                    </div>
                     {app.certificate_paths && app.certificate_paths.map((p, i) => (
-                      <a key={`cert-${i}`} href={getMediaUrl(p)} target="_blank" className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group">
+                      <div key={`cert-${i}`} className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group">
                         <div className="flex items-center gap-3">
                           <FileText className="size-5 text-amber-500" />
                           <span className="font-bold text-sm">Certificate #{i+1}</span>
                         </div>
-                        <Download className="size-4 text-muted-foreground group-hover:text-primary transition-colors" />
-                      </a>
+                        <div className="flex items-center gap-3">
+                          <button onClick={() => openPreview(getMediaUrl(p), `Certificate #${i+1}`)} className="text-xs font-black uppercase tracking-widest px-3 py-2 rounded-lg bg-muted/10 hover:bg-muted/20">Preview</button>
+                          <a href={getMediaUrl(p)} target="_blank" rel="noreferrer" className="text-muted-foreground group-hover:text-primary transition-colors"><Download className="size-4" /></a>
+                        </div>
+                      </div>
                     ))}
                   </>
                 )}
@@ -451,7 +484,7 @@ export default function ApplicationDetailPage() {
                       <FileText className="size-5 text-primary" />
                       <h3 className="text-xs font-black uppercase tracking-widest">Resume Extraction</h3>
                     </div>
-                    <Button variant="ghost" className="h-8 text-[10px] font-black uppercase tracking-widest" onClick={() => window.open(getMediaUrl(app.cv_path))}>
+                    <Button variant="ghost" className="h-8 text-[10px] font-black uppercase tracking-widest" onClick={() => openPreview(getMediaUrl(app.cv_path), 'Resume')}>
                       View Original <ExternalLink className="size-3 ml-2" />
                     </Button>
                   </div>
@@ -560,6 +593,37 @@ export default function ApplicationDetailPage() {
             </motion.div>
           </AnimatePresence>
         </main>
+        {/* Inline Preview Modal */}
+        {previewUrl && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
+            <div className="bg-white dark:bg-zinc-900 rounded-2xl w-full max-w-5xl max-h-[90vh] overflow-hidden shadow-xl">
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <h3 className="font-black text-sm truncate">{previewName}</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <a href={previewUrl} target="_blank" rel="noreferrer" className="text-xs font-black px-3 py-2 rounded-lg hover:underline">Open in new tab</a>
+                  <a href={previewUrl} download className="text-xs font-black px-3 py-2 rounded-lg hover:underline">Download</a>
+                  <button onClick={closePreview} className="text-xs font-black px-3 py-2 rounded-lg">Close</button>
+                </div>
+              </div>
+              <div className="p-4 h-[80vh] overflow-auto flex items-center justify-center bg-background">
+                {previewType === 'pdf' && (
+                  <iframe src={previewUrl} title={previewName || 'document'} className="w-full h-full border-0" />
+                )}
+                {previewType === 'image' && (
+                  <img src={previewUrl} alt={previewName || 'image'} className="max-w-full max-h-full object-contain" />
+                )}
+                {previewType === 'other' && (
+                  <div className="p-8 text-center">
+                    <p className="text-muted-foreground">Preview not available for this file type.</p>
+                    <a href={previewUrl} target="_blank" rel="noreferrer" className="text-primary underline">Open in new tab</a>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

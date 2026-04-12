@@ -9,16 +9,41 @@ export interface PaginatedResponse<T> {
 
 export type JobStatus = "open" | "closed" | "on_hold" | "cancelled";
 
-export interface JobPosting {
-  job_id: number;
-  title: string;
-  department: string;
-  description: string;
-  requirements: string;
-  status: JobStatus;
-  posted_date: string;
-  created_at: string;
-  updated_at: string;
+export type CustomFieldType =
+  | "short_text"
+  | "long_text"
+  | "number"
+  | "integer"
+  | "boolean"
+  | "select"
+  | "multi_select"
+  | "date"
+  | "file"
+  | "file_list"
+  | "email"
+  | "url"
+  | "phone";
+
+export interface CustomApplicationField {
+  key?: string;
+  label: string;
+  type: CustomFieldType;
+  required: boolean;
+  include_in_ai: boolean;
+  order?: number;
+  options?: string[];
+  min_value?: number;
+  max_length?: number;
+}
+
+export interface CustomFieldResponse {
+  upload_id?: number;
+  reference?: string;
+  file_name?: string;
+  mime_type?: string;
+  size_bytes?: number;
+  file_url?: string;
+  [key: string]: any;
 }
 
 export interface JobPosition {
@@ -33,6 +58,7 @@ export interface JobPosition {
   closed_date: string | null;
   created_at: string;
   criteria_version: number;
+  custom_application_fields?: CustomApplicationField[];
   // Screening fields
   min_gpa?: number;
   min_years_experience?: number;
@@ -138,6 +164,7 @@ export interface Application {
   cv_path: string;
   cover_letter?: string;
   position: ApplicationPosition;
+  custom_field_values?: Record<string, CustomFieldResponse | any>;
   applicant?: {
     applicant_id: number;
     full_name: string;

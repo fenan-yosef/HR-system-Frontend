@@ -12,10 +12,12 @@ import {
     fetchApplications,
     updateJobPosition,
     getSkillSuggestions,
+    fetchCustomApplicationFields,
 } from "@/services/recruitmentService";
 import { getMediaUrl, apiDownload } from "@/services/apiClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { CustomFieldsSettings } from "@/components/recruitment/CustomFieldsSettings";
 import {
     ArrowLeft,
     BarChart3,
@@ -297,6 +299,10 @@ export default function JobDetailsPage() {
                                     </div>
                                 </div>
                             )}
+
+                            <div className="pt-6 border-t border-border/50">
+                                <CustomFieldsSettings positionId={job.position_id} />
+                            </div>
 
                             {/* Skill Suggestions Card */}
                             <div className="pt-4">

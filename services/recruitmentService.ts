@@ -45,6 +45,23 @@ export function updateJobPosition(positionId: number, data: Partial<JobPosition>
   });
 }
 
+export function fetchCustomApplicationFields(positionId: number): Promise<{
+  position_id: number;
+  position_title: string;
+  custom_application_fields: CustomApplicationField[];
+  count: number;
+}> {
+  return apiFetch<any>(`/job-positions/${positionId}/application-fields/`, { requiresAuth: true });
+}
+
+export function updateCustomApplicationFields(positionId: number, data: { custom_application_fields: CustomApplicationField[] }): Promise<any> {
+  return apiFetch<any>(`/job-positions/${positionId}/application-fields/`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
 export function fetchDepartments(): Promise<PaginatedResponse<Department>> {
   return apiFetch<PaginatedResponse<Department>>("/departments/", { requiresAuth: true });
 }

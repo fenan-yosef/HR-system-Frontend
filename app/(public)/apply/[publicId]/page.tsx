@@ -31,6 +31,9 @@ export default function PublicApplyPage() {
     const [jobPostedDate, setJobPostedDate] = useState<string | null>(null);
     const [applicationUrl, setApplicationUrl] = useState<string | null>(null);
     const [isLoadingJob, setIsLoadingJob] = useState(true);
+    const [customFields, setCustomFields] = useState<any[]>([]);
+    const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
+    const [customFiles, setCustomFiles] = useState<Record<string, File | File[]>>({});
 
     const [formData, setFormData] = useState({
         full_name: "",
@@ -87,6 +90,16 @@ export default function PublicApplyPage() {
                         if (job.status) setJobStatus(job.status);
                         if (job.posted_date) setJobPostedDate(job.posted_date);
                         if (job.application_url) setApplicationUrl(job.application_url);
+                        if (job.custom_application_fields) {
+                            setCustomFields(job.custom_application_fields);
+                            // Initialize default values
+                            const initialValues: Record<string, any> = {};
+                            job.custom_application_fields.forEach((f: any) => {
+                                if (f.type === "boolean") initialValues[f.key] = false;
+                                else if (f.type === "multi_select") initialValues[f.key] = [];
+                            });
+                            setCustomFieldValues(initialValues);
+                        }
                     } else if (data && data.application_url) {
                         // some responses only return share info
                         setApplicationUrl(data.application_url);
@@ -159,6 +172,21 @@ export default function PublicApplyPage() {
         }
     };
 
+    const handleCustomFieldChange = (key: string, value: any) => {
+        setCustomFieldValues((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const handleCustomFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: any) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        if (field.type === "file") {
+            setCustomFiles((prev) => ({ ...prev, [field.key]: files[0] }));
+        } else if (field.type === "file_list") {
+            setCustomFiles((prev) => ({ ...prev, [field.key]: Array.from(files) }));
+        }
+    };
+
     const handleRemoveFile = (type: 'cv' | 'certificates' | 'docs', index?: number) => {
         if (type === 'cv') {
             setCvFile(null);
@@ -228,7 +256,19 @@ export default function PublicApplyPage() {
             }
             setUploadProgress(80);
 
-            // 4. Submit application
+            // 4. Handle Custom Fields (Files)
+            const submissionCustomValues = { ...customFieldValues };
+            for (const field of customFields) {
+                if (field.type === 'file' && customFiles[field.key]) {
+                    const fid = await uploadSingleFile(customFiles[field.key] as File);
+                    submissionCustomValues[field.key] = fid;
+                } else if (field.type === 'file_list' && customFiles[field.key]) {
+                    const fids = await Promise.all((customFiles[field.key] as File[]).map(f => uploadSingleFile(f)));
+                    submissionCustomValues[field.key] = fids;
+                }
+            }
+
+            // 5. Submit application
             const payload = {
                 full_name: formData.full_name,
                 email: formData.email,
@@ -237,6 +277,7 @@ export default function PublicApplyPage() {
                 certificate_upload_ids: certificateIds,
                 other_upload_ids: documentIds,
                 cover_letter: formData.cover_letter || undefined,
+                custom_field_values: Object.keys(submissionCustomValues).length > 0 ? submissionCustomValues : undefined,
             };
 
             try {
@@ -622,6 +663,130 @@ export default function PublicApplyPage() {
                                             disabled={isSubmitting}
                                         />
                                     </div>
+
+                                    {/* Dynamic Custom Fields Section */}
+                                    {customFields.length > 0 && (
+                                        <div className="space-y-6 pt-6 border-t border-gray-100/50">
+                                            <h3 className="text-lg font-bold text-gray-900">Additional Information</h3>
+                                            <div className="grid gap-6">
+                                                {customFields.map((field) => (
+                                                    <div key={field.key} className="space-y-2">
+                                                        <Label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                            {field.label}
+                                                            {field.required && <span className="text-red-500">*</span>}
+                                                        </Label>
+
+                                                        {field.type === "short_text" && (
+                                                            <Input 
+                                                                value={customFieldValues[field.key] || ""}
+                                                                onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                                                                placeholder={field.label}
+                                                                className="rounded-xl"
+                                                                required={field.required}
+                                                            />
+                                                        )}
+
+                                                        {field.type === "long_text" && (
+                                                            <textarea
+                                                                value={customFieldValues[field.key] || ""}
+                                                                onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                                                                rows={3}
+                                                                className="flex w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary outline-none transition-all"
+                                                                placeholder={field.label}
+                                                                required={field.required}
+                                                            />
+                                                        )}
+
+                                                        {field.type === "number" || field.type === "integer" ? (
+                                                            <Input 
+                                                                type="number"
+                                                                value={customFieldValues[field.key] || ""}
+                                                                onChange={(e) => handleCustomFieldChange(field.key, field.type === "integer" ? parseInt(e.target.value) : parseFloat(e.target.value))}
+                                                                placeholder={field.label}
+                                                                className="rounded-xl"
+                                                                required={field.required}
+                                                            />
+                                                        ) : null}
+
+                                                        {field.type === "email" && (
+                                                            <Input 
+                                                                type="email"
+                                                                value={customFieldValues[field.key] || ""}
+                                                                onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                                                                placeholder="email@example.com"
+                                                                className="rounded-xl"
+                                                                required={field.required}
+                                                            />
+                                                        )}
+
+                                                        {field.type === "url" && (
+                                                            <Input 
+                                                                type="url"
+                                                                value={customFieldValues[field.key] || ""}
+                                                                onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                                                                placeholder="https://..."
+                                                                className="rounded-xl"
+                                                                required={field.required}
+                                                            />
+                                                        )}
+
+                                                        {(field.type === "file" || field.type === "file_list") && (
+                                                            <div className="space-y-2">
+                                                                <Input 
+                                                                    type="file"
+                                                                    multiple={field.type === "file_list"}
+                                                                    onChange={(e) => handleCustomFileChange(e, field)}
+                                                                    className="rounded-xl"
+                                                                    required={field.required && !customFiles[field.key]}
+                                                                />
+                                                                {customFiles[field.key] && (
+                                                                    <p className="text-xs text-primary font-bold">
+                                                                        {Array.isArray(customFiles[field.key]) 
+                                                                            ? `${(customFiles[field.key] as File[]).length} files selected` 
+                                                                            : (customFiles[field.key] as File).name}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {field.type === "boolean" && (
+                                                            <div className="flex items-center gap-2">
+                                                                <input 
+                                                                    type="checkbox"
+                                                                    checked={!!customFieldValues[field.key]}
+                                                                    onChange={(e) => handleCustomFieldChange(field.key, e.target.checked)}
+                                                                    className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                                                                />
+                                                                <span className="text-sm font-medium text-gray-600">Yes / No</span>
+                                                            </div>
+                                                        )}
+
+                                                        {(field.type === "select" || field.type === "multi_select") && (
+                                                                <select 
+                                                                    multiple={field.type === "multi_select"}
+                                                                    value={customFieldValues[field.key] || (field.type === "multi_select" ? [] : "")}
+                                                                    onChange={(e) => {
+                                                                        if (field.type === "multi_select") {
+                                                                            const vals = Array.from(e.target.selectedOptions).map(o => o.value);
+                                                                            handleCustomFieldChange(field.key, vals);
+                                                                        } else {
+                                                                            handleCustomFieldChange(field.key, e.target.value);
+                                                                        }
+                                                                    }}
+                                                                    className="flex w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-primary outline-none transition-all"
+                                                                    required={field.required}
+                                                                >
+                                                                    {field.type !== "multi_select" && <option value="">Select an option</option>}
+                                                                    {field.options?.map((opt: string) => (
+                                                                        <option key={opt} value={opt}>{opt}</option>
+                                                                    ))}
+                                                                </select>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
