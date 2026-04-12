@@ -36,6 +36,15 @@ import {
   startScreening,
 } from "@/services/recruitmentService";
 import type { Application, JobPosition } from "@/types/recruitment";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { ApplicationFilters } from "./ApplicationFilters";
 import { ApplicationMetrics } from "./ApplicationMetrics";
@@ -66,6 +75,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
   const [isBatchEvaluating, setIsBatchEvaluating] = useState(false);
   const [evaluatingApps, setEvaluatingApps] = useState<number[]>([]);
   const [retryingApps, setRetryingApps] = useState<number[]>([]);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
   const router = useRouter();
 
 
@@ -137,24 +147,34 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
   };
 
   const handleBatchEvaluate = async () => {
-    if (selectedJobId) {
-      setIsBatchEvaluating(true);
-      try {
-        await startScreening(Number(selectedJobId));
-        toast("Screening started — redirecting to progress view.", "success");
-        router.push(`/recruitment/job-postings/${selectedJobId}/screening`);
-      } catch (err: any) {
-        const msg = err?.message || "";
-        if (msg.includes("405") || msg.includes("404")) {
-          toast("Screening endpoint not available on this backend.", "warning");
-        } else {
-          toast("Failed to start screening. The AI service may be offline.", "error");
-        }
-      } finally {
-        setIsBatchEvaluating(false);
-      }
-    } else {
+    if (!selectedJobId) {
       toast("Please select a specific job position first to run AI screening.", "warning");
+      return;
+    }
+
+    // Check if any applications already have results
+    const alreadyEvaluatedCount = apps.filter(app => app.screening_result).length;
+    
+    if (alreadyEvaluatedCount > 0 && !showConfirmModal) {
+      setShowConfirmModal(true);
+      return;
+    }
+
+    setShowConfirmModal(false);
+    setIsBatchEvaluating(true);
+    try {
+      await startScreening(Number(selectedJobId));
+      toast("Screening started — redirecting to progress view.", "success");
+      router.push(`/recruitment/job-postings/${selectedJobId}/screening`);
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("405") || msg.includes("404")) {
+        toast("Screening endpoint not available on this backend.", "warning");
+      } else {
+        toast("Failed to start screening. The AI service may be offline.", "error");
+      }
+    } finally {
+      setIsBatchEvaluating(false);
     }
   };
 
@@ -403,7 +423,18 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                   )}
 
                   <div className="grid gap-4">
-                    {jobApps.map((app) => (
+                    {jobApps.map((app) => {
+                      const applicant: any = (app as any).applicant || (app as any);
+                      const fullName = applicant?.full_name || (app as any).full_name || (app as any).applicant_name || "Unknown";
+                      const email = applicant?.email || (app as any).email || "";
+                      const phone = applicant?.phone || (app as any).phone || "";
+                      const submittedAt = applicant?.submitted_at || (app as any).submitted_at || app.submitted_at;
+                      const tracking = applicant?.tracking_code || (app as any).tracking_code || "";
+                      const documents: any[] = applicant?.documents || (app as any).documents || [];
+                      const cvDoc = documents.find((d: any) => d.document_type === "cv");
+                      const cvUrl = cvDoc?.file_url;
+
+                      return (
                       <motion.div
                         key={app.application_id}
                         layout
@@ -416,7 +447,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                             {/* Candidate Info */}
                             <div className="flex items-center gap-4 flex-1">
                               <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-lg">
-                                {app.full_name?.charAt(0) || "U"}
+                                {fullName?.charAt(0) || "U"}
                               </div>
                               <div>
                                 <Link
@@ -425,15 +456,24 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                   rel="noopener noreferrer"
                                 >
                                   <h4 className="font-black text-lg group-hover:text-primary transition-colors cursor-pointer">
-                                    {app.full_name}
+                                    {fullName}
                                   </h4>
                                 </Link>
 
                                 <div className="flex items-center gap-3 text-xs text-muted-foreground font-medium">
-                                  <span>{app.email}</span>
+                                  {email && <span>{email}</span>}
+                                  {phone && email && <span className="opacity-30">•</span>}
+                                  {phone && <span>{phone}</span>}
                                   <span className="opacity-30">•</span>
-                                  <span>{new Date(app.submitted_at).toLocaleDateString()}</span>
+                                  <span>{submittedAt ? new Date(submittedAt).toLocaleDateString() : ""}</span>
+                                  {tracking && <span className="ml-2 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-muted/5 text-muted-foreground">{tracking}</span>}
+                                  {cvUrl && (
+                                    <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-primary font-black flex items-center gap-1">
+                                      <Download className="size-3" /> CV
+                                    </a>
+                                  )}
                                 </div>
+
                                 {/* Quick strengths / keywords */}
                                 <div className="flex flex-wrap gap-2 mt-2">
                                   {((app.screening_result?.key_strengths as string[]) || app.evaluation?.matched_keywords || [])
@@ -442,6 +482,19 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                       <span key={`${s}-${idx}`} className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black">{s}</span>
                                     ))}
                                 </div>
+
+                                {/* Custom field/file summaries */}
+                                {((app as any).custom_field_values && Object.keys((app as any).custom_field_values).length > 0) && (
+                                  <div className="flex gap-2 mt-2">
+                                    {Object.entries((app as any).custom_field_values).map(([k, v]: [string, any]) => (
+                                      v?.file_url ? (
+                                        <a key={k} href={v.file_url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-black">{v.file_name || k}</a>
+                                      ) : (
+                                        <span key={k} className="px-2 py-1 rounded-full bg-muted/10 text-muted-foreground text-xs">{k}</span>
+                                      )
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             </div>
 
@@ -449,11 +502,11 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                             <div className="flex items-center gap-6">
                               <div className="flex flex-col items-center">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Score</span>
-                                <span className={`text-xl font-black ${(app.screening_result?.overall_score || 0) >= 80 ? 'text-emerald-600' :
-                                  (app.screening_result?.overall_score || 0) >= 60 ? 'text-teal-600' :
-                                    (app.screening_result?.overall_score || 0) >= 40 ? 'text-amber-600' : 'text-red-500'
+                                <span className={`text-xl font-black ${(app.screening_result?.final_score || app.screening_result?.overall_score || 0) >= 80 ? 'text-emerald-600' :
+                                  (app.screening_result?.final_score || app.screening_result?.overall_score || 0) >= 60 ? 'text-teal-600' :
+                                    (app.screening_result?.final_score || app.screening_result?.overall_score || 0) >= 40 ? 'text-amber-600' : 'text-red-500'
                                   }`}>
-                                  {Number(app.screening_result?.overall_score || app.evaluation?.matching_percentage || 0).toFixed(0)}%
+                                  {Number(app.screening_result?.final_score || app.screening_result?.overall_score || app.evaluation?.matching_percentage || 0).toFixed(0)}%
 
                                 </span>
                               </div>
@@ -508,7 +561,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                           </div>
                         </div>
                       </motion.div>
-                    ))}
+                    )})}
                   </div>
                 </div>
               );})}
@@ -525,6 +578,46 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
           />
         )}
       </AnimatePresence>
+
+      <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="text-amber-500" size={20} />
+              Re-evaluate Applicants?
+            </DialogTitle>
+            <DialogDescription className="py-2">
+              Some applicants already have screening results. Starting a new batch screen will re-evaluate them and overwrite existing scores.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 py-4">
+            <div className="p-4 rounded-xl bg-muted/50 border border-border/50">
+              <p className="text-xs font-medium text-muted-foreground mb-1 uppercase tracking-wider">Affected Applicants</p>
+              <p className="text-xl font-black text-foreground">
+                {apps.filter(app => app.screening_result).length} / {apps.length}
+              </p>
+            </div>
+            <p className="text-[11px] text-muted-foreground bg-amber-500/5 p-3 rounded-lg border border-amber-500/10 italic">
+              Tip: AI Screening can take a few minutes depending on the pool size.
+            </p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowConfirmModal(false)}
+              className="rounded-xl font-bold"
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => handleBatchEvaluate()}
+              className="rounded-xl font-bold bg-primary text-white hover:bg-primary/90"
+            >
+              Confirm & Start
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
