@@ -189,6 +189,7 @@ export interface Application {
     extracted_json: any;
   };
   screening_result?: ScreeningResult;
+  screening_history?: ScreeningHistoryEntry[];
   status: string;
   applicant_note?: string;
   submitted_at: string;
@@ -240,6 +241,17 @@ export interface ApplicantResponse {
   tracking_code_sent_at: string;
 }
 
+export interface ScreeningHistoryEntry {
+  id: number;
+  source_result_id: number;
+  evaluation_version: number;
+  final_score: number;
+  status: "passed" | "failed";
+  archive_reason: string;
+  screened_at: string;
+  archived_at: string;
+}
+
 export interface ScreeningResult {
   application_id: number;
   applicant_name: string;
@@ -263,10 +275,12 @@ export interface ScreeningResult {
     [key: string]: any;
   };
   raw_llm_response: string;
-  // Additional metadata
+  // Metadata & History
+  include_history?: boolean;
+  history?: ScreeningHistoryEntry[];
   screening_model?: string;
   screened_at?: string;
-  // Legacy fields (keeping for compatibility if needed during migration)
+  // Legacy fields
   overall_score?: number;
 }
 

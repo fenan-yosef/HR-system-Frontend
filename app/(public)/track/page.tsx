@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch, getMediaUrl } from "@/services/apiClient";
+import { formatScore } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { 
@@ -23,6 +24,9 @@ import {
   ExternalLink,
   ChevronRight,
   Download,
+  Archive,
+  History,
+  Info,
   Quote
 } from "lucide-react";
 
@@ -42,7 +46,7 @@ export default function TrackApplicationPage() {
     setResult(null);
 
     try {
-      const data = await trackApplicant(trackingCode, email);
+      const data = await trackApplicant(trackingCode, email, true);
       setResult(data);
     } catch (err: any) {
       console.error("Tracking failed", err);
@@ -301,6 +305,42 @@ export default function TrackApplicationPage() {
                                <span>Last updated: {new Date(app.evaluation?.evaluated_at || app.submitted_at).toLocaleDateString()}</span>
                             </div>
                          </div>
+
+                         {/* AI Evaluation History (Public View) */}
+                         {(app.screening_history?.length > 0 || app.screening_result?.history?.length > 0) && (
+                            <div className="mt-6 pt-6 border-t border-slate-100">
+                               <div className="flex items-center gap-2 mb-4">
+                                  <History className="text-slate-400" size={16} />
+                                  <h5 className="text-xs font-black uppercase text-slate-500 tracking-widest">Previous Evaluations</h5>
+                               </div>
+                               <div className="space-y-2">
+                                  {(app.screening_history || app.screening_result?.history).map((entry: any, idx: number) => (
+                                     <div key={entry.id || idx} className="bg-slate-50/50 rounded-xl p-3 flex items-center justify-between border border-transparent hover:border-slate-200 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                           <div className={`size-8 rounded-full flex items-center justify-center ${entry.status === 'passed' ? 'bg-emerald-100 text-emerald-600' : 'bg-slate-200 text-slate-500'}`}>
+                                              {entry.status === 'passed' ? <CheckCircle2 size={14} /> : <Archive size={14} />}
+                                           </div>
+                                           <div>
+                                              <p className="text-xs font-bold text-slate-700">Matched {formatScore(entry.final_score, 0)}% <span className="text-[10px] text-slate-400 font-medium font-mono uppercase ml-1">v{entry.evaluation_version}</span></p>
+                                              <p className="text-[10px] text-slate-500 flex items-center gap-1 mt-0.5">
+                                                 <Calendar size={10} /> {new Date(entry.screened_at).toLocaleDateString()}
+                                              </p>
+                                           </div>
+                                        </div>
+                                        <div className="text-[10px] font-black uppercase bg-white px-2 py-1 rounded-md border border-slate-100 text-slate-400">
+                                           {entry.archive_reason?.replace('_', ' ') || 'Archived'}
+                                        </div>
+                                     </div>
+                                  ))}
+                                  <div className="flex items-center gap-2 mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100/50">
+                                     <Info size={12} className="text-blue-500 shrink-0" />
+                                     <p className="text-[10px] text-blue-700/70 font-medium italic">
+                                        Our AI evaluations are versioned to ensure your profile is always compared against the most up-to-date requirements.
+                                     </p>
+                                  </div>
+                               </div>
+                            </div>
+                         )}
                       </div>
                    </div>
                 </Card>

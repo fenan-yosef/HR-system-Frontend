@@ -20,11 +20,15 @@ import {
   XCircle,
   AlertTriangle,
   FileSearch,
-  Brain
+  Brain,
+  History,
+  Clock,
+  Archive
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Application, ScreeningResult } from "@/types/recruitment";
 import { getMediaUrl } from "@/services/apiClient";
+import { formatScore } from "@/lib/utils";
 
 function getScoreColor(score: number) {
   if (score >= 80) return { text: "text-emerald-600", light: "bg-emerald-500/10", border: "border-emerald-500/20", label: "Strong Fit" };
@@ -41,6 +45,7 @@ interface EvaluationDetailsModalProps {
 export function EvaluationDetailsModal({ application, onClose }: EvaluationDetailsModalProps) {
   const evalData = application.evaluation;
   const screening = application.screening_result;
+  const history = application.screening_history || screening?.history || [];
   
   const [activeTab, setActiveTab] = useState<"matched" | "missing">("matched");
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -48,6 +53,7 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
     skills: true,
     questions: true,
     screening: true,
+    history: false,
     rawLogic: false
   });
   
@@ -56,6 +62,11 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
+
+   // Coerce numeric fields that may arrive as strings from the API
+   const screeningScoreNum = screening ? (Number(screening.final_score) || 0) : 0;
+   const screeningRuleNum = screening ? (Number(screening.rule_score) || 0) : 0;
+   const screeningAiNum = screening ? (Number(screening.ai_score) || 0) : 0;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -104,7 +115,7 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
                   className="w-full flex items-center justify-between p-4 hover:bg-primary/5 transition-colors border-b border-border/30"
                >
                   <div className="flex items-center gap-3">
-                     <div className={`p-2 rounded-lg ${getScoreColor(screening.final_score).light} ${getScoreColor(screening.final_score).text}`}>
+                               <div className={`p-2 rounded-lg ${getScoreColor(screeningScoreNum).light} ${getScoreColor(screeningScoreNum).text}`}>
                         <Brain size={16} />
                      </div>
                      <div className="text-left">
@@ -114,7 +125,7 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
                               {screening.hard_criteria_met ? 'Passed Criteria' : 'Failed Criteria'}
                            </span>
                         </div>
-                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Weighted Fit: {screening.final_score.toFixed(1)}% (V{screening.evaluation_version})</div>
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Weighted Fit: {formatScore(screening.final_score, 1)}% (V{screening.evaluation_version})</div>
                      </div>
                   </div>
                   <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-300 ${expandedSections.screening ? '' : '-rotate-90'}`} />
@@ -133,11 +144,11 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
                            <div className="grid grid-cols-2 gap-3">
                               <div className="p-3 rounded-xl bg-background/50 border border-border/30 text-center">
                                  <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">Rule Score</p>
-                                 <p className="text-lg font-black">{screening.rule_score.toFixed(0)}%</p>
+                                 <p className="text-lg font-black">{formatScore(screening.rule_score, 0)}%</p>
                               </div>
                               <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center">
                                  <p className="text-[9px] font-black uppercase text-primary mb-1">AI Match</p>
-                                 <p className="text-lg font-black text-primary">{screening.ai_score.toFixed(0)}%</p>
+                                 <p className="text-lg font-black text-primary">{formatScore(screening.ai_score, 0)}%</p>
                               </div>
                            </div>
 
@@ -181,6 +192,59 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
                   )}
                </AnimatePresence>
             </section>
+          )}
+
+          {/* Evaluation History Section */}
+          {history.length > 0 && (
+            <section className="border border-border/50 rounded-2xl overflow-hidden bg-muted/5">
+               <button 
+                  onClick={() => toggleSection('history')}
+                  className="w-full flex items-center justify-between p-4 hover:bg-muted/10 transition-colors"
+               >
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground">
+                     <History size={14} />
+                     <span>Evaluation History</span>
+                     <span className="ml-1 px-2 py-0.5 rounded-full bg-muted text-[10px]">{history.length} Previous</span>
+                  </div>
+                  <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-300 ${expandedSections.history ? '' : '-rotate-90'}`} />
+               </button>
+               <AnimatePresence>
+                  {expandedSections.history && (
+                     <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                     >
+                        <div className="p-4 pt-0 space-y-3">
+                           {history.map((entry, idx) => (
+                              <div key={entry.id || idx} className="p-3 rounded-xl bg-background/50 border border-border/30 flex items-center justify-between group">
+                                 <div className="flex items-center gap-3">
+                                    <div className={`p-1.5 rounded-lg ${entry.status === 'passed' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500'}`}>
+                                       {entry.status === 'passed' ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                                    </div>
+                                    <div>
+                                       <div className="text-xs font-black flex items-center gap-2 tracking-tight">
+                                          Score: {formatScore(entry.final_score, 1)}%
+                                          <span className="text-[10px] font-bold text-muted-foreground uppercase px-1.5 py-0.5 rounded-md bg-muted">v{entry.evaluation_version}</span>
+                                       </div>
+                                       <div className="text-[10px] text-muted-foreground font-medium flex items-center gap-1.5 mt-0.5">
+                                          <Clock size={10} /> {new Date(entry.screened_at).toLocaleDateString()}
+                                          <span className="opacity-30">•</span>
+                                          <span className="flex items-center gap-1"><Archive size={10} /> {(entry.archive_reason || '').replace('_', ' ')}</span>
+                                       </div>
+                                    </div>
+                                 </div>
+                              </div>
+                           ))}
+                           <p className="text-[10px] text-center text-muted-foreground italic font-medium pt-2 border-t border-border/20">
+                              History tracking started from the latest system update.
+                           </p>
+                        </div>
+                     </motion.div>
+                )}
+             </AnimatePresence>
+          </section>
           )}
 
           {/* Existing AiEvaluation fields */}

@@ -99,8 +99,9 @@ export function fetchApplications(params: FetchApplicationsParams = {}): Promise
   return apiFetch<PaginatedResponse<Application>>(endpoint, { requiresAuth: true });
 }
 
-export function fetchApplication(applicationId: number): Promise<Application> {
-  return apiFetch<Application>(`/applicant-applications/${applicationId}/`, { requiresAuth: true });
+export function fetchApplication(applicationId: number, includeHistory: boolean = false): Promise<Application> {
+  const url = `/applicant-applications/${applicationId}/${includeHistory ? "?include_history=true" : ""}`;
+  return apiFetch<Application>(url, { requiresAuth: true });
 }
 
 export function fetchApplicationMetrics(): Promise<ApplicationMetrics> {
@@ -161,10 +162,11 @@ export function createPublicApplication(publicId: string, data: CreateApplicant)
   });
 }
 
-export function trackApplicant(trackingCode: string, email?: string): Promise<any> {
-  return apiFetch<any>("/applicants/track-status/", {
+export function trackApplicant(trackingCode: string, email?: string, includeHistory: boolean = false): Promise<any> {
+  const url = `/applicants/track-status/${includeHistory ? "?include_history=true" : ""}`;
+  return apiFetch<any>(url, {
     method: "POST",
-    body: JSON.stringify({ tracking_code: trackingCode, email }),
+    body: JSON.stringify({ tracking_code: trackingCode, email, include_history: includeHistory }),
     requiresAuth: false,
   });
 }
@@ -220,10 +222,9 @@ export function getScreeningProgress(jobId: number): Promise<ScreeningProgress> 
   });
 }
 
-export function getScreeningResults(jobPositionId: number): Promise<ScreeningResult[]> {
-  return apiFetch<ScreeningResult[]>(`/recruitment/screening/${jobPositionId}/results/`, {
-    requiresAuth: true,
-  });
+export function getScreeningResults(jobPositionId: number, includeHistory: boolean = false): Promise<any> {
+  const url = `/recruitment/screening/${jobPositionId}/results/${includeHistory ? "?include_history=true" : ""}`;
+  return apiFetch<any>(url, { requiresAuth: true });
 }
 
 export function getVersionStats(jobPositionId: number): Promise<VersionStats> {

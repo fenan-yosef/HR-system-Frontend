@@ -3,6 +3,7 @@
 import { ScreeningResult } from "@/types/recruitment";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { formatScore } from "@/lib/utils";
 import {
     CheckCircle2,
     XCircle,
@@ -45,7 +46,7 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
     const [selectedResult, setSelectedResult] = useState<ScreeningResult | null>(null);
 
     // Sort by final_score descending for best candidates first
-    const sortedResults = [...results].sort((a, b) => b.final_score - a.final_score);
+    const sortedResults = [...results].sort((a, b) => (Number(b.final_score) || 0) - (Number(a.final_score) || 0));
 
     return (
         <div className="space-y-6">
@@ -73,7 +74,7 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                     >
                         {/* Decorative background score */}
                         <div className="absolute -right-4 -bottom-4 opacity-[0.03] text-8xl font-black italic pointer-events-none group-hover:scale-110 transition-transform duration-500">
-                            {result.final_score.toFixed(0)}
+                                {formatScore(result.final_score, 0)}
                         </div>
 
                         <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
@@ -84,10 +85,10 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                                     {/* Score fill bar at bottom */}
                                     <div
                                         className={`absolute bottom-0 left-0 right-0 rounded-b-2xl ${scoreColor.bg} opacity-20`}
-                                        style={{ height: `${result.final_score}%` }}
+                                            style={{ height: `${Number(result.final_score) || 0}%` }}
                                     />
                                     <span className={`text-xl font-black relative z-10 ${scoreColor.text}`}>
-                                        {result.final_score.toFixed(0)}
+                                            {formatScore(result.final_score, 0)}
                                     </span>
                                 </div>
 
@@ -114,11 +115,11 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                             <div className="flex items-center gap-6 border-x border-border/50 px-6">
                                 <div className="text-center">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Rule</p>
-                                    <p className="text-xs font-black">{result.rule_score.toFixed(0)}%</p>
+                                    <p className="text-xs font-black">{formatScore(result.rule_score, 0)}%</p>
                                 </div>
                                 <div className="text-center">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">AI</p>
-                                    <p className="text-xs font-black text-primary">{result.ai_score.toFixed(0)}%</p>
+                                    <p className="text-xs font-black text-primary">{formatScore(result.ai_score, 0)}%</p>
                                 </div>
                             </div>
 
@@ -158,7 +159,8 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
             <Dialog open={!!selectedResult} onOpenChange={() => setSelectedResult(null)}>
                 <DialogContent className="max-w-3xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
                     {selectedResult && (() => {
-                        const scoreColor = getScoreColor(selectedResult.final_score);
+                                const selectedScore = Number(selectedResult.final_score) || 0;
+                                const scoreColor = getScoreColor(selectedScore);
                         return (
                         <div className="flex flex-col h-[80vh]">
                             <div className="p-8 bg-gradient-to-br from-primary/10 to-transparent border-b border-border/50">
@@ -175,7 +177,7 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                                         <div className="flex items-center gap-3">
                                             <div className="text-right">
                                                 <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Weighted Total</p>
-                                                <p className={`text-2xl font-black ${scoreColor.text}`}>{selectedResult.final_score.toFixed(1)}%</p>
+                                                            <p className={`text-2xl font-black ${scoreColor.text}`}>{formatScore(selectedResult.final_score, 1)}%</p>
                                             </div>
                                         </div>
                                     </div>
@@ -193,13 +195,14 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Rule-based Score</p>
                                         <div className="flex items-end gap-2">
                                             <span className="text-3xl font-black">{selectedResult.rule_score.toFixed(0)}%</span>
+                                            <span className="text-3xl font-black">{formatScore(selectedResult.rule_score, 0)}%</span>
                                             <span className="text-[10px] font-bold text-muted-foreground mb-1.5">HARD CRITERIA</span>
                                         </div>
                                     </Card>
                                     <Card className="p-5 rounded-3xl bg-primary/5 border-primary/10 space-y-2">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-primary">LLM Reasoning Score</p>
                                         <div className="flex items-end gap-2">
-                                            <span className="text-3xl font-black text-primary">{selectedResult.ai_score.toFixed(0)}%</span>
+                                            <span className="text-3xl font-black text-primary">{formatScore(selectedResult.ai_score, 0)}%</span>
                                             <span className="text-[10px] font-bold text-primary/60 mb-1.5">SEMANTIC MATCH</span>
                                         </div>
                                     </Card>

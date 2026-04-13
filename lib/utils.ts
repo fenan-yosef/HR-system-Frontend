@@ -38,3 +38,14 @@ export function getJobApplyPath(job: { public_id?: string; position_id: number; 
   
   return `/jobs/${job.position_id}/apply`;
 }
+
+/**
+ * Safely format a numeric score that may be provided as a number or string.
+ * Returns a string representation with the requested number of decimal places,
+ * or a dash (—) when the value is not a finite number.
+ */
+export function formatScore(score: number | string | null | undefined, digits = 1): string {
+  const n = Number(score);
+  if (!Number.isFinite(n)) return "—";
+  return n.toFixed(digits);
+}
