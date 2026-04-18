@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 import {
   fetchApplications,
+  fetchApplication,
   exportApplicationsCsv,
   confirmApplication,
   inviteToInterview,
@@ -180,7 +181,13 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
 
   const handleBrainClick = async (app: Application) => {
     if (app.screening_result) {
-      setSelectedApp(app);
+      try {
+        const details = await fetchApplication(app.application_id, { includeHistory: true, includeDeleted: true });
+        setSelectedApp(details);
+      } catch {
+        // Fallback to list payload if full fetch fails.
+        setSelectedApp(app);
+      }
       return;
     }
 
@@ -433,6 +440,12 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                       const documents: any[] = applicant?.documents || (app as any).documents || [];
                       const cvDoc = documents.find((d: any) => d.document_type === "cv");
                       const cvUrl = cvDoc?.file_url;
+                      const scoreValue = Number(
+                        app.screening_result?.final_score ||
+                        app.screening_result?.overall_score ||
+                        app.evaluation?.matching_percentage ||
+                        0,
+                      );
 
                       return (
                       <motion.div
@@ -502,11 +515,11 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                             <div className="flex items-center gap-6">
                               <div className="flex flex-col items-center">
                                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Score</span>
-                                <span className={`text-xl font-black ${(app.screening_result?.final_score || app.screening_result?.overall_score || 0) >= 80 ? 'text-emerald-600' :
-                                  (app.screening_result?.final_score || app.screening_result?.overall_score || 0) >= 60 ? 'text-teal-600' :
-                                    (app.screening_result?.final_score || app.screening_result?.overall_score || 0) >= 40 ? 'text-amber-600' : 'text-red-500'
+                                <span className={`text-xl font-black ${scoreValue >= 80 ? 'text-emerald-600' :
+                                  scoreValue >= 60 ? 'text-teal-600' :
+                                    scoreValue >= 40 ? 'text-amber-600' : 'text-red-500'
                                   }`}>
-                                  {Number(app.screening_result?.final_score || app.screening_result?.overall_score || app.evaluation?.matching_percentage || 0).toFixed(0)}%
+                                  {scoreValue.toFixed(0)}%
 
                                 </span>
                               </div>

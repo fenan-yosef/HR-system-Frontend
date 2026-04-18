@@ -64,7 +64,7 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
 
             <div className="grid gap-4">
                 {sortedResults.map((result, idx) => {
-                    const scoreColor = getScoreColor(result.final_score);
+                    const scoreColor = getScoreColor(Number(result.final_score) || 0);
 
                     return (
                     <Card
@@ -194,7 +194,6 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                                     <Card className="p-5 rounded-3xl bg-muted/20 border-border/40 space-y-2">
                                         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Rule-based Score</p>
                                         <div className="flex items-end gap-2">
-                                            <span className="text-3xl font-black">{selectedResult.rule_score.toFixed(0)}%</span>
                                             <span className="text-3xl font-black">{formatScore(selectedResult.rule_score, 0)}%</span>
                                             <span className="text-[10px] font-bold text-muted-foreground mb-1.5">HARD CRITERIA</span>
                                         </div>

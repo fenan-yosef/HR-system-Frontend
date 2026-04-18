@@ -82,6 +82,9 @@ export interface JobPosition {
   };
 }
 
+// Legacy alias used by some services/routes that still call /job-posts/
+export interface JobPosting extends JobPosition {}
+
 export interface CreateJobPosition {
   title: string;
   department: number;
@@ -245,19 +248,22 @@ export interface ScreeningHistoryEntry {
   id: number;
   source_result_id: number;
   evaluation_version: number;
-  final_score: number;
+  final_score: number | string;
   status: "passed" | "failed";
   archive_reason: string;
   screened_at: string;
   archived_at: string;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
 }
 
 export interface ScreeningResult {
+  id?: number;
   application_id: number;
   applicant_name: string;
-  rule_score: number;
-  ai_score: number;
-  final_score: number;
+  rule_score: number | string;
+  ai_score: number | string;
+  final_score: number | string;
   evaluation_version: number;
   status: "passed" | "failed";
   hard_criteria_met: boolean;
@@ -280,6 +286,8 @@ export interface ScreeningResult {
   history?: ScreeningHistoryEntry[];
   screening_model?: string;
   screened_at?: string;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
   // Legacy fields
   overall_score?: number;
 }

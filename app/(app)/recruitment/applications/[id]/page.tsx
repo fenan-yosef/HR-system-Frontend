@@ -8,9 +8,14 @@ import {
   confirmApplication,
   inviteToInterview,
   hireApplicant,
+  softDeleteScreeningResult,
+  restoreScreeningResult,
+  softDeleteScreeningHistory,
+  restoreScreeningHistory,
 } from "@/services/recruitmentService";
 import type { Application } from "@/types/recruitment";
 import { getMediaUrl } from "@/services/apiClient";
+import { formatScore } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import {
   ArrowLeft,
@@ -49,11 +54,12 @@ export default function ApplicationDetailPage() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<'pdf' | 'image' | 'other' | null>(null);
+  const [actionBusyKey, setActionBusyKey] = useState<string | null>(null);
 
   const loadApplication = useCallback(async () => {
     try {
       setIsLoading(true);
-      const data = await fetchApplication(applicationId);
+      const data = await fetchApplication(applicationId, { includeHistory: true, includeDeleted: true });
       setApp(data);
     } catch (error) {
       console.error("Failed to load application:", error);
@@ -107,6 +113,76 @@ export default function ApplicationDetailPage() {
     }
   };
 
+  const handleArchiveLiveResult = async () => {
+    if (!app?.screening_result?.id) {
+      toast("No active screening result ID was returned by the API.", "warning");
+      return;
+    }
+
+    const confirmed = window.confirm("Move this evaluation to archive? This can be restored by HR.");
+    if (!confirmed) return;
+
+    const reason = window.prompt("Optional archive reason", "manual_archive") || undefined;
+    try {
+      setActionBusyKey("live-archive");
+      await softDeleteScreeningResult(app.screening_result.id, reason?.trim() || undefined);
+      toast("Evaluation moved to archive.", "success");
+      await loadApplication();
+    } catch (error: any) {
+      toast(`Failed to archive evaluation: ${error.message || "Unknown error"}`, "error");
+    } finally {
+      setActionBusyKey(null);
+    }
+  };
+
+  const handleRestoreLiveResult = async () => {
+    if (!app?.screening_result?.id) {
+      toast("No screening result ID was returned by the API.", "warning");
+      return;
+    }
+
+    try {
+      setActionBusyKey("live-restore");
+      await restoreScreeningResult(app.screening_result.id);
+      toast("Evaluation restored.", "success");
+      await loadApplication();
+    } catch (error: any) {
+      toast(`Failed to restore evaluation: ${error.message || "Unknown error"}`, "error");
+    } finally {
+      setActionBusyKey(null);
+    }
+  };
+
+  const handleArchiveHistoryEntry = async (historyId: number) => {
+    const confirmed = window.confirm("Hide this archived history entry? You can restore it later from Archived evaluations.");
+    if (!confirmed) return;
+
+    const reason = window.prompt("Optional reason", "manual_cleanup") || undefined;
+    try {
+      setActionBusyKey(`history-archive-${historyId}`);
+      await softDeleteScreeningHistory(historyId, reason?.trim() || undefined);
+      toast("History entry archived.", "success");
+      await loadApplication();
+    } catch (error: any) {
+      toast(`Failed to archive history entry: ${error.message || "Unknown error"}`, "error");
+    } finally {
+      setActionBusyKey(null);
+    }
+  };
+
+  const handleRestoreHistoryEntry = async (historyId: number) => {
+    try {
+      setActionBusyKey(`history-restore-${historyId}`);
+      await restoreScreeningHistory(historyId);
+      toast("History entry restored.", "success");
+      await loadApplication();
+    } catch (error: any) {
+      toast(`Failed to restore history entry: ${error.message || "Unknown error"}`, "error");
+    } finally {
+      setActionBusyKey(null);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
@@ -149,6 +225,14 @@ export default function ApplicationDetailPage() {
       default: return "bg-slate-500/10 text-slate-600 border-slate-500/20";
     }
   };
+
+  const historyEntries = [...(app.screening_history || [])].sort((a, b) => {
+    const aTs = new Date(a.archived_at || a.screened_at || 0).getTime();
+    const bTs = new Date(b.archived_at || b.screened_at || 0).getTime();
+    return bTs - aTs;
+  });
+  const visibleHistory = historyEntries.filter((entry) => !entry.is_deleted);
+  const archivedHistory = historyEntries.filter((entry) => !!entry.is_deleted);
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-20 animate-in fade-in duration-700">
@@ -257,11 +341,11 @@ export default function ApplicationDetailPage() {
                         key={doc.upload_id || doc.file_path}
                         className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <FileText className="size-5 text-red-500" />
-                          <div className="text-left">
+                          <div className="text-left flex-1 min-w-0 overflow-hidden">
                             <div className="font-bold text-sm truncate">{doc.original_name}</div>
-                            <div className="text-[11px] text-muted-foreground">{doc.document_type} • {formatBytes(doc.size_bytes)} • {new Date(doc.uploaded_at).toLocaleString()}</div>
+                            <div className="text-[11px] text-muted-foreground truncate">{doc.document_type} • {formatBytes(doc.size_bytes)} • {new Date(doc.uploaded_at).toLocaleString()}</div>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
@@ -274,9 +358,11 @@ export default function ApplicationDetailPage() {
                 ) : (
                   <>
                     <div className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border-2 border-dashed border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
                         <FileText className="size-5 text-red-500" />
-                        <span className="font-bold text-sm">Main Resume / CV</span>
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <span className="font-bold text-sm truncate">Main Resume / CV</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <button onClick={() => openPreview(getMediaUrl(app.cv_path), 'Resume')} className="text-xs font-black uppercase tracking-widest px-3 py-2 rounded-lg bg-muted/10 hover:bg-muted/20">Preview</button>
@@ -285,9 +371,11 @@ export default function ApplicationDetailPage() {
                     </div>
                     {app.certificate_paths && app.certificate_paths.map((p, i) => (
                       <div key={`cert-${i}`} className="w-full flex items-center justify-between p-4 rounded-2xl bg-background border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all group">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <FileText className="size-5 text-amber-500" />
-                          <span className="font-bold text-sm">Certificate #{i+1}</span>
+                          <div className="flex-1 min-w-0 overflow-hidden">
+                            <span className="font-bold text-sm truncate">Certificate #{i+1}</span>
+                          </div>
                         </div>
                         <div className="flex items-center gap-3">
                           <button onClick={() => openPreview(getMediaUrl(p), `Certificate #${i+1}`)} className="text-xs font-black uppercase tracking-widest px-3 py-2 rounded-lg bg-muted/10 hover:bg-muted/20">Preview</button>
@@ -510,84 +598,172 @@ export default function ApplicationDetailPage() {
               {activeTab === "ai" && (
                 <div className="space-y-8">
                    {app.screening_result ? (
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                       <Card className="p-8 rounded-[2.5rem] border-none bg-zinc-950 text-white space-y-6">
-                         <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Raw AI Logic Trace</h3>
-                         <pre className="text-[10px] font-mono leading-relaxed text-zinc-400 whitespace-pre-wrap max-h-[400px] overflow-auto custom-scrollbar">
-                           {app.screening_result.raw_llm_response}
-                         </pre>
-                       </Card>
+                     <>
+                       <div className="flex items-center gap-3 justify-end">
+                         {app.screening_result.is_deleted ? (
+                           <Button
+                             variant="outline"
+                             onClick={handleRestoreLiveResult}
+                             disabled={actionBusyKey === "live-restore"}
+                             className="rounded-xl font-black uppercase tracking-widest text-[10px]"
+                           >
+                             {actionBusyKey === "live-restore" ? "Restoring..." : "Restore Live Evaluation"}
+                           </Button>
+                         ) : (
+                           <Button
+                             variant="outline"
+                             onClick={handleArchiveLiveResult}
+                             disabled={actionBusyKey === "live-archive"}
+                             className="rounded-xl font-black uppercase tracking-widest text-[10px]"
+                           >
+                             {actionBusyKey === "live-archive" ? "Archiving..." : "Move To Archive"}
+                           </Button>
+                         )}
+                       </div>
 
-                       <Card className="p-8 rounded-[2.5rem] border border-border/50 space-y-8">
-                          <div className="space-y-4">
-                             <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                                <ShieldCheck size={14} /> Full Evaluation
-                             </h3>
-                             <div className="grid grid-cols-1 gap-4">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="p-4 rounded-2xl bg-muted/20 border border-border/30">
-                                     <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">Rule Score</p>
-                                     <p className="text-xl font-black">{Number(app.screening_result.rule_score || 0).toFixed(0)}%</p>
-                                  </div>
-                                  <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
-                                     <p className="text-[9px] font-black uppercase text-primary mb-1">AI Intuition</p>
-                                     <p className="text-xl font-black text-primary">{Number(app.screening_result.ai_score || 0).toFixed(0)}%</p>
-                                  </div>
-                                </div>
+                       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                         <Card className="p-8 rounded-[2.5rem] border-none bg-zinc-950 text-white space-y-6">
+                           <h3 className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Raw AI Logic Trace</h3>
+                           <pre className="text-[10px] font-mono leading-relaxed text-zinc-400 whitespace-pre-wrap max-h-[400px] overflow-auto custom-scrollbar">
+                             {app.screening_result.raw_llm_response}
+                           </pre>
+                         </Card>
 
-                                <div className="p-4 rounded-2xl bg-background/50 border border-border/30">
-                                   <p className="text-[10px] font-black uppercase text-foreground">Scoring Explanation</p>
-                                   <p className="text-sm font-medium leading-relaxed text-muted-foreground">
-                                     {app.screening_result.explanation}
-                                   </p>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="p-4 rounded-2xl bg-muted/10 border border-border/30">
-                                    <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">AI Breakdown (categories)</p>
-                                    {app.screening_result.scoring_breakdown?.ai ? (
-                                      <div className="space-y-2 text-sm font-medium">
-                                        {Object.entries(app.screening_result.scoring_breakdown.ai).map(([k, v]) => (
-                                          <div key={k} className="flex items-center justify-between">
-                                            <div className="text-muted-foreground text-xs uppercase">{k.replace(/_/g, ' ')}</div>
-                                            <div className="font-black">{String(v)}</div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <div className="text-sm text-muted-foreground">No AI breakdown available.</div>
-                                    )}
+                         <Card className="p-8 rounded-[2.5rem] border border-border/50 space-y-8">
+                            <div className="space-y-4">
+                               <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                                  <ShieldCheck size={14} /> Full Evaluation
+                               </h3>
+                               <div className="grid grid-cols-1 gap-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="p-4 rounded-2xl bg-muted/20 border border-border/30">
+                                       <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">Rule Score</p>
+                                       <p className="text-xl font-black">{formatScore(app.screening_result.rule_score, 0)}%</p>
+                                    </div>
+                                    <div className="p-4 rounded-2xl bg-primary/5 border border-primary/10">
+                                       <p className="text-[9px] font-black uppercase text-primary mb-1">AI Intuition</p>
+                                       <p className="text-xl font-black text-primary">{formatScore(app.screening_result.ai_score, 0)}%</p>
+                                    </div>
                                   </div>
 
-                                  <div className="p-4 rounded-2xl bg-muted/10 border border-border/30">
-                                    <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Rule Breakdown</p>
-                                    {app.screening_result.scoring_breakdown?.rule ? (
-                                      <div className="space-y-2 text-sm font-medium">
-                                        {Object.entries(app.screening_result.scoring_breakdown.rule).map(([k, v]) => (
-                                          <div key={k} className="flex items-center justify-between">
-                                            <div className="text-muted-foreground text-xs uppercase">{k.replace(/_/g, ' ')}</div>
-                                            <div className="font-black">{String(v)}</div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    ) : (
-                                      <div className="text-sm text-muted-foreground">No rule breakdown available.</div>
-                                    )}
+                                  <div className="p-4 rounded-2xl bg-background/50 border border-border/30">
+                                     <p className="text-[10px] font-black uppercase text-foreground">Scoring Explanation</p>
+                                     <p className="text-sm font-medium leading-relaxed text-muted-foreground">
+                                       {app.screening_result.explanation}
+                                     </p>
                                   </div>
-                                </div>
-                             </div>
-                          </div>
-                       </Card>
-                     </div>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="p-4 rounded-2xl bg-muted/10 border border-border/30">
+                                      <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">AI Breakdown (categories)</p>
+                                      {app.screening_result.scoring_breakdown?.ai ? (
+                                        <div className="space-y-2 text-sm font-medium">
+                                          {Object.entries(app.screening_result.scoring_breakdown.ai).map(([k, v]) => (
+                                            <div key={k} className="flex items-center justify-between">
+                                              <div className="text-muted-foreground text-xs uppercase">{k.replace(/_/g, ' ')}</div>
+                                              <div className="font-black">{String(v)}</div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <div className="text-sm text-muted-foreground">No AI breakdown available.</div>
+                                      )}
+                                    </div>
+
+                                    <div className="p-4 rounded-2xl bg-muted/10 border border-border/30">
+                                      <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Rule Breakdown</p>
+                                      {app.screening_result.scoring_breakdown?.rule ? (
+                                        <div className="space-y-2 text-sm font-medium">
+                                          {Object.entries(app.screening_result.scoring_breakdown.rule).map(([k, v]) => (
+                                            <div key={k} className="flex items-center justify-between">
+                                              <div className="text-muted-foreground text-xs uppercase">{k.replace(/_/g, ' ')}</div>
+                                              <div className="font-black">{String(v)}</div>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <div className="text-sm text-muted-foreground">No rule breakdown available.</div>
+                                      )}
+                                    </div>
+                                  </div>
+                               </div>
+                            </div>
+                         </Card>
+                       </div>
+                     </>
                    ) : (
-                     <div className="flex flex-col items-center justify-center py-32 bg-muted/10 rounded-[3rem] border border-dashed border-border/50 text-center">
+                     <div className="flex flex-col items-center justify-center py-16 bg-muted/10 rounded-[3rem] border border-dashed border-border/50 text-center">
                         <Brain className="size-16 text-muted-foreground/30 mb-6" />
-                        <h3 className="text-2xl font-black uppercase tracking-widest">No AI screening data</h3>
+                        <h3 className="text-2xl font-black uppercase tracking-widest">No Active Live Evaluation</h3>
                         <p className="text-muted-foreground font-medium max-w-sm mx-auto">
-                          This applicant has not been processed by the AI screening pipeline yet.
+                          Live screening may be archived or not generated yet. Historical evaluations are listed below.
                         </p>
                      </div>
                    )}
+
+                   <Card className="p-8 rounded-[2.5rem] border border-border/50 space-y-6">
+                     <div className="flex items-center justify-between">
+                       <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                         <Clock size={14} /> Evaluation History
+                       </h3>
+                       <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                         {visibleHistory.length} visible • {archivedHistory.length} archived
+                       </span>
+                     </div>
+
+                     {visibleHistory.length === 0 ? (
+                       <p className="text-sm text-muted-foreground">No visible historical evaluations returned.</p>
+                     ) : (
+                       <div className="space-y-3">
+                         {visibleHistory.map((entry) => (
+                           <div key={entry.id} className="p-4 rounded-2xl bg-muted/10 border border-border/40 flex items-center justify-between gap-4">
+                             <div className="space-y-1">
+                               <div className="text-sm font-black">
+                                 Version {entry.evaluation_version} • Score {formatScore(entry.final_score, 1)}%
+                               </div>
+                               <div className="text-xs text-muted-foreground">
+                                 {entry.status.toUpperCase()} • Screened {entry.screened_at ? new Date(entry.screened_at).toLocaleString() : "—"}
+                               </div>
+                               <div className="text-xs text-muted-foreground">Reason: {entry.archive_reason || "—"}</div>
+                             </div>
+                             <Button
+                               variant="outline"
+                               onClick={() => handleArchiveHistoryEntry(entry.id)}
+                               disabled={actionBusyKey === `history-archive-${entry.id}`}
+                               className="rounded-xl text-[10px] font-black uppercase tracking-widest"
+                             >
+                               {actionBusyKey === `history-archive-${entry.id}` ? "Archiving..." : "Archive Entry"}
+                             </Button>
+                           </div>
+                         ))}
+                       </div>
+                     )}
+
+                     <div className="pt-4 border-t border-border/40 space-y-3">
+                       <h4 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Archived Evaluations</h4>
+                       {archivedHistory.length === 0 ? (
+                         <p className="text-sm text-muted-foreground">No soft-deleted evaluations found.</p>
+                       ) : (
+                         archivedHistory.map((entry) => (
+                           <div key={`archived-${entry.id}`} className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 flex items-center justify-between gap-4">
+                             <div className="space-y-1">
+                               <div className="text-sm font-black">Version {entry.evaluation_version} • Score {formatScore(entry.final_score, 1)}%</div>
+                               <div className="text-xs text-muted-foreground">
+                                 Deleted {entry.deleted_at ? new Date(entry.deleted_at).toLocaleString() : "—"}
+                               </div>
+                             </div>
+                             <Button
+                               onClick={() => handleRestoreHistoryEntry(entry.id)}
+                               disabled={actionBusyKey === `history-restore-${entry.id}`}
+                               className="rounded-xl text-[10px] font-black uppercase tracking-widest"
+                             >
+                               {actionBusyKey === `history-restore-${entry.id}` ? "Restoring..." : "Restore"}
+                             </Button>
+                           </div>
+                         ))
+                       )}
+                     </div>
+                   </Card>
                 </div>
               )}
             </motion.div>
