@@ -13,7 +13,10 @@ import {
   fetchDepartments,
   updateJobPosition,
   suggestSkills,
-  updateCustomApplicationFields
+  updateCustomApplicationFields,
+  fetchInstructionTemplates,
+  createInstructionTemplate,
+  deleteInstructionTemplate
 } from "@/services/recruitmentService";
 import { Card } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
@@ -35,11 +38,14 @@ import {
   Loader2,
   Trash2,
   Settings2,
-  GripVertical
+  GripVertical,
+  Wand2,
+  Save,
+  ChevronDown
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CustomApplicationField, CustomFieldType } from "@/types/recruitment";
+import { CustomApplicationField, CustomFieldType, RecruiterInstructionTemplate } from "@/types/recruitment";
 
 const FIELD_TYPES: { label: string; value: CustomFieldType }[] = [
   { label: "Short Text", value: "short_text" },
@@ -68,6 +74,10 @@ export function JobPositionManager() {
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
+  const [templates, setTemplates] = useState<RecruiterInstructionTemplate[]>([]);
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
   const getToday = () => {
     const now = new Date();
@@ -88,6 +98,7 @@ export function JobPositionManager() {
     description: "",
     status: "open",
     posted_date: getToday(),
+    recruiter_instructions: "",
     min_gpa: 0,
     min_years_experience: 0,
     required_skills: [],
@@ -193,14 +204,17 @@ export function JobPositionManager() {
   async function loadInitialData() {
     try {
       setLoading(true);
-      const [posResponse, deptResponse] = await Promise.all([
+      const [posResponse, deptResponse, templateResponse] = await Promise.all([
         fetchJobPositions(),
-        fetchDepartments()
+        fetchDepartments(),
+        fetchInstructionTemplates()
       ]);
       const posList = Array.isArray(posResponse) ? posResponse : posResponse?.results ?? [];
       const deptList = deptResponse?.results ?? [];
+      const templateList = templateResponse?.results ?? [];
       setPositions(posList);
       setDepartments(deptList);
+      setTemplates(templateList);
 
       // Set default department if none selected
       if (deptList.length > 0) {
@@ -234,6 +248,45 @@ export function JobPositionManager() {
       }
     } catch (error) {
       console.error("Failed to fetch departments", error);
+    }
+  }
+
+  async function reloadTemplates() {
+    try {
+      const response = await fetchInstructionTemplates();
+      setTemplates(response.results || []);
+    } catch (error) {
+      console.error("Failed to fetch templates", error);
+    }
+  }
+
+  async function handleSaveTemplate() {
+    if (!newTemplateName.trim()) return;
+    if (!formData.recruiter_instructions?.trim()) return;
+
+    try {
+      setIsSavingTemplate(true);
+      await createInstructionTemplate({
+        name: newTemplateName.trim(),
+        content: formData.recruiter_instructions.trim()
+      });
+      setNewTemplateName("");
+      setIsCreatingTemplate(false);
+      await reloadTemplates();
+    } catch (error) {
+      console.error("Failed to save template", error);
+    } finally {
+      setIsSavingTemplate(false);
+    }
+  }
+
+  async function handleDeleteTemplate(id: number) {
+    if (!confirm("Are you sure you want to delete this template?")) return;
+    try {
+      await deleteInstructionTemplate(id);
+      await reloadTemplates();
+    } catch (error) {
+      console.error("Failed to delete template", error);
     }
   }
 
@@ -296,6 +349,7 @@ export function JobPositionManager() {
         description: "",
         status: "open",
         posted_date: getToday(),
+        recruiter_instructions: "",
         min_gpa: 0,
         min_years_experience: 0,
         required_skills: [],
@@ -631,6 +685,100 @@ export function JobPositionManager() {
                       className="w-full rounded-xl border border-border/50 p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[100px] text-sm font-medium transition-all"
                       value={formData.description}
                       onChange={e => setFormData({ ...formData, description: e.target.value })}
+                    />
+                  </div>
+
+                  {/* AI Custom Guidance (Optional) */}
+                  <div className="space-y-4 p-6 rounded-3xl bg-primary/5 border border-primary/10">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Wand2 className="size-4 text-primary" />
+                        <h4 className="text-xs font-black uppercase tracking-widest text-primary">AI Custom Guidance (Optional)</h4>
+                      </div>
+                      
+                      <div className="flex items-center gap-3">
+                        {templates.length > 0 && (
+                          <div className="relative group/templates">
+                            <button
+                              type="button"
+                              className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                            >
+                              Load Template <ChevronDown className="size-3" />
+                            </button>
+                            <div className="absolute right-0 top-full mt-2 w-64 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover/templates:opacity-100 group-hover/templates:visible transition-all z-20 overflow-hidden">
+                              <div className="p-2 border-b border-border/50 bg-muted/30 text-[9px] font-black uppercase tracking-widest text-muted-foreground">Select a template</div>
+                              <div className="max-h-48 overflow-y-auto">
+                                {templates.map(t => (
+                                  <div key={t.id} className="flex items-center justify-between group/titem hover:bg-muted/50 transition-colors">
+                                    <button
+                                      type="button"
+                                      onClick={() => setFormData({ ...formData, recruiter_instructions: t.content })}
+                                      className="flex-1 text-left px-4 py-2 text-[11px] font-bold truncate"
+                                    >
+                                      {t.name}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteTemplate(t.id)}
+                                      className="px-3 py-2 text-muted-foreground hover:text-destructive opacity-0 group-hover/titem:opacity-100 transition-opacity"
+                                    >
+                                      <Trash2 className="size-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {!isCreatingTemplate ? (
+                          <button
+                            type="button"
+                            onClick={() => setIsCreatingTemplate(true)}
+                            disabled={!formData.recruiter_instructions?.trim()}
+                            className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline disabled:opacity-50 flex items-center gap-1"
+                          >
+                            <Save className="size-3" /> Save current as template
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
+                            <Input
+                              placeholder="Template name..."
+                              className="h-7 w-32 text-[10px] rounded-lg"
+                              value={newTemplateName}
+                              onChange={e => setNewTemplateName(e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              onClick={handleSaveTemplate}
+                              disabled={isSavingTemplate || !newTemplateName.trim()}
+                              className="p-1 px-2 bg-primary text-primary-foreground rounded-lg text-[10px] font-black uppercase"
+                            >
+                              {isSavingTemplate ? <Loader2 className="size-2 animate-spin" /> : "Save"}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setIsCreatingTemplate(false)}
+                                className="p-1 px-2 bg-muted text-muted-foreground rounded-lg text-[10px] font-black uppercase"
+                              >
+                                Cancel
+                              </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <p className="text-[10px] text-muted-foreground leading-relaxed">
+                      Influence the AI&apos;s qualitative scoring. Give it specific rules or priorities for this role.
+                      <br/>
+                      <em className="text-primary/70 italic">Example: &quot;Prioritize candidates with experience in large-scale cloud migrations over general DevOps.&quot;</em>
+                    </p>
+                    
+                    <textarea
+                      placeholder="Enter custom instructions for the AI recruiter..."
+                      className="w-full rounded-2xl border border-primary/20 bg-background p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[80px] text-sm font-medium transition-all"
+                      value={formData.recruiter_instructions}
+                      onChange={e => setFormData({ ...formData, recruiter_instructions: e.target.value })}
                     />
                   </div>
 

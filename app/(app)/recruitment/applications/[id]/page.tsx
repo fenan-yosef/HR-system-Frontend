@@ -51,6 +51,7 @@ export default function ApplicationDetailPage() {
   const [app, setApp] = useState<Application | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"overview" | "resume" | "ai">("overview");
+  const [resumeView, setResumeView] = useState<'ui' | 'formatted' | 'raw'>('ui');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<'pdf' | 'image' | 'other' | null>(null);
@@ -233,6 +234,50 @@ export default function ApplicationDetailPage() {
   });
   const visibleHistory = historyEntries.filter((entry) => !entry.is_deleted);
   const archivedHistory = historyEntries.filter((entry) => !!entry.is_deleted);
+
+  const parsedExtractedResume = (() => {
+    if (!app?.extracted_resume) return null;
+    try {
+      if (typeof app.extracted_resume === 'string') {
+        return JSON.parse(app.extracted_resume);
+      }
+      if ((app.extracted_resume as any).extracted_json) return (app.extracted_resume as any).extracted_json;
+      if ((app.extracted_resume as any).raw_llm_response) return JSON.parse((app.extracted_resume as any).raw_llm_response);
+    } catch (e) {
+      return null;
+    }
+    return null;
+  })();
+
+  const rawExtractedText = typeof app?.extracted_resume === 'string' ? app.extracted_resume : app?.extracted_resume?.raw_llm_response || '';
+
+  function JsonPrettyView({ data, depth = 0 }: any) {
+    if (data === null || data === undefined) return <div className="text-sm text-muted-foreground">—</div>;
+    if (typeof data !== 'object') {
+      return <div className="text-sm font-medium">{String(data)}</div>;
+    }
+    if (Array.isArray(data)) {
+      return (
+        <div className="space-y-2" style={{ marginLeft: depth * 8 }}>
+          {data.map((item: any, i: number) => (
+            <div key={i} className="p-3 rounded-lg bg-background border border-border/20">
+              <JsonPrettyView data={item} depth={depth + 1} />
+            </div>
+          ))}
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-3">
+        {Object.entries(data).map(([k, v]) => (
+          <div key={k} className="p-3 rounded-2xl bg-muted/5 border border-border/20">
+            <div className="text-[10px] font-black uppercase text-muted-foreground mb-1">{k}</div>
+            <JsonPrettyView data={v} depth={depth + 1} />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto space-y-8 pb-20 animate-in fade-in duration-700">
@@ -572,19 +617,52 @@ export default function ApplicationDetailPage() {
                       <FileText className="size-5 text-primary" />
                       <h3 className="text-xs font-black uppercase tracking-widest">Resume Extraction</h3>
                     </div>
-                    <Button variant="ghost" className="h-8 text-[10px] font-black uppercase tracking-widest" onClick={() => openPreview(getMediaUrl(app.cv_path), 'Resume')}>
-                      View Original <ExternalLink className="size-3 ml-2" />
-                    </Button>
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-background p-1 flex items-center gap-1 border border-border/30">
+                        <button onClick={() => setResumeView('ui')} className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded ${resumeView === 'ui' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted/10'}`}>
+                          Beautiful UI
+                        </button>
+                        <button onClick={() => setResumeView('formatted')} className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded ${resumeView === 'formatted' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted/10'}`}>
+                          Formatted JSON
+                        </button>
+                        <button onClick={() => setResumeView('raw')} className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded ${resumeView === 'raw' ? 'bg-primary text-white' : 'text-muted-foreground hover:bg-muted/10'}`}>
+                          Raw
+                        </button>
+                      </div>
+                      <Button variant="ghost" className="h-8 text-[10px] font-black uppercase tracking-widest" onClick={() => openPreview(getMediaUrl(app.cv_path), 'Resume')}>
+                        View Original <ExternalLink className="size-3 ml-2" />
+                      </Button>
+                    </div>
                   </div>
                   <div className="p-10">
                     {app.extracted_resume ? (
-                      <div className="prose prose-sm max-w-none prose-headings:font-black prose-p:font-medium prose-p:text-muted-foreground">
-                         <div className="whitespace-pre-wrap font-mono text-xs leading-relaxed opacity-80">
-                            {typeof app.extracted_resume === 'string' 
-                              ? app.extracted_resume 
-                              : app.extracted_resume.raw_llm_response}
-                         </div>
-                      </div>
+                      <>
+                        {resumeView === 'raw' && (
+                          <div className="prose prose-sm max-w-none prose-headings:font-black prose-p:font-medium prose-p:text-muted-foreground">
+                            <div className="whitespace-pre-wrap font-mono text-xs leading-relaxed opacity-80">
+                              {rawExtractedText || (typeof app.extracted_resume === 'string' ? app.extracted_resume : (app.extracted_resume as any).raw_llm_response)}
+                            </div>
+                          </div>
+                        )}
+
+                        {resumeView === 'formatted' && (
+                          <pre className="text-[12px] font-mono leading-relaxed max-h-[500px] overflow-auto custom-scrollbar p-4 bg-background border border-border rounded-lg whitespace-pre-wrap">
+                            {parsedExtractedResume ? JSON.stringify(parsedExtractedResume, null, 2) : (rawExtractedText || (typeof app.extracted_resume === 'string' ? app.extracted_resume : (app.extracted_resume as any).raw_llm_response))}
+                          </pre>
+                        )}
+
+                        {resumeView === 'ui' && (
+                          <div className="space-y-4">
+                            {parsedExtractedResume ? (
+                              <JsonPrettyView data={parsedExtractedResume} />
+                            ) : (
+                              <div className="whitespace-pre-wrap font-mono text-xs leading-relaxed opacity-80">
+                                {rawExtractedText || (typeof app.extracted_resume === 'string' ? app.extracted_resume : (app.extracted_resume as any).raw_llm_response)}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
                         <Loader2 className="size-10 text-primary/30 animate-spin" />

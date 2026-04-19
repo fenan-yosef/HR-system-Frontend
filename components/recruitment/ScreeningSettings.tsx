@@ -4,7 +4,10 @@ import {
     updateJobPosition,
     getVersionStats,
     reEvaluate,
-    suggestSkills
+    suggestSkills,
+    fetchInstructionTemplates,
+    createInstructionTemplate,
+    deleteInstructionTemplate
 } from "@/services/recruitmentService";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,8 +26,14 @@ import {
     CheckCircle2,
     Calendar,
     Users,
-    Loader2
+    Loader2,
+    Wand2,
+    Save,
+    Trash2,
+    ChevronDown
 } from "lucide-react";
+
+import { RecruiterInstructionTemplate } from "@/types/recruitment";
 
 interface ScreeningSettingsProps {
     job: JobPosition;
@@ -44,10 +53,25 @@ export function ScreeningSettings({ job, onStartScreening, onUpdate }: Screening
     const [suggesting, setSuggesting] = useState(false);
     const [versionStats, setVersionStats] = useState<VersionStats | null>(null);
     const [isLoadingStats, setIsLoadingStats] = useState(false);
+    const [recruiterInstructions, setRecruiterInstructions] = useState(job.recruiter_instructions || "");
+    const [templates, setTemplates] = useState<RecruiterInstructionTemplate[]>([]);
+    const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+    const [newTemplateName, setNewTemplateName] = useState("");
+    const [isSavingTemplate, setIsSavingTemplate] = useState(false);
 
     useEffect(() => {
         loadVersionStats();
+        loadTemplates();
     }, [job.position_id]);
+
+    const loadTemplates = async () => {
+        try {
+            const res = await fetchInstructionTemplates();
+            setTemplates(res.results || []);
+        } catch (e) {
+            console.error("Failed to load templates", e);
+        }
+    };
 
     const loadVersionStats = async () => {
         try {
@@ -61,6 +85,34 @@ export function ScreeningSettings({ job, onStartScreening, onUpdate }: Screening
         }
     };
 
+    const handleSaveTemplate = async () => {
+        if (!newTemplateName.trim() || !recruiterInstructions.trim()) return;
+        try {
+            setIsSavingTemplate(true);
+            await createInstructionTemplate({
+                name: newTemplateName.trim(),
+                content: recruiterInstructions.trim()
+            });
+            setNewTemplateName("");
+            setIsCreatingTemplate(false);
+            loadTemplates();
+        } catch (e) {
+            console.error("Failed to save template", e);
+        } finally {
+            setIsSavingTemplate(false);
+        }
+    };
+
+    const handleDeleteTemplate = async (id: number) => {
+        if (!confirm("Delete template?")) return;
+        try {
+            await deleteInstructionTemplate(id);
+            loadTemplates();
+        } catch (e) {
+            console.error("Failed to delete template", e);
+        }
+    };
+
     const handleSave = async () => {
         setIsSaving(true);
         try {
@@ -70,6 +122,7 @@ export function ScreeningSettings({ job, onStartScreening, onUpdate }: Screening
                 shortlist_size: shortlistSize,
                 required_skills: skills,
                 required_certificates: certs,
+                recruiter_instructions: recruiterInstructions,
             });
             onUpdate(updated);
             loadVersionStats(); // Reload stats after criteria change
@@ -254,6 +307,86 @@ export function ScreeningSettings({ job, onStartScreening, onUpdate }: Screening
                             ))}
                         </div>
                     </div>
+                </div>
+
+                {/* AI Custom Guidance */}
+                <div className="space-y-4 p-5 rounded-3xl bg-primary/5 border border-primary/10">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <Wand2 className="size-4 text-primary" />
+                            <h4 className="text-xs font-black uppercase tracking-widest text-primary">AI Guidance (Optional)</h4>
+                        </div>
+                        
+                        <div className="flex items-center gap-3">
+                            {templates.length > 0 && (
+                                <div className="relative group/templates">
+                                    <button
+                                        type="button"
+                                        className="text-[10px] font-black uppercase tracking-widest text-muted-foreground hover:text-primary flex items-center gap-1 transition-colors"
+                                    >
+                                        Templates <ChevronDown className="size-3" />
+                                    </button>
+                                    <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-xl opacity-0 invisible group-hover/templates:opacity-100 group-hover/templates:visible transition-all z-20 overflow-hidden">
+                                        <div className="max-h-48 overflow-y-auto">
+                                            {templates.map(t => (
+                                                <div key={t.id} className="flex items-center justify-between group/titem hover:bg-muted/50 transition-colors">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setRecruiterInstructions(t.content)}
+                                                        className="flex-1 text-left px-4 py-2 text-[10px] font-bold truncate"
+                                                    >
+                                                        {t.name}
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleDeleteTemplate(t.id)}
+                                                        className="px-3 py-2 text-muted-foreground hover:text-destructive opacity-0 group-hover/titem:opacity-100 transition-opacity"
+                                                    >
+                                                        <Trash2 className="size-3" />
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {!isCreatingTemplate ? (
+                                <button
+                                    type="button"
+                                    onClick={() => setIsCreatingTemplate(true)}
+                                    disabled={!recruiterInstructions.trim()}
+                                    className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline disabled:opacity-50 flex items-center gap-1"
+                                >
+                                    <Save className="size-3" /> Save Template
+                                </button>
+                            ) : (
+                                <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-2">
+                                    <Input
+                                        placeholder="Name..."
+                                        className="h-7 w-24 text-[10px] rounded-lg"
+                                        value={newTemplateName}
+                                        onChange={e => setNewTemplateName(e.target.value)}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleSaveTemplate}
+                                        disabled={isSavingTemplate || !newTemplateName.trim()}
+                                        className="p-1 px-2 bg-primary text-primary-foreground rounded-lg text-[10px] font-black uppercase"
+                                    >
+                                        {isSavingTemplate ? <Loader2 className="size-2 animate-spin" /> : "Save"}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    <textarea
+                        placeholder="Influence the AI's qualitative scoring with custom prioritized rules..."
+                        className="w-full rounded-2xl border border-primary/10 bg-background/50 p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[90px] text-sm font-medium transition-all"
+                        value={recruiterInstructions}
+                        onChange={e => setRecruiterInstructions(e.target.value)}
+                    />
                 </div>
 
                 <div className="pt-4 flex flex-col gap-3">

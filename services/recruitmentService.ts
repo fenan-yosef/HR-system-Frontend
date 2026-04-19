@@ -14,7 +14,8 @@ import type {
   ScreeningProgress,
   VersionStats,
   SuggestSkillsResponse,
-  CustomApplicationField
+  CustomApplicationField,
+  RecruiterInstructionTemplate
 } from "@/types/recruitment";
 import { apiFetch } from "@/services/apiClient";
 
@@ -327,6 +328,33 @@ export function getSkillSuggestions(positionId: number): Promise<SuggestSkillsRe
 export function retryExtraction(applicationId: number): Promise<any> {
   return apiFetch<any>(`/applicant-applications/${applicationId}/retry-extraction/`, {
     method: "POST",
+    requiresAuth: true,
+  });
+}
+
+export function fetchInstructionTemplates(): Promise<PaginatedResponse<RecruiterInstructionTemplate>> {
+  return apiFetch<PaginatedResponse<RecruiterInstructionTemplate>>("/recruiter-instruction-templates/", { requiresAuth: true });
+}
+
+export function createInstructionTemplate(data: Partial<RecruiterInstructionTemplate>): Promise<RecruiterInstructionTemplate> {
+  return apiFetch<RecruiterInstructionTemplate>("/recruiter-instruction-templates/", {
+    method: "POST",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
+export function updateInstructionTemplate(id: number, data: Partial<RecruiterInstructionTemplate>): Promise<RecruiterInstructionTemplate> {
+  return apiFetch<RecruiterInstructionTemplate>(`/recruiter-instruction-templates/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
+export function deleteInstructionTemplate(id: number): Promise<void> {
+  return apiFetch<void>(`/recruiter-instruction-templates/${id}/`, {
+    method: "DELETE",
     requiresAuth: true,
   });
 }

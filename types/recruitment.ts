@@ -58,6 +58,7 @@ export interface JobPosition {
   closed_date: string | null;
   created_at: string;
   criteria_version: number;
+  recruiter_instructions?: string;
   custom_application_fields?: CustomApplicationField[];
   // Screening fields
   min_gpa?: number;
@@ -92,6 +93,7 @@ export interface CreateJobPosition {
   status?: JobStatus;
   posted_date: string;
   closed_date?: string;
+  recruiter_instructions?: string;
   min_gpa?: number;
   min_years_experience?: number;
   required_skills?: string[];
@@ -326,5 +328,13 @@ export interface SuggestSkillsResponse {
   count: number;
   source?: string;
   position_id?: number;
+}
+
+export interface RecruiterInstructionTemplate {
+  id: number;
+  name: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
 }
 
