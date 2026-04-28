@@ -105,6 +105,21 @@ const NAVIGATION_CONFIG: NavSection[] = [
           { label: "Leave Requests", href: ROUTES.LEAVE_REQUESTS },
         ],
       },
+      {
+        label: "Letters",
+        icon: FileText,
+        roles: ["EMPLOYEE"],
+        subItems: [
+          { label: "Request Letter", href: ROUTES.EMPLOYEE_REQUEST_LETTER },
+          { label: "My Requests", href: ROUTES.EMPLOYEE_MY_LETTERS },
+        ],
+      },
+      {
+        label: "Letter Requests",
+        href: ROUTES.HR_LETTER_REQUESTS,
+        icon: FileText,
+        roles: ["ADMIN", "HR_MANAGER", "HR_CEO"],
+      },
       // {
       //   label: "Finance",
       //   icon: CreditCard,
