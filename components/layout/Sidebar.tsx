@@ -58,7 +58,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "Dashboard",
         href: ROUTES.DASHBOARD,
         icon: LayoutDashboard,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
+        roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "APPLICANT"],
       },
     ],
   },
@@ -68,7 +68,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
       {
         label: "Recruitment",
         icon: Briefcase,
-        roles: ["ADMIN", "HR_MANAGER"],
+        roles: ["ADMIN", "HR_STAFF"],
         subItems: [
           { label: "Job Postings", href: ROUTES.RECRUITMENT_JOB_POSTINGS },
           { label: "Applications", href: ROUTES.RECRUITMENT_APPLICATIONS },
@@ -79,7 +79,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "Onboarding",
         href: ROUTES.ONBOARDING,
         icon: UserCheck,
-        roles: ["ADMIN", "HR_MANAGER"],
+        roles: ["ADMIN", "HR_STAFF"],
       },
     ],
   },
@@ -89,7 +89,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
       {
         label: "Employees",
         icon: Users2,
-        roles: ["ADMIN", "HR_MANAGER"],
+        roles: ["ADMIN", "HR_STAFF"],
         subItems: [
           { label: "Employee Directory", href: ROUTES.EMPLOYEES },
           { label: "Departments", href: ROUTES.DEPARTMENTS },
@@ -99,7 +99,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
       {
         label: "Attendance",
         icon: Clock,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
+        roles: ["ADMIN", "HR_STAFF", "EMPLOYEE"],
         subItems: [
           { label: "Time Logs", href: ROUTES.ATTENDANCE },
           { label: "Leave Requests", href: ROUTES.LEAVE_REQUESTS },
@@ -118,12 +118,12 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "Letter Requests",
         href: ROUTES.HR_LETTER_REQUESTS,
         icon: FileText,
-        roles: ["ADMIN", "HR_MANAGER", "HR_CEO"],
+        roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
       },
       // {
       //   label: "Finance",
       //   icon: CreditCard,
-      //   roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
+      //   roles: ["ADMIN", "HR_STAFF", "EMPLOYEE"],
       //   subItems: [
       //     { label: "Payroll", href: ROUTES.PAYROLL },
       //     { label: "Tax Info", href: "#" },
@@ -138,13 +138,13 @@ const NAVIGATION_CONFIG: NavSection[] = [
   //       label: "Performance",
   //       href: ROUTES.PERFORMANCE,
   //       icon: Target,
-  //       roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
+  //       roles: ["ADMIN", "HR_STAFF", "EMPLOYEE"],
   //     },
   //     {
   //       label: "Academy",
   //       href: ROUTES.LEARNING,
   //       icon: GraduationCap,
-  //       roles: ["EMPLOYEE", "ADMIN", "HR_MANAGER"],
+  //       roles: ["EMPLOYEE", "ADMIN", "HR_STAFF"],
   //     },
   //   ],
   // },
@@ -155,13 +155,13 @@ const NAVIGATION_CONFIG: NavSection[] = [
   //       label: "My Profile",
   //       href: ROUTES.MY_PROFILE,
   //       icon: UserCircle,
-  //       roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
+  //       roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "APPLICANT"],
   //     },
   //     {
   //       label: "Documents",
   //       href: ROUTES.MY_DOCUMENTS,
   //       icon: FileText,
-  //       roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
+  //       roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "APPLICANT"],
   //     },
   //   ],
   // },

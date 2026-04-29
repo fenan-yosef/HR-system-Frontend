@@ -201,7 +201,7 @@ export default function LetterRequestsPage() {
   const requestCountLabel = filteredRequests.length.toLocaleString();
 
   return (
-    <RoleGuard allowedRoles={["ADMIN", "HR_MANAGER", "HR_CEO"]}>
+    <RoleGuard allowedRoles={["ADMIN", "HR_STAFF", "HR_CEO"]}>
       <section className="space-y-8">
         <div className="flex flex-col gap-2">
           <h1 className="text-4xl font-extrabold tracking-tight">

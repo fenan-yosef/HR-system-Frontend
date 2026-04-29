@@ -2,11 +2,11 @@
 
 import { useAuth } from "@/hooks/useAuth";
 import { DashboardOverview } from "@/features/dashboard/components/DashboardOverview";
+import { ROLE_LABELS } from "@/constants/roles";
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const username = user?.role.trim().toLocaleLowerCase();
-  const greetingName = username && username.length > 0 ? username : "Explorer";
+  const greetingName = user?.firstName || (user?.role ? ROLE_LABELS[user.role] : null) || "Explorer";
 
   return (
     <section className="space-y-10">
