@@ -18,10 +18,12 @@ import {
   approveLetter,
   generateLetter,
   getAllLetterRequests,
+  getLetterEmployeeId,
   rejectLetter,
   resolveLetterFileUrl,
 } from "@/services/letterService";
 import { apiDownload } from "@/services/apiClient";
+import { fetchEmployee } from "@/services/employeeService";
 import type { LetterRequest, LetterStatus } from "@/types/letter";
 import {
   CheckCircle2,
@@ -81,6 +83,10 @@ function getRequestedDate(request: LetterRequest): string | undefined {
   return request.requested_at ?? request.requestedAt ?? request.created_at;
 }
 
+function getEmployeeId(request: LetterRequest): number | null {
+  return getLetterEmployeeId(request);
+}
+
 function getStatusStyles(status?: LetterStatus) {
   if (status === "approved") {
     return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
@@ -91,7 +97,7 @@ function getStatusStyles(status?: LetterStatus) {
   return "bg-amber-500/10 text-amber-600 border-amber-500/20";
 }
 
-function getEmployeeName(request: LetterRequest) {
+function getEmployeeNameFromPayload(request: LetterRequest) {
   if (request.employee_name) return request.employee_name;
   if (request.employeeName) return request.employeeName;
   if (request.employee?.full_name) return request.employee.full_name;
@@ -113,6 +119,7 @@ export default function LetterRequestsPage() {
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<PendingAction>(null);
+  const [employeeNames, setEmployeeNames] = useState<Record<number, string>>({});
 
   const loadRequests = async () => {
     setIsLoading(true);
@@ -120,6 +127,37 @@ export default function LetterRequestsPage() {
     try {
       const data = await getAllLetterRequests();
       setRequests(data);
+
+      const idsToResolve = Array.from(
+        new Set(
+          data
+            .map((request) => getEmployeeId(request))
+            .filter((value): value is number => value !== null),
+        ),
+      ).filter((employeeId) => !employeeNames[employeeId]);
+
+      if (idsToResolve.length > 0) {
+        const resolved = await Promise.allSettled(
+          idsToResolve.map(async (employeeId) => {
+            const employee = await fetchEmployee(employeeId);
+            const first = employee.first_name ?? "";
+            const last = employee.last_name ?? "";
+            const fullName = `${first} ${last}`.trim();
+            return [employeeId, fullName || "Unknown"] as const;
+          }),
+        );
+
+        setEmployeeNames((prev) => {
+          const next = { ...prev };
+          resolved.forEach((entry) => {
+            if (entry.status === "fulfilled") {
+              const [employeeId, employeeName] = entry.value;
+              next[employeeId] = employeeName;
+            }
+          });
+          return next;
+        });
+      }
     } catch (err) {
       console.error("Failed to load letter requests", err);
       setError("Unable to load letter requests. Please try again.");
@@ -139,31 +177,49 @@ export default function LetterRequestsPage() {
       const matchesStatus = statusFilter === "all" || status === statusFilter;
       if (!matchesStatus) return false;
       if (!normalizedSearch) return true;
-      const employeeName = getEmployeeName(request).toLowerCase();
+      const employeeId = getEmployeeId(request);
+      const employeeName =
+        (employeeId !== null ? employeeNames[employeeId] : undefined) ??
+        getEmployeeNameFromPayload(request);
+      const displayEmployeeName = employeeName.toLowerCase();
       const type = getRequestLetterType(request)?.toLowerCase() ?? "";
       return (
-        employeeName.includes(normalizedSearch) ||
+        displayEmployeeName.includes(normalizedSearch) ||
         type.includes(normalizedSearch)
       );
     });
-  }, [requests, statusFilter, search]);
+  }, [requests, statusFilter, search, employeeNames]);
+
+  const getDisplayEmployeeName = (request: LetterRequest) => {
+    const employeeId = getEmployeeId(request);
+    if (employeeId !== null && employeeNames[employeeId]) {
+      return employeeNames[employeeId];
+    }
+    return getEmployeeNameFromPayload(request);
+  };
 
   const handleAction = async (
     request: LetterRequest,
     action: "approve" | "reject" | "generate",
   ) => {
+    const employeeId = getEmployeeId(request);
+    if (employeeId === null) {
+      toast("Employee id is missing for this request.", "error");
+      return;
+    }
+
     setActionLoadingId(request.id);
     try {
       if (action === "approve") {
-        await approveLetter(request.id);
+        await approveLetter(employeeId);
         toast("Request approved.", "success");
       }
       if (action === "reject") {
-        await rejectLetter(request.id);
+        await rejectLetter(employeeId);
         toast("Request rejected.", "success");
       }
       if (action === "generate") {
-        await generateLetter(request.id);
+        await generateLetter(employeeId);
         toast("PDF generated successfully.", "success");
       }
       await loadRequests();
@@ -288,14 +344,14 @@ export default function LetterRequestsPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2 font-medium">
                             <div className="size-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold">
-                              {getEmployeeName(request)
+                              {getDisplayEmployeeName(request)
                                 .split(" ")
-                                .map((part) => part[0])
+                                .map((part: string) => part[0])
                                 .join("")
                                 .slice(0, 2)
                                 .toUpperCase()}
                             </div>
-                            {getEmployeeName(request)}
+                            {getDisplayEmployeeName(request)}
                           </div>
                         </td>
                         <td className="px-6 py-4">

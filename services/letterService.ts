@@ -49,6 +49,20 @@ function extractLetterRequests(response: unknown): LetterRequest[] {
   return [];
 }
 
+export function getLetterEmployeeId(request: LetterRequest): number | null {
+  const employeeId =
+    request.employee?.employee_id ??
+    request.employee?.id ??
+    request.employee_id;
+
+  if (employeeId === undefined || employeeId === null) {
+    return null;
+  }
+
+  const parsed = Number(employeeId);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function resolveLetterFileUrl(fileUrl: string): string {
   if (!fileUrl) return "";
 
@@ -109,9 +123,9 @@ export async function getAllLetterRequests(): Promise<LetterRequest[]> {
   return extractLetterRequests(response);
 }
 
-export function approveLetter(requestId: number): Promise<LetterRequest> {
+export function approveLetter(employeeId: number): Promise<LetterRequest> {
   return apiFetch<LetterRequest>(
-    `${LETTER_REQUESTS_ENDPOINT}${requestId}/approve/`,
+    `${LETTER_REQUESTS_ENDPOINT}${employeeId}/approve/`,
     {
       method: "PATCH",
       requiresAuth: true,
@@ -119,9 +133,9 @@ export function approveLetter(requestId: number): Promise<LetterRequest> {
   );
 }
 
-export function rejectLetter(requestId: number): Promise<LetterRequest> {
+export function rejectLetter(employeeId: number): Promise<LetterRequest> {
   return apiFetch<LetterRequest>(
-    `${LETTER_REQUESTS_ENDPOINT}${requestId}/reject/`,
+    `${LETTER_REQUESTS_ENDPOINT}${employeeId}/reject/`,
     {
       method: "PATCH",
       requiresAuth: true,
@@ -129,9 +143,9 @@ export function rejectLetter(requestId: number): Promise<LetterRequest> {
   );
 }
 
-export function generateLetter(requestId: number): Promise<LetterRequest> {
+export function generateLetter(employeeId: number): Promise<LetterRequest> {
   return apiFetch<LetterRequest>(
-    `${LETTER_REQUESTS_ENDPOINT}${requestId}/generate/`,
+    `${LETTER_REQUESTS_ENDPOINT}${employeeId}/generate/`,
     {
       method: "POST",
       requiresAuth: true,

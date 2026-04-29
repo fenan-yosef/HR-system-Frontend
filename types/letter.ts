@@ -4,6 +4,7 @@ export type LetterStatus = "pending" | "approved" | "rejected";
 
 export interface LetterRequest {
   id: number;
+  employee_id?: number;
   letter_type?: LetterType;
   letterType?: LetterType;
   status?: LetterStatus;
@@ -21,6 +22,7 @@ export interface LetterRequest {
   employeeName?: string;
   employee?: {
     id?: number;
+    employee_id?: number;
     first_name?: string;
     last_name?: string;
     full_name?: string;
