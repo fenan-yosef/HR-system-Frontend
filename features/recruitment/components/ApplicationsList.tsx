@@ -249,8 +249,8 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
     toast(`Failed to ${action}: ${err.message}`, "error");
   };
 
-  const canEdit = user?.role === "HR_MANAGER" || user?.role === "HR_CEO";
-  const canShortlist = user?.role === "HR_MANAGER";
+  const canEdit = user?.role === "HR_STAFF" || user?.role === "HR_CEO";
+  const canShortlist = user?.role === "HR_STAFF";
   const canCEOActions = user?.role === "HR_CEO";
 
   const getStatusStyle = (status: string) => {

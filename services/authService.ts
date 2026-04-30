@@ -16,15 +16,18 @@ const ROLE_MAP: Record<string, UserRole> = {
   ADMINISTRATOR: "ADMIN",
   HR_CEO: "HR_CEO",
   CEO: "HR_CEO",
-  HR_MANAGER: "HR_MANAGER",
-  HRMANAGER: "HR_MANAGER",
-  HR: "HR_MANAGER",
-  STAFF: "HR_MANAGER",
+  HR_STAFF: "HR_STAFF",
+  HRSTAFF: "HR_STAFF",
+  HR_MANAGER: "HR_STAFF",
+  HRMANAGER: "HR_STAFF",
+  HR: "HR_STAFF",
+  STAFF: "HR_STAFF",
+  MANAGER: "HR_STAFF",
   EMPLOYEE: "EMPLOYEE",
   APPLICANT: "APPLICANT",
 };
 
-function mapRoleNameToUserRole(roleName?: string): UserRole {
+export function mapRoleNameToUserRole(roleName?: string): UserRole {
   if (!roleName) return "UNKNOWN";
   const normalised = roleName.trim().replace(/\s|-/g, "_").toUpperCase();
   return ROLE_MAP[normalised] ?? "UNKNOWN";

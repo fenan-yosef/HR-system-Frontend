@@ -24,7 +24,7 @@ export function isHRStaff(user: AuthUser | null): boolean {
   if (!user) return false;
   if (isHRCeo(user)) return true;
   return (
-    user.role === "HR_MANAGER" ||
+    user.role === "HR_STAFF" ||
     user.roleName === "HR Staff" ||
     user.roleName === "HR" ||
     user.roleName === "Staff"
