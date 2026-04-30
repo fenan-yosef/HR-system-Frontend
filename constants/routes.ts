@@ -7,11 +7,16 @@ export const ROUTES = {
   
   // People & Ops
   EMPLOYEES: "/employees",
+  DEPARTMENTS: "/departments",
   ONBOARDING: "/onboarding",
   OFFBOARDING: "/offboarding",
   ATTENDANCE: "/attendance",
   LEAVE_REQUESTS: "/leave-requests",
   PAYROLL: "/payroll",
+
+  // Employee Letters
+  EMPLOYEE_REQUEST_LETTER: "/employee/request-letter",
+  EMPLOYEE_MY_LETTERS: "/employee/my-letters",
 
   // Performance & Growth
   PERFORMANCE: "/performance",
@@ -20,6 +25,9 @@ export const ROUTES = {
   // Self Service
   MY_PROFILE: "/profile",
   MY_DOCUMENTS: "/documents",
+
+  // HR Letters
+  HR_LETTER_REQUESTS: "/hr/letter-requests",
   
   // System
   SETTINGS: "/settings",

@@ -1,7 +1,7 @@
 export type UserRole =
   | "ADMIN"
   | "HR_CEO"
-  | "HR_MANAGER"
+  | "HR_STAFF"
   | "EMPLOYEE"
   | "APPLICANT"
   | "UNKNOWN";

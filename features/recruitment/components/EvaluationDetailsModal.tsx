@@ -16,11 +16,26 @@ import {
   TrendingUp,
   BrainCircuit,
   Search,
-  BookOpen
+  BookOpen,
+  XCircle,
+  AlertTriangle,
+  FileSearch,
+  Brain,
+  History,
+  Clock,
+  Archive
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { Application } from "@/types/recruitment";
+import type { Application, ScreeningResult, ScreeningHistoryEntry } from "@/types/recruitment";
 import { getMediaUrl } from "@/services/apiClient";
+import { formatScore } from "@/lib/utils";
+
+function getScoreColor(score: number) {
+  if (score >= 80) return { text: "text-emerald-600", light: "bg-emerald-500/10", border: "border-emerald-500/20", label: "Strong Fit" };
+  if (score >= 60) return { text: "text-teal-600", light: "bg-teal-500/10", border: "border-teal-500/20", label: "Qualified" };
+  if (score >= 40) return { text: "text-amber-600", light: "bg-amber-500/10", border: "border-amber-500/20", label: "Needs Review" };
+  return { text: "text-red-500", light: "bg-red-500/10", border: "border-red-500/20", label: "Low Match" };
+}
 
 interface EvaluationDetailsModalProps {
   application: Application;
@@ -29,18 +44,52 @@ interface EvaluationDetailsModalProps {
 
 export function EvaluationDetailsModal({ application, onClose }: EvaluationDetailsModalProps) {
   const evalData = application.evaluation;
+  const screening = application.screening_result;
+  const history = application.screening_history || screening?.history || [];
+  
   const [activeTab, setActiveTab] = useState<"matched" | "missing">("matched");
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    summary: true,
-    skills: true,
-    questions: true
+    rawLogic: false
   });
   
-  if (!evalData) return null;
+  // Track which version we are currently viewing (defaults to active screening result)
+  const [selectedSnapshotId, setSelectedSnapshotId] = useState<number | string | null>(screening?.id || null);
+  
+  if (!evalData && !screening) return null;
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
+
+    // Determine which snapshot to display
+    const currentSnapshot = selectedSnapshotId === (screening?.id)
+         ? screening
+         : history.find(h => h.id === selectedSnapshotId) || screening;
+
+    // Type guard for snapshots that include full screening details
+    const isFullSnapshot = (s: ScreeningResult | ScreeningHistoryEntry | undefined): s is ScreeningResult =>
+       !!s && 'rule_score' in s && 'ai_score' in s;
+
+    const fullSnapshot = isFullSnapshot(currentSnapshot) ? currentSnapshot : undefined;
+
+    // Coerce numeric fields that may arrive as strings from the API
+    const screeningScoreNum = currentSnapshot ? (Number(currentSnapshot.final_score) || 0) : 0;
+    const screeningRuleNum = fullSnapshot ? (Number(fullSnapshot.rule_score) || 0) : 0;
+    const screeningAiNum = fullSnapshot ? (Number(fullSnapshot.ai_score) || 0) : 0;
+
+    const hardCriteriaMet = fullSnapshot ? !!fullSnapshot.hard_criteria_met : false;
+    const explanationText = fullSnapshot ? fullSnapshot.explanation : "";
+    const keyStrengths: string[] = fullSnapshot ? (fullSnapshot.key_strengths || []) : [];
+    const keyWeaknesses: string[] = fullSnapshot ? (fullSnapshot.key_weaknesses || []) : [];
+    const rawLlmResponse = fullSnapshot ? fullSnapshot.raw_llm_response : undefined;
+
+    // Extract interview questions from breakdown if present, fall back to evaluation data
+    let interviewQuestions: string[] = [];
+    if (fullSnapshot && Array.isArray(fullSnapshot.scoring_breakdown?.interview_questions)) {
+       interviewQuestions = fullSnapshot.scoring_breakdown!.interview_questions as string[];
+    } else if (evalData?.interview_questions) {
+       interviewQuestions = evalData.interview_questions;
+    }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -81,7 +130,177 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
           
-          {/* Summary Section */}
+          {/* New AI Screening Results Section */}
+          {screening && (
+            <section className="border border-border/50 rounded-2xl overflow-hidden bg-gradient-to-br from-primary/5 to-transparent">
+                <button 
+                  onClick={() => toggleSection('screening')}
+                  className="w-full flex items-center justify-between p-4 hover:bg-primary/5 transition-colors border-b border-border/30"
+               >
+                  <div className="flex items-center gap-3">
+                     <div className={`p-2 rounded-lg ${getScoreColor(screeningScoreNum).light} ${getScoreColor(screeningScoreNum).text}`}>
+                        <Brain size={16} />
+                     </div>
+                     <div className="text-left">
+                        <div className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                           {selectedSnapshotId === screening?.id ? "Latest AI Screening" : "Archived Screening Version"}
+                           <span className={`px-2 py-0.5 rounded-full text-[10px] ${hardCriteriaMet ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500'}`}>
+                              {hardCriteriaMet ? 'Passed Criteria' : 'Failed Criteria'}
+                           </span>
+                        </div>
+                        <div className="text-[10px] font-bold text-muted-foreground uppercase">Weighted Fit: {formatScore(currentSnapshot?.final_score, 1)}% (V{currentSnapshot?.evaluation_version})</div>
+                     </div>
+                  </div>
+                  <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-300 ${expandedSections.screening ? '' : '-rotate-90'}`} />
+               </button>
+               
+               <AnimatePresence>
+                  {expandedSections.screening && (
+                     <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                     >
+                        <div className="p-4 space-y-4">
+                           {/* Scores Grid */}
+                           <div className="grid grid-cols-2 gap-3">
+                              <div className="p-3 rounded-xl bg-background/50 border border-border/30 text-center">
+                                 <p className="text-[9px] font-black uppercase text-muted-foreground mb-1">Rule Score</p>
+                                 <p className="text-lg font-black">{formatScore(screeningRuleNum, 0)}%</p>
+                              </div>
+                              <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center">
+                                 <p className="text-[9px] font-black uppercase text-primary mb-1">AI Match</p>
+                                 <p className="text-lg font-black text-primary">{formatScore(screeningAiNum, 0)}%</p>
+                              </div>
+                           </div>
+
+                           {/* Explanation */}
+                           <div className="p-4 rounded-xl bg-background/50 border border-border/30">
+                              <p className="text-xs font-black uppercase tracking-widest text-muted-foreground mb-2 flex items-center gap-2">
+                                 <MessageSquare size={12} /> AI Logic Explanation
+                              </p>
+                              <div className="text-sm font-medium leading-relaxed whitespace-pre-wrap italic">"{explanationText}"</div>
+                           </div>
+
+                           {/* Pros/Cons */}
+                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                              <div className="space-y-2">
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 flex items-center gap-1.5 border-b border-emerald-500/10 pb-1">
+                                    <CheckCircle2 size={12} /> Strong Signals
+                                 </p>
+                                 <div className="flex flex-col gap-1.5">
+                                    {keyStrengths.map((s: string, i: number) => (
+                                       <div key={i} className="text-[11px] font-semibold text-foreground/80 flex items-start gap-1.5">
+                                          <div className="size-1 rounded-full bg-emerald-500 mt-1.5 shrink-0" /> {s}
+                                       </div>
+                                    ))}
+                                    {keyStrengths.length === 0 && <span className="text-[10px] italic text-muted-foreground">None identified.</span>}
+                                 </div>
+                              </div>
+                              <div className="space-y-2">
+                                 <p className="text-[10px] font-black uppercase tracking-widest text-amber-600 flex items-center gap-1.5 border-b border-amber-500/10 pb-1">
+                                    <AlertTriangle size={12} /> Identified Gaps
+                                 </p>
+                                 <div className="flex flex-col gap-1.5">
+                                    {keyWeaknesses.map((w: string, i: number) => (
+                                       <div key={i} className="text-[11px] font-semibold text-foreground/80 flex items-start gap-1.5">
+                                          <div className="size-1 rounded-full bg-amber-500 mt-1.5 shrink-0" /> {w}
+                                       </div>
+                                    ))}
+                                    {keyWeaknesses.length === 0 && <span className="text-[10px] italic text-muted-foreground">None identified.</span>}
+                                 </div>
+                              </div>
+                           </div>
+                        </div>
+                     </motion.div>
+                  )}
+               </AnimatePresence>
+            </section>
+          )}
+
+          {/* Evaluation History Section */}
+          {history.length > 0 && (
+            <section className="border border-border/50 rounded-2xl overflow-hidden bg-muted/5">
+               <button 
+                  onClick={() => toggleSection('history')}
+                  className="w-full flex items-center justify-between p-4 hover:bg-muted/10 transition-colors"
+               >
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground">
+                     <History size={14} />
+                     <span>Evaluation History</span>
+                     <span className="ml-1 px-2 py-0.5 rounded-full bg-muted text-[10px]">{history.length} Previous</span>
+                  </div>
+                  <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-300 ${expandedSections.history ? '' : '-rotate-90'}`} />
+               </button>
+               <AnimatePresence>
+                  {expandedSections.history && (
+                     <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                     >
+                        <div className="p-4 pt-0 space-y-2">
+                           {/* Current Snapshot indicator */}
+                           {screening && (
+                              <button 
+                                 onClick={() => setSelectedSnapshotId(screening?.id ?? null)}
+                                 className={`w-full p-3 rounded-xl border transition-all flex items-center justify-between ${selectedSnapshotId === screening.id ? 'bg-primary/10 border-primary ring-2 ring-primary/20' : 'bg-background/50 border-border/30 hover:bg-muted/30'}`}
+                              >
+                                 <div className="flex items-center gap-3 text-left">
+                                    <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600">
+                                       <CheckCircle2 size={14} />
+                                    </div>
+                                    <div>
+                                       <div className="text-xs font-black flex items-center gap-2">Latest: {formatScore(screening.final_score, 1)}% <span className="text-[8px] bg-primary text-primary-foreground px-1 rounded">V{screening.evaluation_version}</span></div>
+                                       <div className="text-[10px] text-muted-foreground font-bold">CURRENT ACTIVE VERSION</div>
+                                    </div>
+                                 </div>
+                                 {selectedSnapshotId === screening.id && <ChevronRight size={14} className="text-primary" />}
+                              </button>
+                           )}
+
+                           <div className="h-px bg-border/20 my-2" />
+
+                           {history.map((entry, idx) => (
+                              <button 
+                                 key={entry.id ?? idx} 
+                                 onClick={() => setSelectedSnapshotId(entry.id ?? null)}
+                                 className={`w-full p-3 rounded-xl border transition-all flex items-center justify-between ${selectedSnapshotId === entry.id ? 'bg-amber-500/10 border-amber-500 ring-2 ring-amber-500/20' : 'bg-background/50 border-border/30 hover:bg-muted/30'}`}
+                              >
+                                 <div className="flex items-center gap-3 text-left">
+                                    <div className={`p-1.5 rounded-lg ${entry.status === 'passed' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500'}`}>
+                                       {entry.status === 'passed' ? <CheckCircle2 size={14} /> : <XCircle size={14} />}
+                                    </div>
+                                    <div>
+                                       <div className="text-xs font-black flex items-center gap-2 tracking-tight">
+                                          Score: {formatScore(entry.final_score, 1)}%
+                                          <span className="text-[9px] font-bold text-muted-foreground uppercase px-1.5 py-0.5 rounded-md bg-muted">v{entry.evaluation_version}</span>
+                                       </div>
+                                       <div className="text-[9px] text-muted-foreground font-medium flex items-center gap-1.5 mt-0.5">
+                                          <Clock size={10} /> {new Date(entry.screened_at).toLocaleDateString()}
+                                          <span className="opacity-30">•</span>
+                                          <span className="flex items-center gap-1"><Archive size={10} /> {(entry.archive_reason || '').replace('_', ' ')}</span>
+                                       </div>
+                                    </div>
+                                 </div>
+                                 {selectedSnapshotId === entry.id && <ChevronRight size={14} className="text-amber-500" />}
+                              </button>
+                           ))}
+                           <p className="text-[10px] text-center text-muted-foreground italic font-medium pt-2 border-t border-border/20">
+                              History tracking started from the latest system update.
+                           </p>
+                        </div>
+                     </motion.div>
+                )}
+             </AnimatePresence>
+          </section>
+          )}
+
+          {/* Existing AiEvaluation fields */}
+          {evalData && (
+            <>
           <section className="border border-border/50 rounded-2xl overflow-hidden bg-muted/5">
              <button 
                 onClick={() => toggleSection('summary')}
@@ -208,6 +427,7 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
           </section>
 
           {/* Interview Questions */}
+          {interviewQuestions.length > 0 && (
           <section className="border border-border/50 rounded-2xl overflow-hidden bg-muted/5">
              <button 
                 onClick={() => toggleSection('questions')}
@@ -215,7 +435,7 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
              >
                 <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-violet-600">
                    <MessageSquare size={14} />
-                   <span>Tailored Interview Questions</span>
+                   <span>Tailored Interview Questions ({selectedSnapshotId === screening?.id ? "Latest" : "Archived"})</span>
                 </div>
                 <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-300 ${expandedSections.questions ? '' : '-rotate-90'}`} />
              </button>
@@ -228,32 +448,63 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
                       className="overflow-hidden"
                    >
                       <div className="p-4 pt-0 space-y-3">
-                         {evalData.interview_questions?.map((q, i) => (
+                         {(interviewQuestions.length > 0 ? interviewQuestions : evalData.interview_questions)?.map((q: string, i: number) => (
                             <div key={i} className="flex gap-4 p-4 rounded-xl bg-background/50 border border-border/30 hover:bg-muted/20 transition-all group">
                                <span className="size-6 shrink-0 bg-violet-100 text-violet-700 text-[10px] font-black rounded-lg flex items-center justify-center group-hover:bg-violet-600 group-hover:text-white transition-colors">
                                   {i+1}
                                </span>
                                <p className="text-sm font-medium leading-relaxed">{q}</p>
                             </div>
-                         )) || (
-                            <div className="text-center py-6 bg-muted/10 rounded-xl border border-dashed text-xs text-muted-foreground">
-                               Evaluation pending more data for tailored questions.
-                            </div>
-                         )}
+                         ))}
                       </div>
                    </motion.div>
                 )}
              </AnimatePresence>
           </section>
+          )}
+            </>
+          )}
+
+          {/* AI Audit Section (Transparency) */}
+          {currentSnapshot && (
+            <section className="border border-border/50 rounded-2xl overflow-hidden bg-zinc-950">
+               <button 
+                  onClick={() => toggleSection('rawLogic')}
+                  className="w-full flex items-center justify-between p-4 hover:bg-white/5 transition-colors"
+               >
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-zinc-400">
+                     <FileSearch size={14} />
+                     <span>AI Audit (Raw LLM Response - V{currentSnapshot.evaluation_version})</span>
+                  </div>
+                  <ChevronDown size={16} className={`text-zinc-500 transition-transform duration-300 ${expandedSections.rawLogic ? '' : '-rotate-90'}`} />
+               </button>
+               <AnimatePresence>
+                  {expandedSections.rawLogic && (
+                     <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                     >
+                        <div className="p-4 pt-0">
+                           <pre className="p-4 rounded-xl bg-black text-zinc-500 text-[10px] font-mono leading-relaxed overflow-x-auto whitespace-pre-wrap max-h-48">
+                             {rawLlmResponse || "No raw logic stored for this version."}
+                           </pre>
+                        </div>
+                     </motion.div>
+                  )}
+               </AnimatePresence>
+            </section>
+          )}
 
           {/* Clustering & Meta */}
           <section className="flex flex-wrap gap-4 items-center justify-between pt-4 border-t border-border/50">
              <div className="flex items-center gap-2">
                 <div className="flex items-center gap-2 bg-slate-900 text-white px-3 py-1.5 rounded-xl shadow-sm">
                    <Layers size={14} className="text-blue-400" />
-                   <span className="text-[10px] font-black uppercase">Cluster #{evalData.cluster_id || "N/A"}</span>
+                   <span className="text-[10px] font-black uppercase">Cluster #{evalData?.cluster_id || "N/A"}</span>
                 </div>
-                {evalData.ai_rank && (
+                {evalData?.ai_rank && (
                    <div className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 px-3 py-1.5 rounded-xl border border-amber-100">
                       Top Rank {evalData.ai_rank}
                    </div>

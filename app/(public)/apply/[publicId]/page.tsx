@@ -31,6 +31,9 @@ export default function PublicApplyPage() {
     const [jobPostedDate, setJobPostedDate] = useState<string | null>(null);
     const [applicationUrl, setApplicationUrl] = useState<string | null>(null);
     const [isLoadingJob, setIsLoadingJob] = useState(true);
+    const [customFields, setCustomFields] = useState<any[]>([]);
+    const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
+    const [customFiles, setCustomFiles] = useState<Record<string, File | File[]>>({});
 
     const [formData, setFormData] = useState({
         full_name: "",
@@ -39,12 +42,8 @@ export default function PublicApplyPage() {
         cover_letter: "",
     });
     const [cvFile, setCvFile] = useState<File | null>(null);
-    const [certificates, setCertificates] = useState<File[]>([]);
-    const [supportingDocs, setSupportingDocs] = useState<File[]>([]);
 
     const cvInputRef = useRef<HTMLInputElement | null>(null);
-    const certInputRef = useRef<HTMLInputElement | null>(null);
-    const docInputRef = useRef<HTMLInputElement | null>(null);
 
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
@@ -87,6 +86,16 @@ export default function PublicApplyPage() {
                         if (job.status) setJobStatus(job.status);
                         if (job.posted_date) setJobPostedDate(job.posted_date);
                         if (job.application_url) setApplicationUrl(job.application_url);
+                        if (job.custom_application_fields) {
+                            setCustomFields(job.custom_application_fields);
+                            // Initialize default values
+                            const initialValues: Record<string, any> = {};
+                            job.custom_application_fields.forEach((f: any) => {
+                                if (f.type === "boolean") initialValues[f.key] = false;
+                                else if (f.type === "multi_select") initialValues[f.key] = [];
+                            });
+                            setCustomFieldValues(initialValues);
+                        }
                     } else if (data && data.application_url) {
                         // some responses only return share info
                         setApplicationUrl(data.application_url);
@@ -107,7 +116,7 @@ export default function PublicApplyPage() {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'cv' | 'certificates' | 'docs') => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'cv') => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
@@ -136,36 +145,27 @@ export default function PublicApplyPage() {
                 return;
             }
             setCvFile(file);
-        } else {
-            const newFiles: File[] = [];
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                if (file.size > maxSize) {
-                    toast(`File ${file.name} is too large (max 100MB).`, 'warning');
-                    continue;
-                }
-                if (!allowedTypes.includes(file.type)) {
-                    toast(`Invalid type for ${file.name}.`, 'warning');
-                    continue;
-                }
-                newFiles.push(file);
-            }
-
-            if (type === 'certificates') {
-                setCertificates((prev) => [...prev, ...newFiles]);
-            } else {
-                setSupportingDocs((prev) => [...prev, ...newFiles]);
-            }
         }
     };
 
-    const handleRemoveFile = (type: 'cv' | 'certificates' | 'docs', index?: number) => {
+    const handleCustomFieldChange = (key: string, value: any) => {
+        setCustomFieldValues((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const handleCustomFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: any) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        if (field.type === "file") {
+            setCustomFiles((prev) => ({ ...prev, [field.key]: files[0] }));
+        } else if (field.type === "file_list") {
+            setCustomFiles((prev) => ({ ...prev, [field.key]: Array.from(files) }));
+        }
+    };
+
+    const handleRemoveFile = (type: 'cv') => {
         if (type === 'cv') {
             setCvFile(null);
-        } else if (type === 'certificates') {
-            setCertificates((prev) => prev.filter((_, i) => i !== index));
-        } else {
-            setSupportingDocs((prev) => prev.filter((_, i) => i !== index));
         }
     };
 
@@ -214,29 +214,26 @@ export default function PublicApplyPage() {
             const cvId = await uploadSingleFile(cvFile);
             setUploadProgress(40);
 
-            // 2. Upload Certificates
-            let certificateIds: number[] = [];
-            if (certificates.length > 0) {
-                certificateIds = await Promise.all(certificates.map(f => uploadSingleFile(f)));
+            // 2. Handle Custom Fields (Files)
+            const submissionCustomValues = { ...customFieldValues };
+            for (const field of customFields) {
+                if (field.type === 'file' && customFiles[field.key]) {
+                    const fid = await uploadSingleFile(customFiles[field.key] as File);
+                    submissionCustomValues[field.key] = fid;
+                } else if (field.type === 'file_list' && customFiles[field.key]) {
+                    const fids = await Promise.all((customFiles[field.key] as File[]).map(f => uploadSingleFile(f)));
+                    submissionCustomValues[field.key] = fids;
+                }
             }
-            setUploadProgress(60);
 
-            // 3. Upload Supporting Docs
-            let documentIds: number[] = [];
-            if (supportingDocs.length > 0) {
-                documentIds = await Promise.all(supportingDocs.map(f => uploadSingleFile(f)));
-            }
-            setUploadProgress(80);
-
-            // 4. Submit application
+            // 5. Submit application
             const payload = {
                 full_name: formData.full_name,
                 email: formData.email,
                 phone: formData.phone,
                 upload_id: cvId,
-                certificate_upload_ids: certificateIds,
-                other_upload_ids: documentIds,
                 cover_letter: formData.cover_letter || undefined,
+                custom_field_values: Object.keys(submissionCustomValues).length > 0 ? submissionCustomValues : undefined,
             };
 
             try {
@@ -491,120 +488,6 @@ export default function PublicApplyPage() {
                                         {validationErrors.cv && <p className="text-red-500 text-xs mt-1 flex items-center gap-1 font-bold italic"><AlertCircle className="h-3 w-3" /> {validationErrors.cv}</p>}
                                     </div>
 
-                                    {/* Certificates & Certifications Section */}
-                                    <div className="space-y-4 pt-4 border-t border-gray-100/50">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Label className="text-base font-bold text-gray-900">Certificates & Certifications</Label>
-                                                <span className="text-sm text-gray-400 font-medium">(Optional)</span>
-                                            </div>
-                                            <Button 
-                                                type="button" 
-                                                variant="outline" 
-                                                size="sm" 
-                                                className="rounded-xl font-bold h-9 border-gray-200 hover:border-primary/50 hover:bg-primary/5 transition-all"
-                                                onClick={() => certInputRef.current?.click()}
-                                                disabled={isSubmitting}
-                                            >
-                                                <Plus className="size-4 mr-1.5" /> Add Certificate
-                                                <input 
-                                                    type="file" 
-                                                    ref={certInputRef} 
-                                                    className="hidden" 
-                                                    multiple 
-                                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                                    onChange={(e) => handleFileChange(e, 'certificates')} 
-                                                />
-                                            </Button>
-                                        </div>
-                                        
-                                        <div className="space-y-2">
-                                            {certificates.length === 0 ? (
-                                                <p className="text-sm text-gray-400 font-medium italic">No certificates added yet.</p>
-                                            ) : (
-                                                <div className="grid gap-2">
-                                                    {certificates.map((file, idx) => (
-                                                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 group animate-in slide-in-from-left-2 fade-in">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="p-2 bg-white rounded-lg shadow-sm">
-                                                                    <Paperclip className="size-4 text-primary" />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-sm font-bold text-gray-700 truncate max-w-[200px] sm:max-w-md">{file.name}</p>
-                                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                                                                </div>
-                                                            </div>
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => handleRemoveFile('certificates', idx)}
-                                                                className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
-                                                            >
-                                                                <X className="size-4" />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* Other Supporting Documents Section */}
-                                    <div className="space-y-4 pt-4 border-t border-gray-100/50">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-2">
-                                                <Label className="text-base font-bold text-gray-900">Other Supporting Documents</Label>
-                                                <span className="text-sm text-gray-400 font-medium">(Optional)</span>
-                                            </div>
-                                            <Button 
-                                                type="button" 
-                                                variant="outline" 
-                                                size="sm" 
-                                                className="rounded-xl font-bold h-9 border-gray-200 hover:border-primary/50 hover:bg-primary/5 transition-all"
-                                                onClick={() => docInputRef.current?.click()}
-                                                disabled={isSubmitting}
-                                            >
-                                                <Plus className="size-4 mr-1.5" /> Add Document
-                                                <input 
-                                                    type="file" 
-                                                    ref={docInputRef} 
-                                                    className="hidden" 
-                                                    multiple 
-                                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                                    onChange={(e) => handleFileChange(e, 'docs')} 
-                                                />
-                                            </Button>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            {supportingDocs.length === 0 ? (
-                                                <p className="text-sm text-gray-400 font-medium italic">No additional documents added.</p>
-                                            ) : (
-                                                <div className="grid gap-2">
-                                                    {supportingDocs.map((file, idx) => (
-                                                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-gray-50 border border-gray-100 group animate-in slide-in-from-left-2 fade-in">
-                                                            <div className="flex items-center gap-3">
-                                                                <div className="p-2 bg-white rounded-lg shadow-sm">
-                                                                    <Paperclip className="size-4 text-blue-500" />
-                                                                </div>
-                                                                <div>
-                                                                    <p className="text-sm font-bold text-gray-700 truncate max-w-[200px] sm:max-w-md">{file.name}</p>
-                                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{(file.size / 1024 / 1024).toFixed(2)} MB</p>
-                                                                </div>
-                                                            </div>
-                                                            <button 
-                                                                type="button" 
-                                                                onClick={() => handleRemoveFile('docs', idx)}
-                                                                className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
-                                                            >
-                                                                <X className="size-4" />
-                                                            </button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
                                     {/* Cover Letter Section */}
                                     <div className="space-y-3 pt-4 border-t border-gray-100/50">
                                         <div className="flex items-center gap-2">
@@ -622,6 +505,130 @@ export default function PublicApplyPage() {
                                             disabled={isSubmitting}
                                         />
                                     </div>
+
+                                    {/* Dynamic Custom Fields Section */}
+                                    {customFields.length > 0 && (
+                                        <div className="space-y-6 pt-6 border-t border-gray-100/50">
+                                            <h3 className="text-lg font-bold text-gray-900">Additional Information</h3>
+                                            <div className="grid gap-6">
+                                                {customFields.map((field) => (
+                                                    <div key={field.key} className="space-y-2">
+                                                        <Label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                                                            {field.label}
+                                                            {field.required && <span className="text-red-500">*</span>}
+                                                        </Label>
+
+                                                        {field.type === "short_text" && (
+                                                            <Input 
+                                                                value={customFieldValues[field.key] || ""}
+                                                                onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                                                                placeholder={field.label}
+                                                                className="rounded-xl"
+                                                                required={field.required}
+                                                            />
+                                                        )}
+
+                                                        {field.type === "long_text" && (
+                                                            <textarea
+                                                                value={customFieldValues[field.key] || ""}
+                                                                onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                                                                rows={3}
+                                                                className="flex w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-primary outline-none transition-all"
+                                                                placeholder={field.label}
+                                                                required={field.required}
+                                                            />
+                                                        )}
+
+                                                        {field.type === "number" || field.type === "integer" ? (
+                                                            <Input 
+                                                                type="number"
+                                                                value={customFieldValues[field.key] || ""}
+                                                                onChange={(e) => handleCustomFieldChange(field.key, field.type === "integer" ? parseInt(e.target.value) : parseFloat(e.target.value))}
+                                                                placeholder={field.label}
+                                                                className="rounded-xl"
+                                                                required={field.required}
+                                                            />
+                                                        ) : null}
+
+                                                        {field.type === "email" && (
+                                                            <Input 
+                                                                type="email"
+                                                                value={customFieldValues[field.key] || ""}
+                                                                onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                                                                placeholder="email@example.com"
+                                                                className="rounded-xl"
+                                                                required={field.required}
+                                                            />
+                                                        )}
+
+                                                        {field.type === "url" && (
+                                                            <Input 
+                                                                type="url"
+                                                                value={customFieldValues[field.key] || ""}
+                                                                onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
+                                                                placeholder="https://..."
+                                                                className="rounded-xl"
+                                                                required={field.required}
+                                                            />
+                                                        )}
+
+                                                        {(field.type === "file" || field.type === "file_list") && (
+                                                            <div className="space-y-2">
+                                                                <Input 
+                                                                    type="file"
+                                                                    multiple={field.type === "file_list"}
+                                                                    onChange={(e) => handleCustomFileChange(e, field)}
+                                                                    className="rounded-xl"
+                                                                    required={field.required && !customFiles[field.key]}
+                                                                />
+                                                                {customFiles[field.key] && (
+                                                                    <p className="text-xs text-primary font-bold">
+                                                                        {Array.isArray(customFiles[field.key]) 
+                                                                            ? `${(customFiles[field.key] as File[]).length} files selected` 
+                                                                            : (customFiles[field.key] as File).name}
+                                                                    </p>
+                                                                )}
+                                                            </div>
+                                                        )}
+
+                                                        {field.type === "boolean" && (
+                                                            <div className="flex items-center gap-2">
+                                                                <input 
+                                                                    type="checkbox"
+                                                                    checked={!!customFieldValues[field.key]}
+                                                                    onChange={(e) => handleCustomFieldChange(field.key, e.target.checked)}
+                                                                    className="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary"
+                                                                />
+                                                                <span className="text-sm font-medium text-gray-600">Yes / No</span>
+                                                            </div>
+                                                        )}
+
+                                                        {(field.type === "select" || field.type === "multi_select") && (
+                                                                <select 
+                                                                    multiple={field.type === "multi_select"}
+                                                                    value={customFieldValues[field.key] || (field.type === "multi_select" ? [] : "")}
+                                                                    onChange={(e) => {
+                                                                        if (field.type === "multi_select") {
+                                                                            const vals = Array.from(e.target.selectedOptions).map(o => o.value);
+                                                                            handleCustomFieldChange(field.key, vals);
+                                                                        } else {
+                                                                            handleCustomFieldChange(field.key, e.target.value);
+                                                                        }
+                                                                    }}
+                                                                    className="flex w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-primary outline-none transition-all"
+                                                                    required={field.required}
+                                                                >
+                                                                    {field.type !== "multi_select" && <option value="">Select an option</option>}
+                                                                    {field.options?.map((opt: string) => (
+                                                                        <option key={opt} value={opt}>{opt}</option>
+                                                                    ))}
+                                                                </select>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

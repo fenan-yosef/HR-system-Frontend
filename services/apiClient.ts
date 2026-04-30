@@ -88,13 +88,28 @@ export async function apiFetch<TResponse>(
 
   const response = await fetch(url, {
     ...options,
+    cache: options.cache ?? "no-store",
     headers,
   });
 
-  // If unauthorized and this request required auth, attempt a single refresh-then-retry flow.
-  if (response.status === 401 && options.requiresAuth) {
+  // If we get a 401, check whether it's due to an expired/invalid access token.
+  if (response.status === 401) {
+    let respJson: any = null;
+    try {
+      respJson = await response.clone().json().catch(() => null);
+    } catch {
+      respJson = null;
+    }
+
+    const isTokenNotValid =
+      respJson?.code === "token_not_valid" ||
+      (typeof respJson?.detail === "string" && respJson.detail.toLowerCase().includes("given token not valid")) ||
+      (Array.isArray(respJson?.messages) && respJson.messages.some((m: any) => m?.token_class === "AccessToken" && /expire|expired/i.test(m?.message)));
+
     const refresh = getStoredRefreshToken();
-    if (refresh) {
+
+    // Attempt refresh if the backend indicates the access token is invalid/expired and we have a refresh token.
+    if (isTokenNotValid && refresh) {
       try {
         const tokenRes = await fetch(`${API_BASE_URL}auth/token/refresh/`, {
           method: "POST",
@@ -109,6 +124,7 @@ export async function apiFetch<TResponse>(
             if (typeof window !== "undefined") {
               window.localStorage.setItem(ACCESS_TOKEN_KEY, newAccess);
             }
+
             // retry original request with new access token
             const retryHeaders = new Headers(options.headers);
             if (!isFormData(options.body)) retryHeaders.set("Content-Type", "application/json");
@@ -127,9 +143,18 @@ export async function apiFetch<TResponse>(
           }
         }
       } catch (e) {
-        // fall through to original error handling below
         console.warn("Token refresh failed", e);
       }
+    }
+
+    // If refresh was not possible or failed, and we're running in the browser, clear tokens and redirect to login.
+    if (typeof window !== "undefined") {
+      try {
+        clearTokens();
+      } catch {}
+      // Force a full-page navigation to ensure any app state is reset.
+      window.location.assign("/login");
+      throw new ApiError(401, "Redirecting to login");
     }
   }
 
