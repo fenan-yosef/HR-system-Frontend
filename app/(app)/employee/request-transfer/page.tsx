@@ -1,0 +1,199 @@
+"use client";
+
+import { useState } from "react";
+import { RoleGuard } from "@/context/RoleGuard";
+import { useToast } from "@/components/ui/toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Loader2, ArrowRightLeft } from "lucide-react";
+
+// Dummy departments for UI demonstration
+const DUMMY_DEPARTMENTS = [
+  { department_id: 1, name: "Human Resources" },
+  { department_id: 2, name: "Engineering" },
+  { department_id: 3, name: "Marketing" },
+  { department_id: 4, name: "Sales" },
+  { department_id: 5, name: "Finance" },
+  { department_id: 6, name: "Operations" },
+];
+
+export default function RequestTransferPage() {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState({
+    from_department: "",
+    to_department: "",
+    reason: "",
+    effective_date: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleChange = (
+    field: keyof typeof formData,
+    value: string,
+  ) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+
+    if (!formData.from_department) {
+      setError("From department is required.");
+      return;
+    }
+
+    if (!formData.to_department) {
+      setError("To department is required.");
+      return;
+    }
+
+    if (formData.from_department === formData.to_department) {
+      setError("From and to departments must be different.");
+      return;
+    }
+
+    if (!formData.reason.trim()) {
+      setError("Reason for transfer is required.");
+      return;
+    }
+
+    if (!formData.effective_date) {
+      setError("Effective date is required.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      // TODO: Implement API call to submit transfer request
+      // await createTransferRequest(formData);
+      toast("Transfer request submitted successfully.", "success");
+      setFormData({
+        from_department: "",
+        to_department: "",
+        reason: "",
+        effective_date: "",
+      });
+    } catch (err) {
+      console.error("Failed to submit transfer request", err);
+      toast("Failed to submit transfer request.", "error");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <RoleGuard allowedRoles={["EMPLOYEE"]}>
+      <section className="space-y-8">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-4xl font-extrabold tracking-tight">Request Transfer</h1>
+          <p className="text-muted-foreground">
+            Submit a transfer request to move to a different department.
+          </p>
+        </div>
+
+        <Card className="max-w-3xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ArrowRightLeft className="size-5 text-primary" /> New Transfer Request
+            </CardTitle>
+            <CardDescription>
+              HR will review your request and process the transfer once approved.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid gap-6 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="from_department">From Department</Label>
+                  <select
+                    id="from_department"
+                    value={formData.from_department}
+                    onChange={(event) =>
+                      handleChange("from_department", event.target.value)
+                    }
+                    className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                  >
+                    <option value="">Select department</option>
+                    {DUMMY_DEPARTMENTS.map((dept) => (
+                      <option key={dept.department_id} value={dept.department_id.toString()}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="to_department">To Department</Label>
+                  <select
+                    id="to_department"
+                    value={formData.to_department}
+                    onChange={(event) =>
+                      handleChange("to_department", event.target.value)
+                    }
+                    className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                  >
+                    <option value="">Select department</option>
+                    {DUMMY_DEPARTMENTS.map((dept) => (
+                      <option key={dept.department_id} value={dept.department_id.toString()}>
+                        {dept.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="effective_date">Effective Date</Label>
+                <Input
+                  id="effective_date"
+                  type="date"
+                  value={formData.effective_date}
+                  onChange={(event) =>
+                    handleChange("effective_date", event.target.value)
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="reason">Reason for Transfer</Label>
+                <textarea
+                  id="reason"
+                  value={formData.reason}
+                  onChange={(event) =>
+                    handleChange("reason", event.target.value)
+                  }
+                  placeholder="Explain why you want to transfer to this department"
+                  className="min-h-[120px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                />
+              </div>
+
+              {error && <p className="text-sm text-destructive">{error}</p>}
+
+              <div className="flex items-center justify-end">
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <span className="inline-flex items-center gap-2">
+                      <Loader2 className="size-4 animate-spin" /> Submitting
+                    </span>
+                  ) : (
+                    "Submit Request"
+                  )}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      </section>
+    </RoleGuard>
+  );
+}

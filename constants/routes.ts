@@ -17,6 +17,7 @@ export const ROUTES = {
   // Employee Letters
   EMPLOYEE_REQUEST_LETTER: "/employee/request-letter",
   EMPLOYEE_MY_LETTERS: "/employee/my-letters",
+  EMPLOYEE_REQUEST_TRANSFER: "/employee/request-transfer",
 
   // Performance & Growth
   PERFORMANCE: "/performance",
