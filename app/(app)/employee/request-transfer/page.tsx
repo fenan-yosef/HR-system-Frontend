@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { RoleGuard } from "@/context/RoleGuard";
 import { useToast } from "@/components/ui/toast";
+import { fetchDepartmentsAll } from "@/services/departmentService";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,19 +15,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2, ArrowRightLeft } from "lucide-react";
-
-// Dummy departments for UI demonstration
-const DUMMY_DEPARTMENTS = [
-  { department_id: 1, name: "Human Resources" },
-  { department_id: 2, name: "Engineering" },
-  { department_id: 3, name: "Marketing" },
-  { department_id: 4, name: "Sales" },
-  { department_id: 5, name: "Finance" },
-  { department_id: 6, name: "Operations" },
-];
+import type { Department } from "@/types/department";
 
 export default function RequestTransferPage() {
   const { toast } = useToast();
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [isLoadingDepartments, setIsLoadingDepartments] = useState(true);
   const [formData, setFormData] = useState({
     from_department: "",
     to_department: "",
@@ -36,10 +30,22 @@ export default function RequestTransferPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (
-    field: keyof typeof formData,
-    value: string,
-  ) => {
+  useEffect(() => {
+    const loadDepartments = async () => {
+      try {
+        const response = await fetchDepartmentsAll();
+        setDepartments(response.results);
+      } catch (err) {
+        console.error("Failed to load departments", err);
+        toast("Failed to load departments.", "error");
+      } finally {
+        setIsLoadingDepartments(false);
+      }
+    };
+    loadDepartments();
+  }, [toast]);
+
+  const handleChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -91,11 +97,23 @@ export default function RequestTransferPage() {
     }
   };
 
+  if (isLoadingDepartments) {
+    return (
+      <RoleGuard allowedRoles={["EMPLOYEE"]}>
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-primary" />
+        </div>
+      </RoleGuard>
+    );
+  }
+
   return (
     <RoleGuard allowedRoles={["EMPLOYEE"]}>
       <section className="space-y-8">
         <div className="flex flex-col gap-2">
-          <h1 className="text-4xl font-extrabold tracking-tight">Request Transfer</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight">
+            Request Transfer
+          </h1>
           <p className="text-muted-foreground">
             Submit a transfer request to move to a different department.
           </p>
@@ -104,10 +122,12 @@ export default function RequestTransferPage() {
         <Card className="max-w-3xl">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ArrowRightLeft className="size-5 text-primary" /> New Transfer Request
+              <ArrowRightLeft className="size-5 text-primary" /> New Transfer
+              Request
             </CardTitle>
             <CardDescription>
-              HR will review your request and process the transfer once approved.
+              HR will review your request and process the transfer once
+              approved.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -124,8 +144,11 @@ export default function RequestTransferPage() {
                     className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                   >
                     <option value="">Select department</option>
-                    {DUMMY_DEPARTMENTS.map((dept) => (
-                      <option key={dept.department_id} value={dept.department_id.toString()}>
+                    {departments.map((dept) => (
+                      <option
+                        key={dept.department_id}
+                        value={dept.department_id.toString()}
+                      >
                         {dept.name}
                       </option>
                     ))}
@@ -143,8 +166,11 @@ export default function RequestTransferPage() {
                     className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
                   >
                     <option value="">Select department</option>
-                    {DUMMY_DEPARTMENTS.map((dept) => (
-                      <option key={dept.department_id} value={dept.department_id.toString()}>
+                    {departments.map((dept) => (
+                      <option
+                        key={dept.department_id}
+                        value={dept.department_id.toString()}
+                      >
                         {dept.name}
                       </option>
                     ))}
