@@ -139,6 +139,12 @@ export function fetchEmployee(employeeId: number): Promise<Employee> {
   });
 }
 
+export function fetchCurrentUserEmployee(): Promise<Employee> {
+  return apiFetch<Employee>(`${EMPLOYEES_ENDPOINT}me/`, {
+    requiresAuth: true,
+  });
+}
+
 
 export function createEmployee(data: CreateEmployee): Promise<Employee> {
   return apiFetch<Employee>(EMPLOYEES_ENDPOINT, {
