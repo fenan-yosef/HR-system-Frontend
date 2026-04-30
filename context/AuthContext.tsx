@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { AuthContextState, AuthUser } from "@/types/auth";
-import { buildAuthUserFromAccessToken, loginRequest } from "@/services/authService";
+import { buildAuthUserFromAccessToken, loginRequest, mapRoleNameToUserRole } from "@/services/authService";
 import { clearTokens, persistTokens } from "@/services/apiClient";
 
 const AuthContext = createContext<AuthContextState | undefined>(undefined);
@@ -40,7 +40,21 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     const rawUser = window.localStorage.getItem(USER_STORAGE_KEY);
     if (rawUser) {
       try {
-        const parsedUser: AuthUser = JSON.parse(rawUser);
+        const parsedUser = JSON.parse(rawUser) as AuthUser;
+        parsedUser.role = mapRoleNameToUserRole(parsedUser.roleName ?? parsedUser.role);
+        if (!parsedUser.roleName) {
+          parsedUser.roleName = parsedUser.role === "HR_STAFF"
+            ? "HR Staff"
+            : parsedUser.role === "HR_CEO"
+              ? "HR CEO"
+              : parsedUser.role === "ADMIN"
+                ? "Admin"
+                : parsedUser.role === "EMPLOYEE"
+                  ? "Employee"
+                  : parsedUser.role === "APPLICANT"
+                    ? "Applicant"
+                    : "Unknown";
+        }
         setUser(parsedUser);
       } catch (error) {
         console.error("Failed to parse stored user", error);
