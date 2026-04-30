@@ -29,10 +29,20 @@ export interface LetterRequest {
     email?: string;
   };
   [key: string]: unknown;
+  remarks?: string | null;
 }
 
 export interface CreateLetterRequestPayload {
   letter_type: LetterType;
   purpose: string;
   target_company: string;
+}
+
+export interface ApproveRejectPayload {
+  remarks: string;
+}
+
+export interface GeneratePayload {
+  company_name: string;
+  salary: string;
 }

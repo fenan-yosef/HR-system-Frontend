@@ -42,7 +42,15 @@ function getRequestLetterType(request: LetterRequest): string | undefined {
 }
 
 function getRequestFileUrl(request: LetterRequest): string | null {
-  return request.generated_file_url ?? request.generatedFileUrl ?? null;
+  return (
+    request.generated_file_url ??
+    request.generatedFileUrl ??
+    (request as any).file_url ??
+    (request as any).fileUrl ??
+    (request as any).generated_file ??
+    (request as any).generatedFile ??
+    null
+  );
 }
 
 function getRequestedDate(request: LetterRequest): string | undefined {
@@ -115,6 +123,14 @@ export default function MyLettersPage() {
     }
   };
 
+  const handleDownloadLinkClick = async (
+    event: React.MouseEvent<HTMLAnchorElement>,
+    request: LetterRequest,
+  ) => {
+    event.preventDefault();
+    await handleDownload(request);
+  };
+
   if (isLoading) {
     return (
       <RoleGuard allowedRoles={["EMPLOYEE"]}>
@@ -185,6 +201,18 @@ export default function MyLettersPage() {
                             </span>
                           );
                         })()}
+                        {(() => {
+                          const status = getRequestStatus(request);
+                          if ((status === "approved" || status === "rejected") && request.remarks) {
+                            return (
+                              <div className="text-sm text-muted-foreground mt-2">
+                                <strong className="font-medium">Remarks: </strong>
+                                <span>{request.remarks}</span>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-muted-foreground">
                         {formatDate(getRequestedDate(request))}
@@ -196,6 +224,22 @@ export default function MyLettersPage() {
                           const isDownloading = downloadingId === request.id;
                           const canDownload = status === "approved" && !!fileUrl;
 
+                          if (status === "rejected") {
+                            return (
+                              <span className="text-xs font-semibold text-red-600">
+                                Rejected
+                              </span>
+                            );
+                          }
+
+                          if (status === "approved" && !fileUrl) {
+                            return (
+                              <span className="text-xs text-muted-foreground">
+                                Approved (Letter not generated yet)
+                              </span>
+                            );
+                          }
+
                           if (!canDownload) {
                             return (
                               <span className="text-xs text-muted-foreground">
@@ -205,19 +249,19 @@ export default function MyLettersPage() {
                           }
 
                           return (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDownload(request)}
-                              disabled={isDownloading}
+                            <a
+                              href="#"
+                              onClick={(event) => handleDownloadLinkClick(event, request)}
+                              className="inline-flex items-center gap-2 text-sm font-semibold text-primary underline underline-offset-4 hover:text-primary/80"
+                              aria-disabled={isDownloading}
                             >
                               {isDownloading ? (
                                 <Loader2 className="size-4 animate-spin" />
                               ) : (
                                 <Download className="size-4" />
                               )}
-                              {isDownloading ? "Downloading" : "Download PDF"}
-                            </Button>
+                              {isDownloading ? "Downloading" : "Download letter"}
+                            </a>
                           );
                         })()}
                       </td>

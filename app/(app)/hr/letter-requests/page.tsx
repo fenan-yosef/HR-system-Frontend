@@ -76,7 +76,22 @@ function getRequestLetterType(request: LetterRequest): string | undefined {
 }
 
 function getRequestFileUrl(request: LetterRequest): string | null {
-  return request.generated_file_url ?? request.generatedFileUrl ?? null;
+  return (
+    request.generated_file_url ??
+    request.generatedFileUrl ??
+    (request as any).file_url ??
+    (request as any).fileUrl ??
+    (request as any).generated_file ??
+    (request as any).generatedFile ??
+    null
+  );
+}
+
+function getRequestId(request: LetterRequest): number | null {
+  const id = (request as any).id ?? (request as any).letter_request_id ?? (request as any).request_id ?? (request as any).letterRequestId;
+  if (id === undefined || id === null) return null;
+  const parsed = Number(id);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function getRequestedDate(request: LetterRequest): string | undefined {
@@ -120,6 +135,9 @@ export default function LetterRequestsPage() {
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
   const [confirmAction, setConfirmAction] = useState<PendingAction>(null);
   const [employeeNames, setEmployeeNames] = useState<Record<number, string>>({});
+  const [confirmRemarks, setConfirmRemarks] = useState("");
+  const [confirmCompanyName, setConfirmCompanyName] = useState("");
+  const [confirmSalary, setConfirmSalary] = useState("");
 
   const loadRequests = async () => {
     setIsLoading(true);
@@ -170,6 +188,25 @@ export default function LetterRequestsPage() {
     loadRequests();
   }, []);
 
+  useEffect(() => {
+    if (!confirmAction) {
+      setConfirmRemarks("");
+      setConfirmCompanyName("");
+      setConfirmSalary("");
+      return;
+    }
+
+    const { request, type } = confirmAction;
+    if (type === "approve" || type === "reject") {
+      setConfirmRemarks((request as LetterRequest).remarks ?? "");
+    }
+
+    if (type === "generate") {
+      setConfirmCompanyName((request as LetterRequest).target_company ?? "");
+      setConfirmSalary("");
+    }
+  }, [confirmAction]);
+
   const filteredRequests = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase();
     return requests.filter((request) => {
@@ -202,24 +239,36 @@ export default function LetterRequestsPage() {
     request: LetterRequest,
     action: "approve" | "reject" | "generate",
   ) => {
-    const employeeId = getEmployeeId(request);
-    if (employeeId === null) {
-      toast("Employee id is missing for this request.", "error");
+    const requestId = getRequestId(request);
+    if (requestId === null) {
+      toast("Letter request id is missing.", "error");
       return;
     }
 
-    setActionLoadingId(request.id);
+    setActionLoadingId(request.id ?? null);
     try {
       if (action === "approve") {
-        await approveLetter(employeeId);
+        if (!confirmRemarks || !confirmRemarks.trim()) {
+          toast("Please provide remarks before approving.", "warning");
+          return;
+        }
+        await approveLetter(requestId, { remarks: confirmRemarks });
         toast("Request approved.", "success");
       }
       if (action === "reject") {
-        await rejectLetter(employeeId);
+        if (!confirmRemarks || !confirmRemarks.trim()) {
+          toast("Please provide remarks before rejecting.", "warning");
+          return;
+        }
+        await rejectLetter(requestId, { remarks: confirmRemarks });
         toast("Request rejected.", "success");
       }
       if (action === "generate") {
-        await generateLetter(employeeId);
+        if (!confirmCompanyName || !confirmCompanyName.trim() || !confirmSalary || !confirmSalary.trim()) {
+          toast("Please provide company name and salary before generating.", "warning");
+          return;
+        }
+        await generateLetter(requestId, { company_name: confirmCompanyName, salary: confirmSalary });
         toast("PDF generated successfully.", "success");
       }
       await loadRequests();
@@ -467,6 +516,51 @@ export default function LetterRequestsPage() {
                 "Generate a PDF for this request?"}
             </DialogDescription>
           </DialogHeader>
+          {/* Inputs for action payloads */}
+          {confirmAction?.type === "approve" && (
+            <div className="mt-4">
+              <label className="text-sm font-medium">Remarks</label>
+              <Input
+                value={confirmRemarks}
+                onChange={(e) => setConfirmRemarks(e.target.value)}
+                placeholder="Enter approval remarks"
+                className="mt-2"
+              />
+            </div>
+          )}
+          {confirmAction?.type === "reject" && (
+            <div className="mt-4">
+              <label className="text-sm font-medium">Remarks</label>
+              <Input
+                value={confirmRemarks}
+                onChange={(e) => setConfirmRemarks(e.target.value)}
+                placeholder="Enter rejection remarks"
+                className="mt-2"
+              />
+            </div>
+          )}
+          {confirmAction?.type === "generate" && (
+            <div className="mt-4 grid gap-3">
+              <div>
+                <label className="text-sm font-medium">Company name</label>
+                <Input
+                  value={confirmCompanyName}
+                  onChange={(e) => setConfirmCompanyName(e.target.value)}
+                  placeholder="Company name for the letter"
+                  className="mt-2"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Salary</label>
+                <Input
+                  value={confirmSalary}
+                  onChange={(e) => setConfirmSalary(e.target.value)}
+                  placeholder="Salary to display on letter"
+                  className="mt-2"
+                />
+              </div>
+            </div>
+          )}
           <DialogFooter>
             <Button
               variant="outline"
@@ -481,7 +575,12 @@ export default function LetterRequestsPage() {
                 setConfirmAction(null);
                 handleAction(request, type);
               }}
-              disabled={!confirmAction}
+              disabled={
+                !confirmAction ||
+                (confirmAction.type === "approve" && !confirmRemarks.trim()) ||
+                (confirmAction.type === "reject" && !confirmRemarks.trim()) ||
+                (confirmAction.type === "generate" && (!confirmCompanyName.trim() || !confirmSalary.trim()))
+              }
             >
               {confirmAction?.type === "approve" && "Approve"}
               {confirmAction?.type === "reject" && "Reject"}

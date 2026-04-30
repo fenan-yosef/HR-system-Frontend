@@ -1,5 +1,5 @@
 import { apiFetch, getMediaUrl } from "@/services/apiClient";
-import type { CreateLetterRequestPayload, LetterRequest } from "@/types/letter";
+import type { CreateLetterRequestPayload, LetterRequest, ApproveRejectPayload, GeneratePayload } from "@/types/letter";
 
 const LETTER_REQUESTS_ENDPOINT = "/letter-requests/";
 
@@ -123,31 +123,34 @@ export async function getAllLetterRequests(): Promise<LetterRequest[]> {
   return extractLetterRequests(response);
 }
 
-export function approveLetter(employeeId: number): Promise<LetterRequest> {
+export function approveLetter(letterRequestId: number, data: ApproveRejectPayload): Promise<LetterRequest> {
   return apiFetch<LetterRequest>(
-    `${LETTER_REQUESTS_ENDPOINT}${employeeId}/approve/`,
+    `${LETTER_REQUESTS_ENDPOINT}${letterRequestId}/approve/`,
     {
       method: "PATCH",
+      body: JSON.stringify(data),
       requiresAuth: true,
     },
   );
 }
 
-export function rejectLetter(employeeId: number): Promise<LetterRequest> {
+export function rejectLetter(letterRequestId: number, data: ApproveRejectPayload): Promise<LetterRequest> {
   return apiFetch<LetterRequest>(
-    `${LETTER_REQUESTS_ENDPOINT}${employeeId}/reject/`,
+    `${LETTER_REQUESTS_ENDPOINT}${letterRequestId}/reject/`,
     {
       method: "PATCH",
+      body: JSON.stringify(data),
       requiresAuth: true,
     },
   );
 }
 
-export function generateLetter(employeeId: number): Promise<LetterRequest> {
+export function generateLetter(letterRequestId: number, data: GeneratePayload): Promise<LetterRequest> {
   return apiFetch<LetterRequest>(
-    `${LETTER_REQUESTS_ENDPOINT}${employeeId}/generate/`,
+    `${LETTER_REQUESTS_ENDPOINT}${letterRequestId}/generate/`,
     {
       method: "POST",
+      body: JSON.stringify(data),
       requiresAuth: true,
     },
   );
