@@ -111,6 +111,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         roles: ["EMPLOYEE"],
         subItems: [
           { label: "Request Letter", href: ROUTES.EMPLOYEE_REQUEST_LETTER },
+          { label: "Request Transfer", href: ROUTES.EMPLOYEE_REQUEST_TRANSFER },
           { label: "My Requests", href: ROUTES.EMPLOYEE_MY_LETTERS },
         ],
       },
