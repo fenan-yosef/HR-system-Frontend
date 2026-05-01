@@ -94,7 +94,10 @@ export function ShortlistList() {
         applicationsRes?.results ?? []
       ).map((app) => ({
         shortlist_id: app.application_id,
-        application: app,
+        application: {
+          ...app,
+          full_name: app.full_name || (app as any).applicant_name || "Unknown Applicant"
+        },
         skill_score: String(app.evaluation?.skill_score ?? 0),
         experience_score: String(app.evaluation?.experience_score ?? 0),
         matching_percentage: String(app.evaluation?.matching_percentage ?? 0),
@@ -242,11 +245,11 @@ export function ShortlistList() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="size-14 rounded-2xl bg-muted flex items-center justify-center text-xl font-bold text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary transition-all">
-                        {entry.application.full_name[0]}
+                        {entry.application?.full_name?.[0] || "U"}
                       </div>
                       <div>
                         <h4 className="font-bold text-lg leading-tight">
-                          {entry.application.full_name}
+                          {entry.application?.full_name || "Unknown Candidate"}
                         </h4>
                         <p className="text-sm text-muted-foreground mt-0.5">
                           {entry.application.position?.title}

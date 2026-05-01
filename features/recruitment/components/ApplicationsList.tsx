@@ -22,6 +22,7 @@ import {
   BrainCircuit,
   AlertCircle,
   Inbox,
+  CheckCircle2,
   Eye,
   Star,
 } from "lucide-react";
