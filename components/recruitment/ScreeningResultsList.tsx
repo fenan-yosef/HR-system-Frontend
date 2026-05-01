@@ -13,7 +13,8 @@ import {
     TrendingUp,
     TrendingDown,
     Brain,
-    FileSearch
+    FileSearch,
+    Sparkles
 } from "lucide-react";
 import { useState } from "react";
 import {
@@ -23,6 +24,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/toast";
 
 interface ScreeningResultsListProps {
     results: ScreeningResult[];
@@ -44,6 +46,12 @@ function getScoreColor(score: number) {
 
 export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
     const [selectedResult, setSelectedResult] = useState<ScreeningResult | null>(null);
+    const { toast } = useToast();
+
+    const copyToClipboard = (text: string) => {
+        navigator.clipboard.writeText(text);
+        toast("Copied to clipboard", "success");
+    };
 
     // Sort by final_score descending for best candidates first
     const sortedResults = [...results].sort((a, b) => (Number(b.final_score) || 0) - (Number(a.final_score) || 0));
@@ -242,6 +250,34 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                                         </ul>
                                     </section>
                                 </div>
+
+                                {/* Interview Questions Section */}
+                                {selectedResult.scoring_breakdown?.interview_questions && selectedResult.scoring_breakdown.interview_questions.length > 0 && (
+                                    <section className="space-y-4">
+                                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary">
+                                            <Sparkles className="size-4" /> AI-Suggested Interview Questions
+                                        </div>
+                                        <ul className="space-y-3">
+                                            {selectedResult.scoring_breakdown.interview_questions.map((q, i) => (
+                                                <li 
+                                                    key={i} 
+                                                    onClick={() => copyToClipboard(q)}
+                                                    className="flex gap-4 p-5 rounded-3xl bg-primary/5 border border-primary/10 shadow-sm hover:shadow-md transition-all group cursor-pointer"
+                                                >
+                                                    <div className="flex items-center justify-center size-8 rounded-2xl bg-primary text-primary-foreground font-black text-xs shrink-0 group-hover:scale-110 transition-transform">
+                                                        {i + 1}
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <p className="text-sm font-bold leading-relaxed text-foreground/90 pt-1">
+                                                            {q}
+                                                        </p>
+                                                        <p className="text-[8px] font-black uppercase tracking-widest text-primary/40 opacity-0 group-hover:opacity-100 transition-opacity">Click to copy</p>
+                                                    </div>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </section>
+                                )}
 
                                 <section className="space-y-4">
                                     <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-muted-foreground">

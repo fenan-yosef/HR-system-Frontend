@@ -76,9 +76,16 @@ export function ScreeningProgressDisplay({ progress }: ScreeningProgressDisplayP
                         </div>
                     </div>
 
-                    <div className="flex justify-between text-xs font-black uppercase tracking-widest text-muted-foreground bg-muted/30 px-4 py-2 rounded-xl border border-border/40">
-                        <span>Progress: {progress.progress_percent}%</span>
-                        <span>{progress.current} / {progress.total} PROCESSED</span>
+                    <div className="flex flex-col gap-2 w-full">
+                        <div className="flex justify-between text-xs font-black uppercase tracking-widest text-muted-foreground bg-muted/30 px-4 py-2 rounded-xl border border-border/40">
+                            <span>Progress: {progress.progress_percent}%</span>
+                            <span>{progress.current} / {progress.total} PROCESSED</span>
+                        </div>
+                        {progress.fail_count !== undefined && progress.fail_count > 0 && (
+                            <div className="flex justify-center text-[10px] font-black uppercase tracking-tighter text-red-500/80">
+                                ⚠️ {progress.fail_count} FAILED APPLICATIONS
+                            </div>
+                        )}
                     </div>
                 </div>
 

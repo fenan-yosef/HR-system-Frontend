@@ -8,6 +8,7 @@ import {
   confirmApplication,
   inviteToInterview,
   hireApplicant,
+  updateApplication,
   softDeleteScreeningResult,
   restoreScreeningResult,
   softDeleteScreeningHistory,
@@ -56,6 +57,9 @@ export default function ApplicationDetailPage() {
   const [previewName, setPreviewName] = useState<string | null>(null);
   const [previewType, setPreviewType] = useState<'pdf' | 'image' | 'other' | null>(null);
   const [actionBusyKey, setActionBusyKey] = useState<string | null>(null);
+  const [note, setNote] = useState("");
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
 
   const loadApplication = useCallback(async () => {
     try {
@@ -99,6 +103,27 @@ export default function ApplicationDetailPage() {
       loadApplication();
     }
   }, [applicationId, loadApplication]);
+
+  useEffect(() => {
+    if (app) {
+      setNote(app.applicant_note || "");
+    }
+  }, [app]);
+
+  const handleSaveNote = async () => {
+    if (!app) return;
+    try {
+      setIsSavingNote(true);
+      await updateApplication(app.application_id, { applicant_note: note });
+      toast("Note saved successfully", "success");
+      setIsEditingNote(false);
+      loadApplication();
+    } catch (error: any) {
+      toast(`Failed to save note: ${error.message}`, "error");
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
 
   const handleAction = async (action: "confirm" | "invite" | "hire") => {
     if (!app) return;
@@ -250,6 +275,16 @@ export default function ApplicationDetailPage() {
   })();
 
   const rawExtractedText = typeof app?.extracted_resume === 'string' ? app.extracted_resume : app?.extracted_resume?.raw_llm_response || '';
+
+  const interviewQuestions = Array.from(new Set([
+    ...(app.evaluation?.interview_questions || []),
+    ...(app.screening_result?.scoring_breakdown?.interview_questions || [])
+  ])).filter(Boolean);
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast("Copied to clipboard", "success");
+  };
 
   function JsonPrettyView({ data, depth = 0 }: any) {
     if (data === null || data === undefined) return <div className="text-sm text-muted-foreground">—</div>;
@@ -463,12 +498,51 @@ export default function ApplicationDetailPage() {
           {/* HR Notes / Tags Placeholder */}
           <Card className="p-8 rounded-[2.5rem] border-none bg-primary/5 shadow-none space-y-4">
              <h3 className="text-[10px] font-black uppercase tracking-widest text-primary">Internal Notes</h3>
-             <p className="text-sm font-medium italic text-muted-foreground/80 leading-relaxed">
-               {app.applicant_note || "No internal notes have been added for this candidate yet."}
-             </p>
-             <Button variant="ghost" className="w-full justify-start p-0 h-auto text-[10px] font-black uppercase tracking-widest text-primary hover:bg-transparent hover:underline">
-               + Add Note
-             </Button>
+             {isEditingNote ? (
+               <div className="space-y-4">
+                 <textarea
+                   className="w-full h-32 p-4 rounded-2xl bg-background border border-primary/20 focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-sm font-medium resize-none"
+                   placeholder="Add internal notes about this candidate..."
+                   value={note}
+                   onChange={(e) => setNote(e.target.value)}
+                   autoFocus
+                 />
+                 <div className="flex items-center gap-2">
+                   <Button 
+                     size="sm" 
+                     className="rounded-xl px-4 font-black uppercase tracking-widest text-[10px]"
+                     onClick={handleSaveNote}
+                     disabled={isSavingNote}
+                   >
+                     {isSavingNote ? "Saving..." : "Save Note"}
+                   </Button>
+                   <Button 
+                     size="sm" 
+                     variant="ghost" 
+                     className="rounded-xl px-4 font-black uppercase tracking-widest text-[10px]"
+                     onClick={() => {
+                       setIsEditingNote(false);
+                       setNote(app.applicant_note || "");
+                     }}
+                   >
+                     Cancel
+                   </Button>
+                 </div>
+               </div>
+             ) : (
+               <>
+                 <p className="text-sm font-medium italic text-muted-foreground/80 leading-relaxed">
+                   {app.applicant_note || "No internal notes have been added for this candidate yet."}
+                 </p>
+                 <Button 
+                   variant="ghost" 
+                   className="w-full justify-start p-0 h-auto text-[10px] font-black uppercase tracking-widest text-primary hover:bg-transparent hover:underline"
+                   onClick={() => setIsEditingNote(true)}
+                 >
+                   {app.applicant_note ? "Edit Note" : "+ Add Note"}
+                 </Button>
+               </>
+             )}
           </Card>
         </aside>
 
@@ -590,18 +664,33 @@ export default function ApplicationDetailPage() {
                   </div>
 
                   {/* Interview Questions */}
-                  {app.evaluation?.interview_questions && (
+                  {interviewQuestions.length > 0 && (
                     <section className="space-y-6">
-                       <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
-                          <MessageSquare size={14} /> Suggested Questions
-                       </h3>
+                       <div className="flex items-center justify-between">
+                         <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
+                            <MessageSquare size={14} /> Suggested Interview Questions
+                         </h3>
+                         <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50">
+                           {interviewQuestions.length} AI Prompts
+                         </span>
+                       </div>
                        <div className="grid gap-4">
-                         {app.evaluation.interview_questions.map((q, i) => (
-                           <div key={i} className="group p-5 rounded-2xl bg-muted/20 border border-transparent hover:border-primary/20 transition-all flex gap-4">
-                              <span className="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0 group-hover:bg-primary group-hover:text-white transition-all">
+                         {interviewQuestions.map((q, i) => (
+                           <div 
+                             key={i} 
+                             onClick={() => copyToClipboard(q)}
+                             className="group p-5 rounded-[2rem] bg-background border border-border/50 hover:border-primary/40 hover:shadow-xl hover:shadow-primary/5 transition-all flex gap-5 cursor-pointer relative overflow-hidden"
+                           >
+                              <div className="absolute top-0 right-0 p-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Sparkles size={14} className="text-primary animate-pulse" />
+                              </div>
+                              <span className="size-10 rounded-2xl bg-primary/10 text-primary flex items-center justify-center font-black text-xs shrink-0 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
                                 {i + 1}
                               </span>
-                              <p className="font-bold text-base leading-relaxed">{q}</p>
+                              <div className="space-y-1 pr-8">
+                                <p className="font-bold text-base leading-relaxed text-foreground/90 group-hover:text-foreground transition-colors">{q}</p>
+                                <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/40 group-hover:text-primary/60 transition-colors">Click to copy to clipboard</p>
+                              </div>
                            </div>
                          ))}
                        </div>
@@ -735,11 +824,35 @@ export default function ApplicationDetailPage() {
                                     <div className="p-4 rounded-2xl bg-muted/10 border border-border/30">
                                       <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">AI Breakdown (categories)</p>
                                       {app.screening_result.scoring_breakdown?.ai ? (
-                                        <div className="space-y-2 text-sm font-medium">
+                                        <div className="space-y-3 text-sm font-medium">
                                           {Object.entries(app.screening_result.scoring_breakdown.ai).map(([k, v]) => (
-                                            <div key={k} className="flex items-center justify-between">
-                                              <div className="text-muted-foreground text-xs uppercase">{k.replace(/_/g, ' ')}</div>
-                                              <div className="font-black">{String(v)}</div>
+                                            <div key={k} className="flex flex-col gap-2 py-2 border-b border-border/10 last:border-none">
+                                              <div className="flex items-center justify-between">
+                                                <div className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">{k.replace(/_/g, ' ')}</div>
+                                                <div className="font-black text-sm text-primary">
+                                                  {typeof v !== 'object' ? String(v) : Array.isArray(v) ? `${v.length} items` : 'Details'}
+                                                </div>
+                                              </div>
+                                              {typeof v === 'object' && v !== null && (
+                                                <div className="bg-muted/10 rounded-xl p-3 text-[10px] font-mono text-muted-foreground/90 grid grid-cols-1 gap-y-1.5">
+                                                  {Array.isArray(v) ? (
+                                                    <div className="flex flex-wrap gap-1">
+                                                      {v.map((item, idx) => (
+                                                        <span key={idx} className="px-2 py-0.5 rounded-md bg-background border border-border/50">{String(item)}</span>
+                                                      ))}
+                                                    </div>
+                                                  ) : (
+                                                    Object.entries(v).map(([subK, subV]) => (
+                                                      <div key={subK} className="flex justify-between items-start gap-4">
+                                                        <span className="opacity-70 shrink-0">{subK.replace(/_/g, ' ')}:</span>
+                                                        <span className="font-bold text-right break-all">
+                                                          {typeof subV === 'object' ? JSON.stringify(subV) : String(subV)}
+                                                        </span>
+                                                      </div>
+                                                    ))
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
                                           ))}
                                         </div>
@@ -751,11 +864,35 @@ export default function ApplicationDetailPage() {
                                     <div className="p-4 rounded-2xl bg-muted/10 border border-border/30">
                                       <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Rule Breakdown</p>
                                       {app.screening_result.scoring_breakdown?.rule ? (
-                                        <div className="space-y-2 text-sm font-medium">
+                                        <div className="space-y-3 text-sm font-medium">
                                           {Object.entries(app.screening_result.scoring_breakdown.rule).map(([k, v]) => (
-                                            <div key={k} className="flex items-center justify-between">
-                                              <div className="text-muted-foreground text-xs uppercase">{k.replace(/_/g, ' ')}</div>
-                                              <div className="font-black">{String(v)}</div>
+                                            <div key={k} className="flex flex-col gap-2 py-2 border-b border-border/10 last:border-none">
+                                              <div className="flex items-center justify-between">
+                                                <div className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">{k.replace(/_/g, ' ')}</div>
+                                                <div className="font-black text-sm text-amber-600">
+                                                  {typeof v !== 'object' ? String(v) : null}
+                                                </div>
+                                              </div>
+                                              {typeof v === 'object' && v !== null && (
+                                                <div className="bg-muted/10 rounded-xl p-3 text-[10px] font-mono text-muted-foreground/90 grid grid-cols-1 gap-y-1.5">
+                                                  {Array.isArray(v) ? (
+                                                    <div className="flex flex-wrap gap-1">
+                                                      {v.map((item, idx) => (
+                                                        <span key={idx} className="px-2 py-0.5 rounded-md bg-background border border-border/50">{String(item)}</span>
+                                                      ))}
+                                                    </div>
+                                                  ) : (
+                                                    Object.entries(v).map(([subK, subV]) => (
+                                                      <div key={subK} className="flex justify-between items-start gap-4">
+                                                        <span className="opacity-70 shrink-0">{subK.replace(/_/g, ' ')}:</span>
+                                                        <span className="font-bold text-right break-all">
+                                                          {typeof subV === 'object' ? JSON.stringify(subV) : String(subV)}
+                                                        </span>
+                                                      </div>
+                                                    ))
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
                                           ))}
                                         </div>
@@ -764,9 +901,32 @@ export default function ApplicationDetailPage() {
                                       )}
                                     </div>
                                   </div>
+                                  </div>
                                </div>
-                            </div>
-                         </Card>
+
+                               {/* Interview Questions In AI Tab */}
+                               {interviewQuestions.length > 0 && (
+                                  <div className="p-6 rounded-[2rem] bg-primary/5 border border-primary/10 space-y-6">
+                                     <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary">
+                                        <Sparkles size={16} /> Strategic Interview Prompts
+                                     </div>
+                                     <div className="space-y-3">
+                                       {interviewQuestions.map((q, i) => (
+                                         <div 
+                                           key={i} 
+                                           onClick={() => copyToClipboard(q)}
+                                           className="p-4 rounded-2xl bg-background border border-primary/10 hover:border-primary/30 transition-all cursor-pointer group"
+                                         >
+                                           <div className="flex gap-4">
+                                             <div className="font-black text-primary/40 text-xs mt-1">Q{i+1}</div>
+                                             <p className="text-sm font-bold leading-relaxed">{q}</p>
+                                           </div>
+                                         </div>
+                                       ))}
+                                     </div>
+                                  </div>
+                               )}
+                            </Card>
                        </div>
                      </>
                    ) : (

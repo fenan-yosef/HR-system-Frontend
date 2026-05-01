@@ -116,6 +116,14 @@ export function fetchApplication(applicationId: number, flags: boolean | Include
   return apiFetch<Application>(url, { requiresAuth: true });
 }
 
+export function updateApplication(applicationId: number, data: Partial<Application>): Promise<Application> {
+  return apiFetch<Application>(`/applicant-applications/${applicationId}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
 export function fetchApplicationMetrics(): Promise<ApplicationMetrics> {
   return apiFetch<ApplicationMetrics>("/applicant-applications/metrics/", { requiresAuth: true });
 }

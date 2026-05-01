@@ -92,13 +92,19 @@ export default function ScreeningPage() {
                         // Fetch final results
                         const resultsData = await getScreeningResults(positionId);
                         setResults(resultsData);
-                        toast("Screening completed successfully! 🎉", "success");
+                        
+                        if (progressData.fail_count && progressData.fail_count > 0) {
+                            toast(`Screening complete with ${progressData.fail_count} failures. ⚠️`, "warning");
+                        } else {
+                            toast("Screening completed successfully! 🎉", "success");
+                        }
 
                         // Update job version if done
                         loadData();
                     } else if (progressData.status === "failed" || progressData.status === "error") {
                         clearInterval(interval);
-                        toast("🤖 AI Service Offline — screening could not complete.", "error");
+                        const errorMsg = progressData.error_message || progressData.error || "Screening could not complete.";
+                        toast(`🤖 AI Screening Failed — ${errorMsg}`, "error");
                     }
                 } catch (error) {
                     console.error("Polling error:", error);

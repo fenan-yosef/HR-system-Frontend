@@ -280,6 +280,7 @@ export interface ScreeningResult {
       ai?: number;
     };
     recommendation?: string;
+    interview_questions?: string[];
     [key: string]: any;
   };
   raw_llm_response: string;
@@ -303,6 +304,8 @@ export interface ScreeningProgress {
   current_applicant?: string;
   mode: "full" | "stale_only";
   error?: string;
+  fail_count?: number;
+  error_message?: string;
 }
 
 export interface VersionStats {

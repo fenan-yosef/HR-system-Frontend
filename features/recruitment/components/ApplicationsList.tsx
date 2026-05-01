@@ -62,6 +62,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
   const [apps, setApps] = useState<Application[]>([]);
   const [localJobPositions, setLocalJobPositions] = useState<JobPosition[]>(initialJobPositions || []);
   const [isLoading, setIsLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -112,6 +113,10 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
   }, [page, search, status, minScore, startsWith, appliedToday, selectedJobId, sortBy]);
 
   useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
     const timer = setTimeout(
       () => {
         loadApplications();
@@ -119,7 +124,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
       search ? 300 : 0,
     );
     return () => clearTimeout(timer);
-  }, [loadApplications, search]);
+  }, [loadApplications, search, page, status, minScore, startsWith, appliedToday, selectedJobId, sortBy]);
 
   useEffect(() => {
     if (!initialJobPositions || initialJobPositions.length === 0) {
@@ -296,6 +301,16 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
       {} as Record<string, Application[]>,
     );
   }, [apps]);
+
+  if (!isMounted) {
+    return (
+      <div className="space-y-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-32 bg-muted/30 animate-pulse rounded-[2rem] border border-border/30" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-20">
@@ -478,7 +493,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                   {phone && email && <span className="opacity-30">•</span>}
                                   {phone && <span>{phone}</span>}
                                   <span className="opacity-30">•</span>
-                                  <span>{submittedAt ? new Date(submittedAt).toLocaleDateString() : ""}</span>
+                                  <span>{submittedAt ? new Date(submittedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ""}</span>
                                   {tracking && <span className="ml-2 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-muted/5 text-muted-foreground">{tracking}</span>}
                                   {cvUrl && (
                                     <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-primary font-black flex items-center gap-1">
@@ -567,9 +582,9 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                   Re-try
                                 </button>
                               )}
-                              <div className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${getStatusStyle(app.status)}`}>
+                              {/* <div className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${getStatusStyle(app.status)}`}>
                                 {getStatusIcon(app.status)} {app.status.replace("_", " ")}
-                              </div>
+                              </div> */}
                             </div>
                           </div>
                         </div>
