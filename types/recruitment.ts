@@ -197,6 +197,7 @@ export interface Application {
   screening_history?: ScreeningHistoryEntry[];
   status: string;
   applicant_note?: string;
+  is_shortlisted?: boolean;
   submitted_at: string;
   created_at: string;
   updated_at: string;

@@ -22,8 +22,8 @@ import {
   BrainCircuit,
   AlertCircle,
   Inbox,
-  CheckCircle2,
   Eye,
+  Star,
 } from "lucide-react";
 import {
   fetchApplications,
@@ -34,6 +34,7 @@ import {
   hireApplicant,
   retryExtraction,
   fetchJobPositions,
+  toggleShortlist,
   startScreening,
 } from "@/services/recruitmentService";
 import type { Application, JobPosition } from "@/types/recruitment";
@@ -219,6 +220,20 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
     }
   };
 
+
+  const handleToggleShortlist = async (appId: number) => {
+    try {
+      const res = await toggleShortlist(appId);
+      setApps((prev) =>
+        prev.map((a) =>
+          a.application_id === appId ? { ...a, is_shortlisted: res.shortlisted } : a
+        )
+      );
+      toast(res.shortlisted ? "Added to shortlist" : "Removed from shortlist", "success");
+    } catch (err: any) {
+      toast("Action failed: " + err.message, "error");
+    }
+  };
 
   const handleRetryExtraction = async (appId: number) => {
     setRetryingApps(prev => [...prev, appId]);
@@ -572,16 +587,29 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
 
                             {/* Actions Trigger */}
                             <div className="flex items-center gap-2">
-                              {canShortlist && (
-                                <button
-                                  onClick={() => handleRetryExtraction(app.application_id)}
-                                  disabled={retryingApps.includes(app.application_id)}
-                                  className="px-4 py-2.5 rounded-xl bg-amber-500/10 text-amber-700 text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/20 transition-all flex items-center gap-2"
-                                >
-                                  {retryingApps.includes(app.application_id) ? <Loader2 size={12} animate-spin /> : <RotateCcw size={12} />}
-                                  Re-try
-                                </button>
-                              )}
+                                {canShortlist && (
+                                  <>
+                                    <button
+                                      onClick={() => handleToggleShortlist(app.application_id)}
+                                      className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
+                                        (app as any).is_shortlisted
+                                          ? "bg-amber-500 text-white hover:bg-amber-600"
+                                          : "bg-amber-500/10 text-amber-700 hover:bg-amber-500/20"
+                                      }`}
+                                    >
+                                      <Star size={12} fill={(app as any).is_shortlisted ? "currentColor" : "none"} />
+                                      {(app as any).is_shortlisted ? "Shortlisted" : "Shortlist"}
+                                    </button>
+                                    <button
+                                      onClick={() => handleRetryExtraction(app.application_id)}
+                                      disabled={retryingApps.includes(app.application_id)}
+                                      className="px-4 py-2.5 rounded-xl bg-muted/10 text-muted-foreground text-[10px] font-black uppercase tracking-widest hover:bg-muted/20 transition-all flex items-center gap-2"
+                                    >
+                                      {retryingApps.includes(app.application_id) ? <Loader2 size={12} animate-spin /> : <RotateCcw size={12} />}
+                                      Re-try
+                                    </button>
+                                  </>
+                                )}
                               {/* <div className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${getStatusStyle(app.status)}`}>
                                 {getStatusIcon(app.status)} {app.status.replace("_", " ")}
                               </div> */}

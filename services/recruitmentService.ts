@@ -209,6 +209,13 @@ export function fetchUploadMetadata(uploadId: number): Promise<any> {
   return apiFetch<any>(`/uploads/${uploadId}/`, { requiresAuth: true });
 }
 
+export function toggleShortlist(applicationId: number) {
+  return apiFetch<{ status: string; shortlisted: boolean; application_id: number }>(`/applicant-applications/${applicationId}/toggle-shortlist/`, {
+    method: "POST",
+    requiresAuth: true,
+  });
+}
+
 export function confirmApplication(applicationId: number) {
   return apiFetch<{ status: string; application_id: number }>(`/applicant-applications/${applicationId}/confirm/`, {
     method: "POST",
@@ -216,9 +223,18 @@ export function confirmApplication(applicationId: number) {
   });
 }
 
-export function inviteToInterview(applicationId: number) {
+export function inviteToInterview(applicationId: number, data?: { datetime?: string }) {
   return apiFetch<any>(`/applicant-applications/${applicationId}/invite_interview/`, {
     method: "POST",
+    body: data ? JSON.stringify(data) : undefined,
+    requiresAuth: true,
+  });
+}
+
+export function batchInviteToInterview(applicationIds: number[]) {
+  return apiFetch<any>("/applicant-applications/batch-invite/", {
+    method: "POST",
+    body: JSON.stringify({ application_ids: applicationIds }),
     requiresAuth: true,
   });
 }

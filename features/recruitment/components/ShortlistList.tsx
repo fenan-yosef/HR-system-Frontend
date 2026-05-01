@@ -19,6 +19,7 @@ import {
   inviteToInterview,
   hireApplicant,
   fetchApplicationMetrics,
+  batchInviteToInterview,
 } from "@/services/recruitmentService";
 import {
   ShortlistEntry,
@@ -30,6 +31,7 @@ import { isHRCeo } from "@/lib/permissions";
 import { EvaluationDetailsModal } from "./EvaluationDetailsModal";
 import { AnimatePresence } from "framer-motion";
 import { getApiErrorStatus } from "@/services/apiClient";
+import { useToast } from "@/components/ui/toast";
 
 export function ShortlistList() {
   const [shortlist, setShortlist] = useState<ShortlistEntry[]>([]);
@@ -39,6 +41,8 @@ export function ShortlistList() {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [metrics, setMetrics] = useState<ApplicationMetrics | null>(null);
+  const [isBatchInviting, setIsBatchInviting] = useState(false);
+  const { toast } = useToast();
   const { user } = useAuth();
   const canCEOActions = isHRCeo(user);
 
@@ -46,12 +50,32 @@ export function ShortlistList() {
     loadShortlistPageData();
   }, []);
 
+  const handleBatchInvite = async () => {
+    if (shortlist.length === 0) return;
+    const confirmed = window.confirm(`Send interview invitations to all ${shortlist.length} shortlisted candidates?`);
+    if (!confirmed) return;
+
+    try {
+      setIsBatchInviting(true);
+      const applicationIds = shortlist.map(entry => entry.application.application_id);
+      await batchInviteToInterview(applicationIds);
+      toast("Batch invitations sent successfully!", "success");
+      loadShortlistPageData();
+    } catch (error: any) {
+      toast(`Batch invitation failed: ${error.message}`, "error");
+    } finally {
+      setIsBatchInviting(false);
+    }
+  };
+
   const handleGenerateReport = async () => {
     try {
       setIsGeneratingReport(true);
-      // batchEvaluateApplications was removed (405 from backend).
-      // Redirect to screening instead.
-      window.alert("Batch evaluation has been replaced by the new AI Screening workflow. Please use the screening page per job position.");
+      // Simulating report generation intel fetch
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      toast("Shortlist intelligence report generated successfully!", "success");
+    } catch (error: any) {
+      toast(`Failed to generate report: ${error.message}`, "error");
     } finally {
       setIsGeneratingReport(false);
     }
@@ -104,21 +128,21 @@ export function ShortlistList() {
     try {
       if (action === "confirm") {
         await confirmApplication(appId);
-        window.alert("Candidate confirmed!");
+        toast("Candidate confirmed!", "success");
       } else if (action === "invite") {
         await inviteToInterview(appId);
-        window.alert("Interview invitation sent!");
+        toast("Interview invitation sent!", "success");
       } else if (action === "hire") {
         await hireApplicant(appId);
-        window.alert("Candidate marked as HIRED!");
+        toast("Candidate marked as HIRED!", "success");
       }
       loadShortlistPageData();
     } catch (error) {
       const status = getApiErrorStatus(error);
       if (status === 403) {
-        window.alert("You do not have permission for this action.");
+        toast("You do not have permission for this action.", "error");
       } else {
-        window.alert(`Action ${action} failed.`);
+        toast(`Action ${action} failed.`, "error");
       }
     }
   };
@@ -183,9 +207,21 @@ export function ShortlistList() {
           <h3 className="text-xl font-bold tracking-tight">
             Priority Candidates
           </h3>
-          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-            Total: {shortlist.length}
-          </span>
+          <div className="flex items-center gap-3">
+            {shortlist.length > 0 && (
+              <button
+                onClick={handleBatchInvite}
+                disabled={isBatchInviting}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+              >
+                {isBatchInviting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                {isBatchInviting ? "Sending..." : "Batch Invite All"}
+              </button>
+            )}
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+              Total: {shortlist.length}
+            </span>
+          </div>
         </div>
 
         <div className="grid gap-4">

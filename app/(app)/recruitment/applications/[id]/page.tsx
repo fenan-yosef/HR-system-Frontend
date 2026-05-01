@@ -13,6 +13,7 @@ import {
   restoreScreeningResult,
   softDeleteScreeningHistory,
   restoreScreeningHistory,
+  toggleShortlist,
 } from "@/services/recruitmentService";
 import type { Application } from "@/types/recruitment";
 import { getMediaUrl } from "@/services/apiClient";
@@ -37,7 +38,8 @@ import {
   AlertTriangle,
   ChevronRight,
   MessageSquare,
-  Sparkles
+  Sparkles,
+  Star,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -136,6 +138,20 @@ export default function ApplicationDetailPage() {
       loadApplication();
     } catch (error: any) {
       toast(`Action failed: ${error.message}`, "error");
+    }
+  };
+
+  const handleToggleShortlist = async () => {
+    if (!app) return;
+    try {
+      setActionBusyKey("shortlist");
+      const res = await toggleShortlist(app.application_id);
+      setApp((prev) => prev ? { ...prev, is_shortlisted: res.shortlisted } : null);
+      toast(res.shortlisted ? "Added to shortlist" : "Removed from shortlist", "success");
+    } catch (error: any) {
+      toast(`Action failed: ${error.message}`, "error");
+    } finally {
+      setActionBusyKey(null);
     }
   };
 
@@ -360,10 +376,16 @@ export default function ApplicationDetailPage() {
         <div className="flex items-center gap-3 self-end md:self-center">
             <Button 
               variant="outline" 
-              className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs border-2 hover:bg-muted transition-all active:scale-95"
-              onClick={() => handleAction("confirm")}
+              className={`h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs border-2 transition-all active:scale-95 flex items-center gap-2 ${
+                app.is_shortlisted 
+                  ? "bg-amber-500 text-white border-amber-500 hover:bg-amber-600" 
+                  : "hover:bg-muted"
+              }`}
+              onClick={handleToggleShortlist}
+              disabled={actionBusyKey === "shortlist"}
             >
-              Shortlist
+              <Star size={16} fill={app.is_shortlisted ? "currentColor" : "none"} />
+              {app.is_shortlisted ? "Shortlisted" : "Shortlist"}
             </Button>
             <Button 
               className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs bg-primary text-white shadow-xl shadow-primary/20 hover:scale-105 transition-all active:scale-95"
