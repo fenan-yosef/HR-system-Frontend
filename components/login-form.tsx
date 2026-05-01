@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/constants/routes";
+import { ApiError } from "@/services/apiClient";
 import { motion, AnimatePresence } from "framer-motion";
 import { AlertCircle, Lock, User } from "lucide-react";
 
@@ -34,7 +35,13 @@ export function LoginForm({
       router.replace(ROUTES.DASHBOARD);
     } catch (err) {
       console.error(err);
-      setError("Unable to sign in. Please check your credentials.");
+      if (err instanceof ApiError && err.detail) {
+        setError(err.detail);
+      } else if (err instanceof Error && err.message) {
+        setError(err.message);
+      } else {
+        setError("Unable to sign in. Please check your credentials.");
+      }
     }
   }
 
