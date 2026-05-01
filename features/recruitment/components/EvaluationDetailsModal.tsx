@@ -149,7 +149,18 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6 custom-scrollbar">
           
-          {/* New AI Screening Results Section */}
+          {/* Rejection Status */}
+          {application.status === "rejected" && application.rejection_reason && (
+            <section className="p-4 rounded-2xl bg-red-50 border border-red-200">
+              <div className="flex items-center gap-2 text-red-600 mb-2">
+                <XCircle className="size-5" />
+                <h4 className="font-black text-sm uppercase tracking-wider">Candidate Rejected</h4>
+              </div>
+              <p className="text-sm text-red-700 font-medium leading-relaxed bg-white/50 p-3 rounded-xl border border-red-100 italic">
+                "{application.rejection_reason}"
+              </p>
+            </section>
+          )}
           {screening && (
             <section className="border border-border/50 rounded-2xl overflow-hidden bg-gradient-to-br from-primary/5 to-transparent">
                 <button 

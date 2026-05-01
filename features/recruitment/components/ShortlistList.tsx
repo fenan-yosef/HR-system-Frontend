@@ -14,6 +14,8 @@ import {
   Check,
   BrainCircuit,
   RefreshCw,
+  Trash2,
+  XCircle,
 } from "lucide-react";
 import {
   fetchApplications,
@@ -24,6 +26,8 @@ import {
   fetchApplicationMetrics,
   batchInviteToInterview,
   startScreening,
+  removeFromShortlist,
+  rejectShortlisted,
 } from "@/services/recruitmentService";
 import {
   ShortlistEntry,
@@ -122,7 +126,7 @@ export function ShortlistList() {
     setErrorMessage(null);
     try {
       const [applicationsRes, metricsRes] = await Promise.all([
-        fetchApplications({ status: "shortlisted" }),
+        fetchApplications({ is_shortlisted: true }),
         fetchApplicationMetrics().catch(() => null),
       ]);
 
@@ -170,10 +174,18 @@ export function ShortlistList() {
         toast("Candidate confirmed!", "success");
       } else if (action === "invite") {
         await inviteToInterview(appId);
-        toast("Interview invitation sent!", "success");
+        toast("Added to pending interview approval.", "success");
       } else if (action === "hire") {
         await hireApplicant(appId);
         toast("Candidate marked as HIRED!", "success");
+      } else if (action === "remove") {
+        await removeFromShortlist(appId);
+        toast("Removed from shortlist.", "success");
+      } else if (action === "reject") {
+        const reason = window.prompt("Reason for rejection:");
+        if (reason === null) return;
+        await rejectShortlisted(appId, reason);
+        toast("Candidate rejected.", "success");
       }
       loadShortlistPageData();
     } catch (error) {
@@ -349,28 +361,28 @@ export function ShortlistList() {
                           <BrainCircuit className="size-4" />
                         )}
                       </button>
-                      {canCEOActions && (
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => handleAction("confirm", entry)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-500/20 transition-colors"
-                          >
-                            <Check className="size-3" /> Confirm
-                          </button>
-                          <button
                             onClick={() => handleAction("invite", entry)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-500/20 transition-colors"
+                            disabled={entry.application.status === "interview_pending" || entry.application.status === "interview_invited"}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-blue-600 transition-colors disabled:opacity-50"
                           >
-                            <Send className="size-3" /> Invite
+                            <Send className="size-3" /> {entry.application.status === "interview_pending" ? "Pending Approval" : "Invite to Interview"}
                           </button>
                           <button
-                            onClick={() => handleAction("hire", entry)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors"
+                            onClick={() => handleAction("reject", entry)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-600 text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-colors"
                           >
-                            <UserCheck className="size-3" /> Hire
+                            <XCircle className="size-3" /> Reject
+                          </button>
+                          <button
+                            onClick={() => handleAction("remove", entry)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-[10px] font-bold uppercase tracking-wider hover:bg-muted-foreground/10 transition-colors"
+                            title="Remove from shortlist"
+                          >
+                            <Trash2 className="size-3" />
                           </button>
                         </div>
-                      )}
 
                       <button
                         onClick={(e) => { e.stopPropagation(); handleBrainClick(entry.application); }}

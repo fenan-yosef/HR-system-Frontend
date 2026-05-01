@@ -73,6 +73,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
           { label: "Job Postings", href: ROUTES.RECRUITMENT_JOB_POSTINGS },
           { label: "Applications", href: ROUTES.RECRUITMENT_APPLICATIONS },
           { label: "Shortlist", href: ROUTES.RECRUITMENT_SHORTLIST },
+          { label: "Pending Interviews", href: ROUTES.RECRUITMENT_PENDING_INTERVIEWEES },
         ],
       },
       {

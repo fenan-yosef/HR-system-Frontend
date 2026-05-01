@@ -388,10 +388,15 @@ export default function ApplicationDetailPage() {
               {app.is_shortlisted ? "Shortlisted" : "Shortlist"}
             </Button>
             <Button 
-              className="h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs bg-primary text-white shadow-xl shadow-primary/20 hover:scale-105 transition-all active:scale-95"
+              className={`h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all active:scale-95 ${
+                app.status === "interview_pending" || app.status === "interview_invited"
+                  ? "bg-muted text-muted-foreground cursor-not-allowed"
+                  : "bg-primary text-white shadow-primary/20 hover:scale-105"
+              }`}
               onClick={() => handleAction("invite")}
+              disabled={app.status === "interview_pending" || app.status === "interview_invited"}
             >
-              Invite to Interview
+              {app.status === "interview_pending" ? "Interview Pending Approval" : app.status === "interview_invited" ? "Interview Invitation Sent" : "Invite to Interview"}
             </Button>
             <button className="p-3 rounded-2xl bg-muted/50 hover:bg-muted transition-all">
               <MoreVertical size={20} className="text-muted-foreground" />

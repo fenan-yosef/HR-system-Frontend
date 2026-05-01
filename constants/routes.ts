@@ -4,6 +4,7 @@ export const ROUTES = {
   RECRUITMENT_JOB_POSTINGS: "/recruitment/job-postings",
   RECRUITMENT_APPLICATIONS: "/recruitment/applications",
   RECRUITMENT_SHORTLIST: "/recruitment/shortlist",
+  RECRUITMENT_PENDING_INTERVIEWEES: "/recruitment/pending-interviewees",
   
   // People & Ops
   EMPLOYEES: "/employees",

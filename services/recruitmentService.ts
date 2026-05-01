@@ -82,6 +82,7 @@ export interface FetchApplicationsParams {
   starts_with?: string;
   applied_today?: boolean;
   position_id?: number | string;
+  is_shortlisted?: boolean;
 }
 
 export interface IncludeFlags {
@@ -100,6 +101,7 @@ export function fetchApplications(params: FetchApplicationsParams = {}): Promise
   if (params.starts_with) query.append("starts_with", params.starts_with);
   if (params.applied_today) query.append("applied_today", "true");
   if (params.position_id) query.append("position_id", params.position_id.toString());
+  if (params.is_shortlisted !== undefined) query.append("is_shortlisted", params.is_shortlisted.toString());
 
   const queryString = query.toString();
   const endpoint = `/applicant-applications/${queryString ? "?" + queryString : ""}`;
@@ -223,16 +225,38 @@ export function confirmApplication(applicationId: number) {
   });
 }
 
-export function inviteToInterview(applicationId: number, data?: { datetime?: string }) {
+export function inviteToInterview(applicationId: number) {
   return apiFetch<any>(`/applicant-applications/${applicationId}/invite_interview/`, {
     method: "POST",
-    body: data ? JSON.stringify(data) : undefined,
+    requiresAuth: true,
+  });
+}
+
+export function rejectShortlisted(applicationId: number, reason: string) {
+  return apiFetch<any>(`/applicant-applications/${applicationId}/reject-shortlisted/`, {
+    method: "POST",
+    body: JSON.stringify({ reason }),
+    requiresAuth: true,
+  });
+}
+
+export function removeFromShortlist(applicationId: number) {
+  return apiFetch<any>(`/applicant-applications/${applicationId}/remove-shortlist/`, {
+    method: "POST",
     requiresAuth: true,
   });
 }
 
 export function batchInviteToInterview(applicationIds: number[]) {
-  return apiFetch<any>("/applicant-applications/batch-invite/", {
+  return apiFetch<{ success: boolean; count: number }>("/applicant-applications/batch-invite/", {
+    method: "POST",
+    body: JSON.stringify({ application_ids: applicationIds }),
+    requiresAuth: true,
+  });
+}
+
+export function batchConfirmInterviews(applicationIds: number[]) {
+  return apiFetch<any>("/applicant-applications/batch-confirm/", {
     method: "POST",
     body: JSON.stringify({ application_ids: applicationIds }),
     requiresAuth: true,

@@ -198,6 +198,7 @@ export interface Application {
   status: string;
   applicant_note?: string;
   is_shortlisted?: boolean;
+  rejection_reason?: string;
   submitted_at: string;
   created_at: string;
   updated_at: string;
