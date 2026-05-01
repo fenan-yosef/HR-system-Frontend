@@ -55,9 +55,23 @@ function extractDisciplinaryActions(response: unknown): DisciplinaryAction[] {
 export function createDisciplinaryAction(
   data: CreateDisciplinaryActionPayload,
 ): Promise<DisciplinaryAction> {
+  // Backend expects the employee field to be named `employee` (id),
+  // but our frontend type historically used `employee_id`.
+  // Normalize both shapes and send the exact payload the API requires.
+  const payload: Record<string, unknown> = {
+    employee: (data as any).employee ?? (data as any).employee_id,
+    action_type: data.action_type,
+    severity: data.severity,
+    description: data.description,
+  };
+
+  if (typeof data.deduction_amount !== "undefined" && data.deduction_amount !== null) {
+    payload.deduction_amount = String(data.deduction_amount);
+  }
+
   return apiFetch<DisciplinaryAction>(DISCIPLINARY_ACTIONS_ENDPOINT, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
     requiresAuth: true,
   });
 }

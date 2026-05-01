@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, PlusCircle, ShieldAlert } from "lucide-react";
+import { Loader2, PlusCircle } from "lucide-react";
 import { RoleGuard } from "@/context/RoleGuard";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
