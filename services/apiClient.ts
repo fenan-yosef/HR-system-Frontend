@@ -34,6 +34,7 @@ const REFRESH_TOKEN_KEY = "hrms_refresh_token";
 
 export interface ApiRequestOptions extends RequestInit {
   requiresAuth?: boolean;
+  redirectOnUnauthorized?: boolean;
 }
 
 export class ApiError extends Error {
@@ -147,8 +148,10 @@ export async function apiFetch<TResponse>(
       }
     }
 
-    // If refresh was not possible or failed, and we're running in the browser, clear tokens and redirect to login.
-    if (typeof window !== "undefined") {
+    // If refresh was not possible or failed, only redirect when the caller
+    // has not explicitly opted out. Login requests need to surface the error
+    // in-place instead of bouncing back to the page.
+    if (options.redirectOnUnauthorized !== false && typeof window !== "undefined") {
       try {
         clearTokens();
       } catch {}

@@ -90,7 +90,12 @@ export function buildAuthUserFromAccessToken(access: string): AuthUser | null {
 export async function loginRequest(payload: LoginPayload): Promise<TokenResponse> {
   return apiFetch<TokenResponse>("/auth/token/", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      username: payload.username,
+      email: payload.username,
+      password: payload.password,
+    }),
+    redirectOnUnauthorized: false,
   });
 }
 
