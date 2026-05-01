@@ -12,14 +12,18 @@ import {
   Loader2,
   Send,
   Check,
+  BrainCircuit,
+  RefreshCw,
 } from "lucide-react";
 import {
   fetchApplications,
+  fetchApplication,
   confirmApplication,
   inviteToInterview,
   hireApplicant,
   fetchApplicationMetrics,
   batchInviteToInterview,
+  startScreening,
 } from "@/services/recruitmentService";
 import {
   ShortlistEntry,
@@ -38,6 +42,8 @@ export function ShortlistList() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evaluatingApps, setEvaluatingApps] = useState<number[]>([]);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [metrics, setMetrics] = useState<ApplicationMetrics | null>(null);
@@ -65,6 +71,36 @@ export function ShortlistList() {
       toast(`Batch invitation failed: ${error.message}`, "error");
     } finally {
       setIsBatchInviting(false);
+    }
+  };
+
+  const handleBrainClick = async (app: Application) => {
+    if (app.screening_result) {
+      try {
+        const details = await fetchApplication(app.application_id, { includeHistory: true, includeDeleted: true });
+        setSelectedApp(details);
+        setIsDetailsModalOpen(true);
+      } catch {
+        setSelectedApp(app);
+        setIsDetailsModalOpen(true);
+      }
+      return;
+    }
+
+    const posId = app.position?.position_id;
+    if (!posId) {
+      toast("Could not determine job position for this application.", "error");
+      return;
+    }
+
+    setEvaluatingApps(prev => [...prev, app.application_id]);
+    try {
+      await startScreening(Number(posId));
+      toast("Screening started — candidates are being processed.", "success");
+    } catch (err: any) {
+      toast("Failed to start screening. The AI service may be offline.", "error");
+    } finally {
+      setEvaluatingApps(prev => prev.filter(id => id !== app.application_id));
     }
   };
 
@@ -96,7 +132,7 @@ export function ShortlistList() {
         shortlist_id: app.application_id,
         application: {
           ...app,
-          full_name: app.full_name || (app as any).applicant_name || "Unknown Applicant"
+          full_name: app.applicant?.full_name || app.full_name || (app as any).applicant_name || "Unknown Applicant"
         },
         skill_score: String(app.evaluation?.skill_score ?? 0),
         experience_score: String(app.evaluation?.experience_score ?? 0),
@@ -152,10 +188,7 @@ export function ShortlistList() {
 
 
 
-  const openDetailsModal = (app: Application) => {
-    setSelectedApp(app);
-    setIsDetailsModalOpen(true);
-  };
+
 
   const getStatusStyle = (s: string) => {
     switch (s) {
@@ -240,7 +273,10 @@ export function ShortlistList() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
               >
-                <Card className="p-6 border-none shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                <Card
+                  className="p-6 border-none shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer"
+                  onClick={() => handleBrainClick(entry.application)}
+                >
                   <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -261,9 +297,15 @@ export function ShortlistList() {
                       <div className="flex items-center gap-1 text-amber-500 mb-1">
                         <Star className="size-3 fill-current" />
                         <span className="text-xs font-bold">
-                          {entry.ai_rank
-                            ? (entry.ai_rank * 5).toFixed(1)
-                            : "N/A"}
+                          {(() => {
+                            const scoreValue = Number(
+                              entry.application?.screening_result?.final_score ||
+                              entry.application?.screening_result?.overall_score ||
+                              entry.application?.evaluation?.matching_percentage ||
+                              (entry.ai_rank ? entry.ai_rank * 100 : 0)
+                            );
+                            return scoreValue > 0 ? `${scoreValue.toFixed(0)}%` : "N/A";
+                          })()}
                         </span>
                       </div>
                       <span
@@ -281,40 +323,62 @@ export function ShortlistList() {
                         {new Date(entry.evaluated_at).toLocaleDateString()}
                       </div>
                       <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground border-l border-border/50 pl-4">
-                        <MessageSquare className="size-3.5" /> AI Score:{" "}
-                        {(entry.ai_rank * 100).toFixed(0)}%
+                        <BrainCircuit className="size-3.5" /> AI Score:{" "}
+                        {(() => {
+                          const scoreValue = Number(
+                            entry.application?.screening_result?.final_score ||
+                            entry.application?.screening_result?.overall_score ||
+                            entry.application?.evaluation?.matching_percentage ||
+                            (entry.ai_rank ? entry.ai_rank * 100 : 0)
+                          );
+                          return scoreValue > 0 ? `${scoreValue.toFixed(0)}%` : "N/A";
+                        })()}
                       </div>
                     </div>
 
-                    {canCEOActions && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAction("confirm", entry)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-500/20 transition-colors"
-                        >
-                          <Check className="size-3" /> Confirm
-                        </button>
-                        <button
-                          onClick={() => handleAction("invite", entry)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-500/20 transition-colors"
-                        >
-                          <Send className="size-3" /> Invite
-                        </button>
-                        <button
-                          onClick={() => handleAction("hire", entry)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors"
-                        >
-                          <UserCheck className="size-3" /> Hire
-                        </button>
-                      </div>
-                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleBrainClick(entry.application); }}
+                        disabled={evaluatingApps.includes(entry.application.application_id)}
+                        className="p-1.5 rounded-lg bg-muted hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+                        title="Quick AI View"
+                      >
+                        {evaluatingApps.includes(entry.application.application_id) ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <BrainCircuit className="size-4" />
+                        )}
+                      </button>
+                      {canCEOActions && (
+                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => handleAction("confirm", entry)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-500/20 transition-colors"
+                          >
+                            <Check className="size-3" /> Confirm
+                          </button>
+                          <button
+                            onClick={() => handleAction("invite", entry)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-500/20 transition-colors"
+                          >
+                            <Send className="size-3" /> Invite
+                          </button>
+                          <button
+                            onClick={() => handleAction("hire", entry)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors"
+                          >
+                            <UserCheck className="size-3" /> Hire
+                          </button>
+                        </div>
+                      )}
 
-                    <button
-                      onClick={() => openDetailsModal(entry.application)}
-                      className="p-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
-                    >
-                      <ChevronRight className="size-4" />
-                    </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleBrainClick(entry.application); }}
+                        className="p-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
+                      >
+                        <ChevronRight className="size-4" />
+                      </button>
+                    </div>
                   </div>
                 </Card>
               </motion.div>

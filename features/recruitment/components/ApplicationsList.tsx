@@ -25,6 +25,7 @@ import {
   CheckCircle2,
   Eye,
   Star,
+  Brain,
 } from "lucide-react";
 import {
   fetchApplications,
@@ -80,6 +81,8 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
   const [evaluatingApps, setEvaluatingApps] = useState<number[]>([]);
   const [retryingApps, setRetryingApps] = useState<number[]>([]);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showShortlistDialog, setShowShortlistDialog] = useState(false);
+  const [shortlistAppId, setShortlistAppId] = useState<number | null>(null);
   const router = useRouter();
 
 
@@ -106,7 +109,10 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
         applied_today: appliedToday || undefined,
         position_id: selectedJobId || undefined,
       });
-      setApps(response.results);
+      setApps(response.results.map((app: any) => ({
+        ...app,
+        full_name: app.full_name || app.applicant?.full_name || app.applicant_name || "Unknown Applicant"
+      })));
     } catch (err: any) {
       setError(err.message || "Failed to load applications");
     } finally {
@@ -222,17 +228,48 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
   };
 
 
-  const handleToggleShortlist = async (appId: number) => {
+  const handleToggleShortlist = async (appId: number, skipAiCheck = false) => {
+    const app = apps.find(a => a.application_id === appId);
+    if (!app) return;
+
+    // Requirement: shortlist without ai review dialog
+    if (!app.screening_result && !app.is_shortlisted && !skipAiCheck) {
+      setShortlistAppId(appId);
+      setShowShortlistDialog(true);
+      return;
+    }
+
     try {
       const res = await toggleShortlist(appId);
       setApps((prev) =>
         prev.map((a) =>
-          a.application_id === appId ? { ...a, is_shortlisted: res.shortlisted } : a
+          a.application_id === appId ? { ...a, is_shortlisted: res.shortlisted, status: res.status as any } : a
         )
       );
       toast(res.shortlisted ? "Added to shortlist" : "Removed from shortlist", "success");
+      setShowShortlistDialog(false);
     } catch (err: any) {
       toast("Action failed: " + err.message, "error");
+    }
+  };
+
+  const handleShortlistWithAi = async () => {
+    if (!shortlistAppId) return;
+    const app = apps.find(a => a.application_id === shortlistAppId);
+    if (!app) return;
+    
+    const posId = app.position?.position_id;
+    if (!posId) {
+      toast("Position ID not found", "error");
+      return;
+    }
+
+    try {
+      await startScreening(Number(posId));
+      toast("Screening started — redirecting to progress view.", "success");
+      router.push(`/recruitment/job-postings/${posId}/screening`);
+    } catch (err: any) {
+      toast("Failed to start screening: " + err.message, "error");
     }
   };
 
@@ -271,7 +308,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
   };
 
   const canEdit = user?.role === "HR_STAFF" || user?.role === "HR_CEO";
-  const canShortlist = user?.role === "HR_STAFF";
+  const canShortlist = ["ADMIN", "HR_STAFF", "HR_CEO"].includes(user?.role || "");
   const canCEOActions = user?.role === "HR_CEO";
 
   const getStatusStyle = (status: string) => {
@@ -318,12 +355,17 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
     );
   }, [apps]);
 
+  // Prevent hydration mismatch and provide a stable mounting state
   if (!isMounted) {
     return (
-      <div className="space-y-4">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-32 bg-muted/30 animate-pulse rounded-[2rem] border border-border/30" />
-        ))}
+      <div className="space-y-6 min-h-[60vh] flex flex-col items-center justify-center">
+        <div className="relative">
+          <div className="size-16 border-4 border-primary/10 border-t-primary/40 rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Brain className="size-6 text-primary/40 animate-pulse" />
+          </div>
+        </div>
+        <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 animate-pulse">Initializing Interface...</p>
       </div>
     );
   }
@@ -475,6 +517,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                         app.screening_result?.final_score ||
                         app.screening_result?.overall_score ||
                         app.evaluation?.matching_percentage ||
+                        (app.evaluation?.ai_rank ? app.evaluation.ai_rank * 100 : 0) ||
                         0,
                       );
 
@@ -486,7 +529,10 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                         animate={{ opacity: 1, y: 0 }}
                         className="group relative"
                       >
-                        <div className="p-6 rounded-[2rem] bg-background border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300">
+                        <div 
+                          className="p-6 rounded-[2rem] bg-background border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 cursor-pointer"
+                          onClick={() => handleBrainClick(app)}
+                        >
                           <div className="flex flex-col lg:flex-row lg:items-center gap-6">
                             {/* Candidate Info */}
                             <div className="flex items-center gap-4 flex-1">
@@ -498,6 +544,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                   href={`/recruitment/applications/${app.application_id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   <h4 className="font-black text-lg group-hover:text-primary transition-colors cursor-pointer">
                                     {fullName}
@@ -512,7 +559,13 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                   <span>{submittedAt ? new Date(submittedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ""}</span>
                                   {tracking && <span className="ml-2 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-muted/5 text-muted-foreground">{tracking}</span>}
                                   {cvUrl && (
-                                    <a href={cvUrl} target="_blank" rel="noopener noreferrer" className="ml-2 text-xs text-primary font-black flex items-center gap-1">
+                                    <a 
+                                      href={cvUrl} 
+                                      target="_blank" 
+                                      rel="noopener noreferrer" 
+                                      className="ml-2 text-xs text-primary font-black flex items-center gap-1"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
                                       <Download className="size-3" /> CV
                                     </a>
                                   )}
@@ -532,7 +585,16 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                   <div className="flex gap-2 mt-2">
                                     {Object.entries((app as any).custom_field_values).map(([k, v]: [string, any]) => (
                                       v?.file_url ? (
-                                        <a key={k} href={v.file_url} target="_blank" rel="noopener noreferrer" className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-black">{v.file_name || k}</a>
+                                        <a 
+                                          key={k} 
+                                          href={v.file_url} 
+                                          target="_blank" 
+                                          rel="noopener noreferrer" 
+                                          className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-black"
+                                          onClick={(e) => e.stopPropagation()}
+                                        >
+                                          {v.file_name || k}
+                                        </a>
                                       ) : (
                                         <span key={k} className="px-2 py-1 rounded-full bg-muted/10 text-muted-foreground text-xs">{k}</span>
                                       )
@@ -569,7 +631,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
 
                               <div className="flex items-center gap-2">
                                 <button
-                                  onClick={() => handleBrainClick(app)}
+                                  onClick={(e) => { e.stopPropagation(); handleBrainClick(app); }}
                                   className="p-3 rounded-2xl bg-muted/50 hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
                                   title="Quick AI View"
                                 >
@@ -580,6 +642,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                   target="_blank"
                                   className="p-3 rounded-2xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-95"
                                   title="View Full Profile"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   <ExternalLink size={18} />
                                 </Link>
@@ -591,18 +654,25 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                 {canShortlist && (
                                   <>
                                     <button
-                                      onClick={() => handleToggleShortlist(app.application_id)}
+                                      onClick={(e) => { e.stopPropagation(); handleToggleShortlist(app.application_id); }}
+                                      disabled={app.status === "shortlisted" || (app as any).is_shortlisted}
                                       className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                                        (app as any).is_shortlisted
-                                          ? "bg-amber-500 text-white hover:bg-amber-600"
-                                          : "bg-amber-500/10 text-amber-700 hover:bg-amber-500/20"
+                                        (app as any).is_shortlisted || app.status === "shortlisted"
+                                          ? "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+                                          : !app.screening_result 
+                                            ? "bg-amber-500/10 text-amber-700 hover:bg-amber-500/20"
+                                            : "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
                                       }`}
                                     >
-                                      <Star size={12} fill={(app as any).is_shortlisted ? "currentColor" : "none"} />
-                                      {(app as any).is_shortlisted ? "Shortlisted" : "Shortlist"}
+                                      <Star size={12} fill={(app as any).is_shortlisted || app.status === "shortlisted" ? "currentColor" : "none"} />
+                                      {(app as any).is_shortlisted || app.status === "shortlisted" 
+                                        ? "Shortlisted" 
+                                        : !app.screening_result 
+                                          ? "Shortlist (No AI)" 
+                                          : "Shortlist"}
                                     </button>
                                     <button
-                                      onClick={() => handleRetryExtraction(app.application_id)}
+                                      onClick={(e) => { e.stopPropagation(); handleRetryExtraction(app.application_id); }}
                                       disabled={retryingApps.includes(app.application_id)}
                                       className="px-4 py-2.5 rounded-xl bg-muted/10 text-muted-foreground text-[10px] font-black uppercase tracking-widest hover:bg-muted/20 transition-all flex items-center gap-2"
                                     >
@@ -671,6 +741,47 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
               className="rounded-xl font-bold bg-primary text-white hover:bg-primary/90"
             >
               Confirm & Start
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showShortlistDialog} onOpenChange={setShowShortlistDialog}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BrainCircuit className="text-amber-500" size={20} />
+              AI Review Pending
+            </DialogTitle>
+            <DialogDescription className="py-2 font-medium">
+              This candidate has not been reviewed by AI yet. How would you like to proceed?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-3 py-4">
+            <div className="p-4 rounded-xl bg-amber-500/5 border border-amber-500/10 text-xs text-amber-700 leading-relaxed">
+              <strong>Shortlisting without AI review</strong> will add the candidate to the priority queue immediately but without AI scores or rankings.
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button 
+              variant="ghost" 
+              onClick={() => setShowShortlistDialog(false)}
+              className="rounded-xl font-bold flex-1"
+            >
+              Cancel
+            </Button>
+            <Button 
+              variant="outline"
+              onClick={() => shortlistAppId && handleToggleShortlist(shortlistAppId, true)}
+              className="rounded-xl font-bold flex-1 border-amber-200 text-amber-700 hover:bg-amber-50"
+            >
+              Shortlist Anyway
+            </Button>
+            <Button 
+              onClick={handleShortlistWithAi}
+              className="rounded-xl font-bold flex-1 bg-primary text-white"
+            >
+              Run AI Review
             </Button>
           </DialogFooter>
         </DialogContent>

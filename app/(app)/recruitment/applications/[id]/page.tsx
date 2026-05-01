@@ -844,35 +844,33 @@ export default function ApplicationDetailPage() {
 
                                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="p-4 rounded-2xl bg-muted/10 border border-border/30">
-                                      <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">AI Breakdown (categories)</p>
+                                      <p className="text-[10px] font-black uppercase text-muted-foreground mb-4">AI Insight Breakdown</p>
                                       {app.screening_result.scoring_breakdown?.ai ? (
-                                        <div className="space-y-3 text-sm font-medium">
+                                        <div className="space-y-4">
                                           {Object.entries(app.screening_result.scoring_breakdown.ai).map(([k, v]) => (
-                                            <div key={k} className="flex flex-col gap-2 py-2 border-b border-border/10 last:border-none">
+                                            <div key={k} className="space-y-2">
                                               <div className="flex items-center justify-between">
                                                 <div className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">{k.replace(/_/g, ' ')}</div>
                                                 <div className="font-black text-sm text-primary">
-                                                  {typeof v !== 'object' ? String(v) : Array.isArray(v) ? `${v.length} items` : 'Details'}
+                                                  {typeof v !== 'object' ? String(v) : null}
                                                 </div>
                                               </div>
+                                              
                                               {typeof v === 'object' && v !== null && (
-                                                <div className="bg-muted/10 rounded-xl p-3 text-[10px] font-mono text-muted-foreground/90 grid grid-cols-1 gap-y-1.5">
-                                                  {Array.isArray(v) ? (
-                                                    <div className="flex flex-wrap gap-1">
-                                                      {v.map((item, idx) => (
-                                                        <span key={idx} className="px-2 py-0.5 rounded-md bg-background border border-border/50">{String(item)}</span>
-                                                      ))}
-                                                    </div>
-                                                  ) : (
-                                                    Object.entries(v).map(([subK, subV]) => (
-                                                      <div key={subK} className="flex justify-between items-start gap-4">
-                                                        <span className="opacity-70 shrink-0">{subK.replace(/_/g, ' ')}:</span>
-                                                        <span className="font-bold text-right break-all">
-                                                          {typeof subV === 'object' ? JSON.stringify(subV) : String(subV)}
-                                                        </span>
+                                                <div className="space-y-1.5">
+                                                  {Object.entries(v).map(([subK, subV]) => (
+                                                    <div key={subK} className="flex flex-col gap-1">
+                                                      <div className="flex justify-between text-[10px]">
+                                                        <span className="font-bold opacity-70">{subK.replace(/_/g, ' ')}</span>
+                                                        <span className="font-black text-primary">{typeof subV === 'number' ? `${(subV * 100).toFixed(0)}%` : String(subV)}</span>
                                                       </div>
-                                                    ))
-                                                  )}
+                                                      {typeof subV === 'number' && (
+                                                        <div className="h-1 w-full bg-primary/10 rounded-full overflow-hidden">
+                                                          <div className="h-full bg-primary" style={{ width: `${subV * 100}%` }} />
+                                                        </div>
+                                                      )}
+                                                    </div>
+                                                  ))}
                                                 </div>
                                               )}
                                             </div>
@@ -884,18 +882,37 @@ export default function ApplicationDetailPage() {
                                     </div>
 
                                     <div className="p-4 rounded-2xl bg-muted/10 border border-border/30">
-                                      <p className="text-[10px] font-black uppercase text-muted-foreground mb-2">Rule Breakdown</p>
+                                      <p className="text-[10px] font-black uppercase text-muted-foreground mb-4">Rule Enforcement</p>
                                       {app.screening_result.scoring_breakdown?.rule ? (
-                                        <div className="space-y-3 text-sm font-medium">
+                                        <div className="space-y-4">
                                           {Object.entries(app.screening_result.scoring_breakdown.rule).map(([k, v]) => (
-                                            <div key={k} className="flex flex-col gap-2 py-2 border-b border-border/10 last:border-none">
+                                            <div key={k} className="space-y-2">
                                               <div className="flex items-center justify-between">
                                                 <div className="text-muted-foreground text-[10px] font-black uppercase tracking-widest">{k.replace(/_/g, ' ')}</div>
                                                 <div className="font-black text-sm text-amber-600">
                                                   {typeof v !== 'object' ? String(v) : null}
                                                 </div>
                                               </div>
-                                              {typeof v === 'object' && v !== null && (
+
+                                              {k === 'rule_adjustments' && typeof v === 'object' && v !== null && (
+                                                <div className="flex flex-wrap gap-2">
+                                                  {Object.entries(v).map(([rule, val]: [string, any]) => (
+                                                    <div 
+                                                      key={rule} 
+                                                      className={`px-3 py-1 rounded-full text-[9px] font-black flex items-center gap-2 border ${
+                                                        val < 0 
+                                                          ? "bg-red-500/10 text-red-600 border-red-500/20" 
+                                                          : "bg-green-500/10 text-green-600 border-green-500/20"
+                                                      }`}
+                                                    >
+                                                      <span className="opacity-70">{rule.replace(/_/g, ' ')}</span>
+                                                      <span className="font-black">{val > 0 ? '+' : ''}{val}</span>
+                                                    </div>
+                                                  ))}
+                                                </div>
+                                              )}
+
+                                              {k !== 'rule_adjustments' && typeof v === 'object' && v !== null && (
                                                 <div className="bg-muted/10 rounded-xl p-3 text-[10px] font-mono text-muted-foreground/90 grid grid-cols-1 gap-y-1.5">
                                                   {Array.isArray(v) ? (
                                                     <div className="flex flex-wrap gap-1">

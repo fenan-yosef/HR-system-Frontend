@@ -29,6 +29,9 @@ import { Button } from "@/components/ui/button";
 import type { Application, ScreeningResult, ScreeningHistoryEntry } from "@/types/recruitment";
 import { getMediaUrl } from "@/services/apiClient";
 import { formatScore } from "@/lib/utils";
+import { toggleShortlist } from "@/services/recruitmentService";
+import { useToast } from "@/components/ui/toast";
+import { Star } from "lucide-react";
 
 function getScoreColor(score: number) {
   if (score >= 80) return { text: "text-emerald-600", light: "bg-emerald-500/10", border: "border-emerald-500/20", label: "Strong Fit" };
@@ -43,6 +46,7 @@ interface EvaluationDetailsModalProps {
 }
 
 export function EvaluationDetailsModal({ application, onClose }: EvaluationDetailsModalProps) {
+  const { toast } = useToast();
   const evalData = application.evaluation;
   const screening = application.screening_result;
   const history = application.screening_history || screening?.history || [];
@@ -54,6 +58,8 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
   
   // Track which version we are currently viewing (defaults to active screening result)
   const [selectedSnapshotId, setSelectedSnapshotId] = useState<number | string | null>(screening?.id || null);
+  const [isShortlisted, setIsShortlisted] = useState(application.is_shortlisted || application.status === "shortlisted");
+  const [isToggling, setIsToggling] = useState(false);
   
   if (!evalData && !screening) return null;
 
@@ -90,6 +96,19 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
     } else if (evalData?.interview_questions) {
        interviewQuestions = evalData.interview_questions;
     }
+
+    const handleToggleShortlist = async () => {
+      try {
+        setIsToggling(true);
+        const res = await toggleShortlist(application.application_id);
+        setIsShortlisted(res.shortlisted);
+        toast(res.shortlisted ? "Added to shortlist" : "Removed from shortlist", "success");
+      } catch (err: any) {
+        toast(`Action failed: ${err.message}`, "error");
+      } finally {
+        setIsToggling(false);
+      }
+    };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -329,8 +348,94 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
                 )}
              </AnimatePresence>
           </section>
+ 
+           {/* Scoring Breakdown (Standardized) */}
+           {fullSnapshot?.scoring_breakdown && (
+           <section className="border border-border/50 rounded-2xl overflow-hidden bg-muted/5">
+              <button 
+                 onClick={() => toggleSection('breakdown')}
+                 className="w-full flex items-center justify-between p-4 hover:bg-muted/10 transition-colors"
+              >
+                 <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-primary">
+                    <Brain size={14} />
+                    <span>Scoring Detail Breakdown</span>
+                 </div>
+                 <ChevronDown size={16} className={`text-muted-foreground transition-transform duration-300 ${expandedSections.breakdown ? '' : '-rotate-90'}`} />
+              </button>
+              <AnimatePresence>
+                 {expandedSections.breakdown && (
+                    <motion.div 
+                       initial={{ height: 0, opacity: 0 }}
+                       animate={{ height: 'auto', opacity: 1 }}
+                       exit={{ height: 0, opacity: 0 }}
+                       className="overflow-hidden"
+                    >
+                       <div className="p-4 pt-0 space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             {/* AI Side */}
+                             <div className="space-y-3">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground border-b border-border/30 pb-1">AI Intuition</p>
+                                {fullSnapshot.scoring_breakdown.ai ? (
+                                   Object.entries(fullSnapshot.scoring_breakdown.ai).map(([k, v]) => (
+                                      <div key={k} className="space-y-1.5">
+                                         <div className="flex justify-between items-center text-[10px]">
+                                            <span className="font-bold opacity-70 uppercase tracking-tighter">{k.replace(/_/g, ' ')}</span>
+                                            <span className="font-black text-primary">{typeof v !== 'object' ? String(v) : null}</span>
+                                         </div>
+                                         {typeof v === 'object' && v !== null && (
+                                            <div className="space-y-2 pl-2 border-l border-primary/10">
+                                               {Object.entries(v).map(([subK, subV]) => (
+                                                  <div key={subK} className="space-y-1">
+                                                     <div className="flex justify-between text-[9px]">
+                                                        <span className="opacity-60">{subK.replace(/_/g, ' ')}</span>
+                                                        <span className="font-bold">{typeof subV === 'number' ? `${(subV * 100).toFixed(0)}%` : String(subV)}</span>
+                                                     </div>
+                                                     {typeof subV === 'number' && (
+                                                        <div className="h-1 w-full bg-primary/5 rounded-full overflow-hidden">
+                                                           <div className="h-full bg-primary/60" style={{ width: `${subV * 100}%` }} />
+                                                        </div>
+                                                     )}
+                                                  </div>
+                                               ))}
+                                            </div>
+                                         )}
+                                      </div>
+                                   ))
+                                ) : <span className="text-[10px] italic text-muted-foreground">No data</span>}
+                             </div>
 
-          {/* Skill Analysis */}
+                             {/* Rule Side */}
+                             <div className="space-y-3">
+                                <p className="text-[9px] font-black uppercase text-muted-foreground border-b border-border/30 pb-1">Rule Enforcement</p>
+                                {fullSnapshot.scoring_breakdown.rule ? (
+                                   Object.entries(fullSnapshot.scoring_breakdown.rule).map(([k, v]) => (
+                                      <div key={k} className="space-y-2">
+                                         <div className="flex justify-between items-center text-[10px]">
+                                            <span className="font-bold opacity-70 uppercase tracking-tighter">{k.replace(/_/g, ' ')}</span>
+                                            <span className="font-black text-amber-600">{typeof v !== 'object' ? String(v) : null}</span>
+                                         </div>
+                                         {k === 'rule_adjustments' && typeof v === 'object' && v !== null && (
+                                            <div className="flex flex-wrap gap-1.5">
+                                               {Object.entries(v).map(([rule, val]: [string, any]) => (
+                                                  <div key={rule} className={`px-2 py-0.5 rounded-lg text-[8px] font-black border ${val < 0 ? "bg-red-500/5 text-red-600 border-red-500/10" : "bg-green-500/5 text-green-600 border-green-500/10"}`}>
+                                                     {rule.replace(/_/g, ' ')} {val > 0 ? '+' : ''}{val}
+                                                  </div>
+                                               ))}
+                                            </div>
+                                         )}
+                                      </div>
+                                   ))
+                                ) : <span className="text-[10px] italic text-muted-foreground">No data</span>}
+                             </div>
+                          </div>
+                       </div>
+                    </motion.div>
+                 )}
+              </AnimatePresence>
+           </section>
+           )}
+
+           {/* Skill Analysis */}
           <section className="border border-border/50 rounded-2xl overflow-hidden bg-muted/5">
              <div className="p-4 border-b border-border/30 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-xs font-black uppercase tracking-widest text-emerald-600">
@@ -524,7 +629,16 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t border-border bg-muted/20 flex justify-end">
+        <div className="p-6 border-t border-border bg-muted/20 flex justify-between items-center">
+           <Button 
+              onClick={handleToggleShortlist} 
+              disabled={isToggling}
+              variant={isShortlisted ? "secondary" : "outline"}
+              className={`rounded-xl font-bold flex items-center gap-2 ${isShortlisted ? "bg-amber-500/10 text-amber-600 hover:bg-amber-500/20" : "border-amber-200 text-amber-700 hover:bg-amber-50"}`}
+           >
+              <Star size={16} fill={isShortlisted ? "currentColor" : "none"} />
+              {isShortlisted ? "Shortlisted" : "Add to Shortlist"}
+           </Button>
            <Button onClick={onClose} variant="secondary" className="rounded-xl font-bold bg-background shadow-sm hover:bg-muted">
               Close Assessment
            </Button>
