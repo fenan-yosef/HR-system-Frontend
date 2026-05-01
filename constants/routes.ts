@@ -1,6 +1,7 @@
 export const ROUTES = {
   LOGIN: "/login",
   DASHBOARD: "/dashboard",
+  MY_DISCIPLINARY: "/employee/disciplinary",
   RECRUITMENT_JOB_POSTINGS: "/recruitment/job-postings",
   RECRUITMENT_APPLICATIONS: "/recruitment/applications",
   RECRUITMENT_SHORTLIST: "/recruitment/shortlist",
@@ -30,6 +31,11 @@ export const ROUTES = {
 
   // HR Letters
   HR_LETTER_REQUESTS: "/hr/letter-requests",
+
+  // Disciplinary Management
+  HR_DISCIPLINARY: "/hr/disciplinary",
+  HR_CREATE_DISCIPLINARY: "/hr/create-disciplinary",
+  CEO_DISCIPLINARY_APPROVALS: "/ceo/disciplinary-approvals",
   
   // System
   SETTINGS: "/settings",

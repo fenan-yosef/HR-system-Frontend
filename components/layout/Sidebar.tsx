@@ -122,6 +122,30 @@ const NAVIGATION_CONFIG: NavSection[] = [
         icon: FileText,
         roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
       },
+      {
+        label: "Disciplinary Records",
+        icon: ShieldAlert,
+        roles: ["ADMIN", "HR_STAFF"],
+        href: ROUTES.HR_DISCIPLINARY,
+      },
+      {
+        label: "Create Disciplinary",
+        icon: ShieldAlert,
+        roles: ["ADMIN", "HR_STAFF"],
+        href: ROUTES.HR_CREATE_DISCIPLINARY,
+      },
+      {
+        label: "Disciplinary Approvals",
+        icon: ShieldAlert,
+        roles: ["ADMIN", "HR_CEO"],
+        href: ROUTES.CEO_DISCIPLINARY_APPROVALS,
+      },
+      {
+        label: "My Disciplinary",
+        href: ROUTES.MY_DISCIPLINARY,
+        icon: ShieldAlert,
+        roles: ["EMPLOYEE"],
+      },
       // {
       //   label: "Finance",
       //   icon: CreditCard,
