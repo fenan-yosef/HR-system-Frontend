@@ -26,7 +26,7 @@ import {
   Application,
 } from "@/types/recruitment";
 import { useAuth } from "@/hooks/useAuth";
-import { isHRCeo } from "@/lib/permissions";
+import { canApproveRecruitment } from "@/lib/permissions";
 import { EvaluationDetailsModal } from "./EvaluationDetailsModal";
 import { getApiErrorStatus } from "@/services/apiClient";
 import { useToast } from "@/components/ui/toast";
@@ -40,7 +40,7 @@ export function PendingIntervieweesList() {
   const [isBatchConfirming, setIsBatchConfirming] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  const canCEOActions = isHRCeo(user);
+  const canApprove = canApproveRecruitment(user);
 
   useEffect(() => {
     loadPendingData();
@@ -119,14 +119,14 @@ export function PendingIntervieweesList() {
           <h2 className="text-2xl font-black tracking-tight">Interview Approvals</h2>
           <p className="text-sm text-muted-foreground font-medium">Candidates waiting for CEO/HR-CEO final confirmation.</p>
         </div>
-        {canCEOActions && candidates.length > 0 && (
+        {canApprove && candidates.length > 0 && (
           <button
             onClick={handleBatchConfirm}
             disabled={isBatchConfirming}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:shadow-lg transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:hover:scale-100"
           >
-            {isBatchConfirming ? <Loader2 size={14} className="animate-spin" /> : <Mail size={14} />}
-            Approve All & Send Invites
+            {isBatchConfirming ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
+            Confirm All Pending
           </button>
         )}
       </div>
@@ -174,8 +174,8 @@ export function PendingIntervieweesList() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        {canCEOActions && (
+                      <div className="flex items-center gap-3">
+                        {canApprove && (
                           <>
                             <button
                               onClick={() => handleAction("confirm", app)}

@@ -19,6 +19,8 @@ import type { Application } from "@/types/recruitment";
 import { getMediaUrl } from "@/services/apiClient";
 import { formatScore } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
+import { useAuth } from "@/hooks/useAuth";
+import { canManageRecruitment } from "@/lib/permissions";
 import {
   ArrowLeft,
   Mail,
@@ -49,6 +51,7 @@ export default function ApplicationDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { toast } = useToast();
+  const { user } = useAuth();
   const applicationId = Number(params.id);
 
   const [app, setApp] = useState<Application | null>(null);
@@ -126,6 +129,8 @@ export default function ApplicationDetailPage() {
       setIsSavingNote(false);
     }
   };
+  
+  const canManage = canManageRecruitment(user);
 
   const handleAction = async (action: "confirm" | "invite" | "hire") => {
     if (!app) return;
@@ -374,30 +379,34 @@ export default function ApplicationDetailPage() {
         </div>
 
         <div className="flex items-center gap-3 self-end md:self-center">
-            <Button 
-              variant="outline" 
-              className={`h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs border-2 transition-all active:scale-95 flex items-center gap-2 ${
-                app.is_shortlisted 
-                  ? "bg-amber-500 text-white border-amber-500 hover:bg-amber-600" 
-                  : "hover:bg-muted"
-              }`}
-              onClick={handleToggleShortlist}
-              disabled={actionBusyKey === "shortlist"}
-            >
-              <Star size={16} fill={app.is_shortlisted ? "currentColor" : "none"} />
-              {app.is_shortlisted ? "Shortlisted" : "Shortlist"}
-            </Button>
-            <Button 
-              className={`h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all active:scale-95 ${
-                app.status === "interview_pending" || app.status === "interview_invited"
-                  ? "bg-muted text-muted-foreground cursor-not-allowed"
-                  : "bg-primary text-white shadow-primary/20 hover:scale-105"
-              }`}
-              onClick={() => handleAction("invite")}
-              disabled={app.status === "interview_pending" || app.status === "interview_invited"}
-            >
-              {app.status === "interview_pending" ? "Interview Pending Approval" : app.status === "interview_invited" ? "Interview Invitation Sent" : "Invite to Interview"}
-            </Button>
+          {canManage && (
+            <>
+              <Button 
+                variant="outline" 
+                className={`h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs border-2 transition-all active:scale-95 flex items-center gap-2 ${
+                  app.is_shortlisted 
+                    ? "bg-amber-500 text-white border-amber-500 hover:bg-amber-600" 
+                    : "hover:bg-muted"
+                }`}
+                onClick={handleToggleShortlist}
+                disabled={actionBusyKey === "shortlist"}
+              >
+                <Star size={16} fill={app.is_shortlisted ? "currentColor" : "none"} />
+                {app.is_shortlisted ? "Shortlisted" : "Shortlist"}
+              </Button>
+              <Button 
+                className={`h-12 px-6 rounded-2xl font-black uppercase tracking-widest text-xs shadow-xl transition-all active:scale-95 ${
+                  app.status === "interview_pending" || app.status === "interview_invited"
+                    ? "bg-muted text-muted-foreground cursor-not-allowed"
+                    : "bg-primary text-white shadow-primary/20 hover:scale-105"
+                }`}
+                onClick={() => handleAction("invite")}
+                disabled={app.status === "interview_pending" || app.status === "interview_invited"}
+              >
+                {app.status === "interview_pending" ? "Interview Pending Approval" : app.status === "interview_invited" ? "Interview Invitation Sent" : "Invite to Interview"}
+              </Button>
+            </>
+          )}
             <button className="p-3 rounded-2xl bg-muted/50 hover:bg-muted transition-all">
               <MoreVertical size={20} className="text-muted-foreground" />
             </button>

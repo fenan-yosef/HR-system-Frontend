@@ -50,6 +50,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { isAdmin, isHRCeo, isHRStaff, canManageRecruitment, canApproveRecruitment } from "@/lib/permissions";
 import { ApplicationFilters } from "./ApplicationFilters";
 import { ApplicationMetrics } from "./ApplicationMetrics";
 import { EvaluationDetailsModal } from "./EvaluationDetailsModal";
@@ -307,9 +308,8 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
     toast(`Failed to ${action}: ${err.message}`, "error");
   };
 
-  const canEdit = user?.role === "HR_STAFF" || user?.role === "HR_CEO";
-  const canShortlist = ["ADMIN", "HR_STAFF", "HR_CEO"].includes(user?.role || "");
-  const canCEOActions = user?.role === "HR_CEO";
+  const canPerformRecruitment = canManageRecruitment(user);
+  const canPerformApproval = canApproveRecruitment(user);
 
   const getStatusStyle = (status: string) => {
     switch (status) {
@@ -387,7 +387,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
             isExporting={isExporting}
             isBatchEvaluating={isBatchEvaluating}
             onBatchEvaluate={handleBatchEvaluate}
-            canBatchEvaluate={canShortlist}
+            canBatchEvaluate={canPerformRecruitment}
             onSearchChange={setSearch}
             onStatusChange={setStatus}
             onMinScoreChange={setMinScore}
@@ -471,14 +471,16 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                   Showing {apps.length} Candidate{apps.length !== 1 ? 's' : ''}
                 </h2>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleBatchEvaluate}
-                    disabled={!selectedJobId}
-                    className={`px-3 py-2 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex items-center gap-2 ${selectedJobId ? 'bg-primary text-white hover:shadow-xl' : 'bg-muted/10 text-muted-foreground cursor-not-allowed'}`}
-                  >
-                    {isBatchEvaluating ? <Loader2 className="size-4 animate-spin" /> : <BrainCircuit className="size-4" />}
-                    {isBatchEvaluating ? 'Starting...' : 'Batch Screen'}
-                  </button>
+                  {canPerformRecruitment && (
+                    <button
+                      onClick={handleBatchEvaluate}
+                      disabled={!selectedJobId}
+                      className={`px-3 py-2 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex items-center gap-2 ${selectedJobId ? 'bg-primary text-white hover:shadow-xl' : 'bg-muted/10 text-muted-foreground cursor-not-allowed'}`}
+                    >
+                      {isBatchEvaluating ? <Loader2 className="size-4 animate-spin" /> : <BrainCircuit className="size-4" />}
+                      {isBatchEvaluating ? 'Starting...' : 'Batch Screen'}
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -651,7 +653,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
 
                             {/* Actions Trigger */}
                             <div className="flex items-center gap-2">
-                                {canShortlist && (
+                                {canPerformRecruitment && (
                                   <>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); handleToggleShortlist(app.application_id); }}

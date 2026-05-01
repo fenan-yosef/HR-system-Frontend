@@ -35,7 +35,7 @@ import {
   ApplicationMetrics,
 } from "@/types/recruitment";
 import { useAuth } from "@/hooks/useAuth";
-import { isHRCeo } from "@/lib/permissions";
+import { canManageRecruitment } from "@/lib/permissions";
 import { EvaluationDetailsModal } from "./EvaluationDetailsModal";
 import { AnimatePresence } from "framer-motion";
 import { getApiErrorStatus } from "@/services/apiClient";
@@ -54,7 +54,7 @@ export function ShortlistList() {
   const [isBatchInviting, setIsBatchInviting] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
-  const canCEOActions = isHRCeo(user);
+  const canManage = canManageRecruitment(user);
 
   useEffect(() => {
     loadShortlistPageData();
@@ -256,7 +256,7 @@ export function ShortlistList() {
             Priority Candidates
           </h3>
           <div className="flex items-center gap-3">
-            {shortlist.length > 0 && (
+            {shortlist.length > 0 && canManage && (
               <button
                 onClick={handleBatchInvite}
                 disabled={isBatchInviting}
@@ -362,26 +362,30 @@ export function ShortlistList() {
                         )}
                       </button>
                         <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => handleAction("invite", entry)}
-                            disabled={entry.application.status === "interview_pending" || entry.application.status === "interview_invited"}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-blue-600 transition-colors disabled:opacity-50"
-                          >
-                            <Send className="size-3" /> {entry.application.status === "interview_pending" ? "Pending Approval" : "Invite to Interview"}
-                          </button>
-                          <button
-                            onClick={() => handleAction("reject", entry)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-600 text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-colors"
-                          >
-                            <XCircle className="size-3" /> Reject
-                          </button>
-                          <button
-                            onClick={() => handleAction("remove", entry)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-[10px] font-bold uppercase tracking-wider hover:bg-muted-foreground/10 transition-colors"
-                            title="Remove from shortlist"
-                          >
-                            <Trash2 className="size-3" />
-                          </button>
+                          {canManage && (
+                            <>
+                              <button
+                                onClick={() => handleAction("invite", entry)}
+                                disabled={entry.application.status === "interview_pending" || entry.application.status === "interview_invited"}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-blue-600 transition-colors disabled:opacity-50"
+                              >
+                                <Send className="size-3" /> {entry.application.status === "interview_pending" ? "Pending Approval" : "Invite to Interview"}
+                              </button>
+                              <button
+                                onClick={() => handleAction("reject", entry)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-600 text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-colors"
+                              >
+                                <XCircle className="size-3" /> Reject
+                              </button>
+                              <button
+                                onClick={() => handleAction("remove", entry)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-[10px] font-bold uppercase tracking-wider hover:bg-muted-foreground/10 transition-colors"
+                                title="Remove from shortlist"
+                              >
+                                <Trash2 className="size-3" />
+                              </button>
+                            </>
+                          )}
                         </div>
 
                       <button

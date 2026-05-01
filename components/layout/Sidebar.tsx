@@ -58,7 +58,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "Dashboard",
         href: ROUTES.DASHBOARD,
         icon: LayoutDashboard,
-        roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "APPLICANT"],
+        roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "APPLICANT", "HR_CEO"],
       },
     ],
   },
@@ -68,7 +68,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
       {
         label: "Recruitment",
         icon: Briefcase,
-        roles: ["ADMIN", "HR_STAFF"],
+        roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
         subItems: [
           { label: "Job Postings", href: ROUTES.RECRUITMENT_JOB_POSTINGS },
           { label: "Applications", href: ROUTES.RECRUITMENT_APPLICATIONS },
