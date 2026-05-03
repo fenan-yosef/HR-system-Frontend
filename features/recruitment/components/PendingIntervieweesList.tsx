@@ -14,6 +14,8 @@ import {
   AlertCircle,
   Mail,
   XCircle,
+  Copy,
+  MessageSquare,
 } from "lucide-react";
 import {
   fetchApplications,
@@ -37,6 +39,8 @@ export function PendingIntervieweesList() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+  const [selectedQuestions, setSelectedQuestions] = useState<string[] | null>(null);
+  const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
   const [isBatchConfirming, setIsBatchConfirming] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -52,12 +56,12 @@ export function PendingIntervieweesList() {
     try {
       const pendingRes = await fetchApplications({ status: "interview_pending" });
       const invitedRes = await fetchApplications({ status: "interview_invited" });
-      
+
       const allCandidates = [
         ...(pendingRes.results || []),
         ...(invitedRes.results || [])
-      ].sort((a, b) => 
-        new Date(b.updated_at || b.submitted_at).getTime() - 
+      ].sort((a, b) =>
+        new Date(b.updated_at || b.submitted_at).getTime() -
         new Date(a.updated_at || a.submitted_at).getTime()
       );
 
@@ -120,6 +124,12 @@ export function PendingIntervieweesList() {
 
   const pendingCount = candidates.filter(c => c.status === "interview_pending").length;
 
+  const handleCopyQuestions = (questions: string[]) => {
+    const text = questions.map((q, i) => `${i + 1}. ${q}`).join("\n");
+    navigator.clipboard.writeText(text);
+    toast("Questions copied to clipboard!", "success");
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -164,7 +174,7 @@ export function PendingIntervieweesList() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
               >
-                <Card 
+                <Card
                   className="p-6 border-none shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer"
                   onClick={() => {
                     setSelectedApp(app);
@@ -206,6 +216,20 @@ export function PendingIntervieweesList() {
                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getStatusStyle(app.status)}`}>
                           {app.status === "interview_pending" ? "Pending Approval" : "Approved & Invited"}
                         </span>
+
+                        {(app.screening_result?.scoring_breakdown?.interview_questions?.length ?? 0) > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedQuestions(app.screening_result?.scoring_breakdown?.interview_questions || []);
+                              setIsQuestionsModalOpen(true);
+                            }}
+                            className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-primary hover:underline group/btn"
+                          >
+                            <MessageSquare className="size-3 group-hover/btn:scale-110 transition-transform" />
+                            AI Suggested Questions for Interview
+                          </button>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
@@ -258,6 +282,53 @@ export function PendingIntervieweesList() {
           onClose={() => setIsDetailsModalOpen(false)}
           application={selectedApp}
         />
+      )}
+
+      {selectedQuestions && isQuestionsModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-background w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden border border-border"
+          >
+            <div className="p-8 space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                    <MessageSquare className="size-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black tracking-tight">AI Interview Questions</h3>
+                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-widest">Recommended based on profile</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsQuestionsModalOpen(false)}
+                  className="p-2 rounded-xl hover:bg-muted transition-colors"
+                >
+                  <XCircle className="size-6 text-muted-foreground" />
+                </button>
+              </div>
+
+              <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                {selectedQuestions.map((q, i) => (
+                  <div key={i} className="p-4 rounded-2xl bg-muted/50 border border-border/50 text-sm font-medium leading-relaxed group hover:border-primary/30 transition-colors">
+                    <span className="text-primary font-black mr-2">0{i + 1}</span> {q}
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3 pt-2">
+                <button
+                  onClick={() => handleCopyQuestions(selectedQuestions)}
+                  className="flex-1 flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:scale-[1.02] active:scale-[0.98] transition-all shadow-lg shadow-primary/20"
+                >
+                  <Copy className="size-4" /> Copy All to Clipboard
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   );
