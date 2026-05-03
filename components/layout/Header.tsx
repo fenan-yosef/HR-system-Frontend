@@ -4,31 +4,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Bell, Search, HelpCircle, Menu } from "lucide-react";
 import { motion } from "framer-motion";
-import {
-  AppNotification,
-  loadNotifications,
-  markAllNotificationsAsRead,
-  markNotificationAsRead,
-  saveNotifications,
-} from "@/lib/notifications";
+import useNotifications from "@/hooks/useNotifications";
 
 export function Header() {
   const { user } = useAuth();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const { notifications, unreadCount, markAllAsRead, markSingleAsRead } = useNotifications();
   const notificationsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    setNotifications(loadNotifications());
-  }, []);
-
-  useEffect(() => {
     if (!isNotificationsOpen) return;
-
-    const updated = markAllNotificationsAsRead(loadNotifications());
-    setNotifications(updated);
-    saveNotifications(updated);
-  }, [isNotificationsOpen]);
+    markAllAsRead();
+  }, [isNotificationsOpen, markAllAsRead]);
 
   useEffect(() => {
     if (!isNotificationsOpen) return;
@@ -55,22 +42,15 @@ export function Header() {
     };
   }, [isNotificationsOpen]);
 
-  const unreadCount = useMemo(
-    () => notifications.filter((notification) => !notification.read).length,
-    [notifications],
-  );
+  // unreadCount provided by hook
 
-  const markAllAsRead = () => {
-    const updated = markAllNotificationsAsRead(notifications);
-    setNotifications(updated);
-    saveNotifications(updated);
+  const markAllAsReadHandler = () => {
+    markAllAsRead();
     setIsNotificationsOpen(false);
   };
 
-  const markSingleAsRead = (id: number) => {
-    const updated = markNotificationAsRead(notifications, id);
-    setNotifications(updated);
-    saveNotifications(updated);
+  const markSingleAsReadHandler = (id: number) => {
+    markSingleAsRead(id);
     setIsNotificationsOpen(false);
   };
 
@@ -143,37 +123,37 @@ export function Header() {
                 </div>
 
                 <div className="max-h-96 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <p className="px-4 py-6 text-sm text-muted-foreground">
-                      No notifications available.
-                    </p>
-                  ) : (
-                    notifications.map((notification) => (
-                      <button
-                        key={notification.id}
-                        onClick={() => markSingleAsRead(notification.id)}
-                        className={`block w-full border-b border-border/40 px-4 py-3 text-left transition-colors hover:bg-muted/40 ${notification.read ? "bg-background" : "bg-primary/5"}`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">
-                              {notification.title}
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {notification.description}
-                            </p>
+                    {notifications.length === 0 ? (
+                      <p className="px-4 py-6 text-sm text-muted-foreground">
+                        No notifications available.
+                      </p>
+                    ) : (
+                      notifications.map((notification) => (
+                        <button
+                          key={notification.id}
+                          onClick={() => markSingleAsReadHandler(notification.id)}
+                          className={`block w-full border-b border-border/40 px-4 py-3 text-left transition-colors hover:bg-muted/40 ${notification.read ? "bg-background" : "bg-primary/5"}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">
+                                {notification.title}
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {notification.description}
+                              </p>
+                            </div>
+                            {!notification.read && (
+                              <span className="mt-1 size-2 rounded-full bg-primary" />
+                            )}
                           </div>
-                          {!notification.read && (
-                            <span className="mt-1 size-2 rounded-full bg-primary" />
-                          )}
-                        </div>
-                        <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {new Date(notification.createdAt).toLocaleString()}
-                        </p>
-                      </button>
-                    ))
-                  )}
-                </div>
+                          <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                            {new Date(notification.createdAt).toLocaleString()}
+                          </p>
+                        </button>
+                      ))
+                    )}
+                  </div>
               </div>
             )}
           </div>
