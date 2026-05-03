@@ -50,8 +50,18 @@ export function PendingIntervieweesList() {
     setIsLoading(true);
     setErrorMessage(null);
     try {
-      const response = await fetchApplications({ status: "interview_pending" });
-      setCandidates(response.results || []);
+      const pendingRes = await fetchApplications({ status: "interview_pending" });
+      const invitedRes = await fetchApplications({ status: "interview_invited" });
+      
+      const allCandidates = [
+        ...(pendingRes.results || []),
+        ...(invitedRes.results || [])
+      ].sort((a, b) => 
+        new Date(b.updated_at || b.submitted_at).getTime() - 
+        new Date(a.updated_at || a.submitted_at).getTime()
+      );
+
+      setCandidates(allCandidates);
     } catch (error) {
       setErrorMessage("Unable to load pending interviewees.");
       console.error(error);
@@ -99,10 +109,16 @@ export function PendingIntervieweesList() {
     switch (s) {
       case "interview_pending":
         return "bg-amber-500/10 text-amber-600";
+      case "interview_invited":
+        return "bg-emerald-500/10 text-emerald-600";
+      case "rejected":
+        return "bg-red-500/10 text-red-600";
       default:
         return "bg-primary/10 text-primary";
     }
   };
+
+  const pendingCount = candidates.filter(c => c.status === "interview_pending").length;
 
   if (isLoading) {
     return (
@@ -119,23 +135,23 @@ export function PendingIntervieweesList() {
           <h2 className="text-2xl font-black tracking-tight">Interview Approvals</h2>
           <p className="text-sm text-muted-foreground font-medium">Candidates waiting for CEO/HR-CEO final confirmation.</p>
         </div>
-        {canApprove && candidates.length > 0 && (
+        {canApprove && pendingCount > 0 && (
           <button
             onClick={handleBatchConfirm}
             disabled={isBatchConfirming}
             className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:hover:scale-100"
           >
             {isBatchConfirming ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
-            Confirm All Pending
+            Confirm All {pendingCount} Pending
           </button>
         )}
       </div>
 
       {candidates.length === 0 ? (
         <Card className="p-12 flex flex-col items-center justify-center text-center border-dashed border-2 bg-muted/5">
-          <Check className="size-12 text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-bold">Queue Empty</h3>
-          <p className="text-sm text-muted-foreground max-w-xs">No candidates are currently awaiting interview approval.</p>
+          <Calendar className="size-12 text-muted-foreground/30 mb-4" />
+          <h3 className="text-lg font-bold">Activity Log Empty</h3>
+          <p className="text-sm text-muted-foreground max-w-xs">No interview candidates have been processed yet.</p>
         </Card>
       ) : (
         <div className="grid gap-4">
@@ -188,12 +204,12 @@ export function PendingIntervieweesList() {
                           </span>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getStatusStyle(app.status)}`}>
-                          Pending Approval
+                          {app.status === "interview_pending" ? "Pending Approval" : "Approved & Invited"}
                         </span>
                       </div>
 
                       <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                        {canApprove && (
+                        {canApprove && app.status === "interview_pending" && (
                           <>
                             <button
                               onClick={() => handleAction("confirm", app)}
