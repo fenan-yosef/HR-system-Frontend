@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AppNotification } from "@/lib/notifications";
-import { fetchInbox, fetchUnreadCount, markNotificationAsRead, connectNotificationSocket } from "@/services/notificationService";
+import { fetchInbox, fetchUnreadCount, markNotificationAsRead, connectNotificationSocket, clearNotifications } from "@/services/notificationService";
 
 export default function useNotifications() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -50,18 +50,25 @@ export default function useNotifications() {
     };
   }, []);
 
-  const markAllAsRead = async () => {
+  const markAllAsRead = useCallback(async () => {
     const unreadIds = notifications.filter((n) => !n.read).map((n) => n.id);
+    if (unreadIds.length === 0) return;
     await Promise.all(unreadIds.map((id) => markNotificationAsRead(id)));
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
     setUnreadCount(0);
-  };
+  }, [notifications]);
 
-  const markSingleAsRead = async (id: number) => {
+  const markSingleAsRead = useCallback(async (id: number) => {
     await markNotificationAsRead(id);
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
     setUnreadCount((prev) => Math.max(0, prev - 1));
-  };
+  }, []);
 
-  return { notifications, unreadCount, markAllAsRead, markSingleAsRead };
+  const clearAll = useCallback(async () => {
+    await clearNotifications();
+    setNotifications([]);
+    setUnreadCount(0);
+  }, []);
+
+  return { notifications, unreadCount, markAllAsRead, markSingleAsRead, clearAll };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Bell, Search, HelpCircle, Menu } from "lucide-react";
 import { motion } from "framer-motion";
@@ -9,13 +9,8 @@ import useNotifications from "@/hooks/useNotifications";
 export function Header() {
   const { user } = useAuth();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const { notifications, unreadCount, markAllAsRead, markSingleAsRead } = useNotifications();
+  const { notifications, unreadCount, markAllAsRead, markSingleAsRead, clearAll } = useNotifications();
   const notificationsRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!isNotificationsOpen) return;
-    markAllAsRead();
-  }, [isNotificationsOpen, markAllAsRead]);
 
   useEffect(() => {
     if (!isNotificationsOpen) return;
@@ -44,13 +39,18 @@ export function Header() {
 
   // unreadCount provided by hook
 
-  const markAllAsReadHandler = () => {
-    markAllAsRead();
+  const markAllAsReadHandler = async () => {
+    await markAllAsRead();
     setIsNotificationsOpen(false);
   };
 
-  const markSingleAsReadHandler = (id: number) => {
-    markSingleAsRead(id);
+  const clearAllHandler = async () => {
+    await clearAll();
+    setIsNotificationsOpen(false);
+  };
+
+  const markSingleAsReadHandler = async (id: number) => {
+    await markSingleAsRead(id);
     setIsNotificationsOpen(false);
   };
 
@@ -114,12 +114,20 @@ export function Header() {
                       {unreadCount} unread updates
                     </p>
                   </div>
+                  <div className="flex items-center gap-3">
                   <button
-                    onClick={markAllAsRead}
+                    onClick={clearAllHandler}
+                    className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:underline"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={markAllAsReadHandler}
                     className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
                   >
                     Mark all read
                   </button>
+                  </div>
                 </div>
 
                 <div className="max-h-96 overflow-y-auto">

@@ -22,6 +22,10 @@ export async function markNotificationAsRead(id: number): Promise<void> {
   await apiFetch<void>(`notifications/${id}/read/`, { method: "POST", requiresAuth: true });
 }
 
+export async function clearNotifications(): Promise<void> {
+  await apiFetch<void>("notifications/clear/", { method: "POST", requiresAuth: true });
+}
+
 export function connectNotificationSocket(onMessage: (payload: any) => void) {
   if (typeof window === "undefined") return null;
   const token = window.localStorage.getItem(getAccessTokenKey());
