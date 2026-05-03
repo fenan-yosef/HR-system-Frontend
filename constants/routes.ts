@@ -1,6 +1,7 @@
 export const ROUTES = {
   LOGIN: "/login",
   DASHBOARD: "/dashboard",
+  NOTIFICATIONS: "/notifications",
   MY_DISCIPLINARY: "/employee/disciplinary",
   RECRUITMENT_JOB_POSTINGS: "/recruitment/job-postings",
   RECRUITMENT_APPLICATIONS: "/recruitment/applications",
