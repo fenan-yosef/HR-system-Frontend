@@ -228,20 +228,25 @@ export function HireModal({
 }: {
   applicationId: number;
   applicantName: string;
-  onHire: (data: { start_date: string; salary: number }) => Promise<void>;
+  onHire: (data: { start_date: string; salary: number; national_id: string }) => Promise<void>;
   onClose: () => void;
 }) {
   const [startDate, setStartDate] = useState("");
   const [salary, setSalary] = useState("");
+  const [nationalId, setNationalId] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const isValid = startDate && salary && Number(salary) > 0;
+  const isValid = startDate && salary && Number(salary) > 0 && nationalId.trim().length > 0;
 
   const handleSubmit = async () => {
     if (!isValid) return;
     setLoading(true);
     try {
-      await onHire({ start_date: startDate, salary: Number(salary) });
+      await onHire({ 
+        start_date: startDate, 
+        salary: Number(salary),
+        national_id: nationalId.trim()
+      });
     } finally {
       setLoading(false);
     }
@@ -258,6 +263,17 @@ export function HireModal({
         Finalize the hiring of <strong className="text-foreground">{applicantName}</strong>.
       </p>
       <div className="space-y-4">
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            National ID Number *
+          </label>
+          <Input
+            placeholder="e.g. ID12345678"
+            value={nationalId}
+            onChange={(e) => setNationalId(e.target.value)}
+            className="h-11 rounded-xl bg-muted/50 border-border/50 focus:ring-2 focus:ring-violet-500 transition-all"
+          />
+        </div>
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
             Start Date *
