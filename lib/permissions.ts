@@ -35,14 +35,7 @@ export function isHRStaff(user: AuthUser | null): boolean {
  * Restricted to Admins and HR Staff (excluding CEO for strict separation).
  */
 export function canManageRecruitment(user: AuthUser | null): boolean {
-  if (!user) return false;
-  if (isAdmin(user)) return true;
-  return (
-    user.role === "HR_STAFF" ||
-    user.roleName === "HR Staff" ||
-    user.roleName === "HR" ||
-    user.roleName === "Staff"
-  );
+  return isHRStaff(user);
 }
 
 /**

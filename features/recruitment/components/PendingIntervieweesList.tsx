@@ -199,7 +199,7 @@ export function PendingIntervieweesList() {
                               onClick={() => handleAction("confirm", app)}
                               className="px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 shadow-sm transition-all flex items-center gap-2 active:scale-95"
                             >
-                              <Check size={14} /> Approve
+                              <Check size={14} /> Confirm
                             </button>
                             <button
                               onClick={() => handleAction("reject", app)}
