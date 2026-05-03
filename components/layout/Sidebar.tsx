@@ -58,7 +58,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "Dashboard",
         href: ROUTES.DASHBOARD,
         icon: LayoutDashboard,
-        roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "APPLICANT", "HR_CEO"],
+        roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "HR_CEO"],
       },
     ],
   },
