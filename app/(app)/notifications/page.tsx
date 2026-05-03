@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { AppShell } from "@/components/layout/AppShell";
 import useNotifications from "@/hooks/useNotifications";
 
 export default function NotificationsPage() {

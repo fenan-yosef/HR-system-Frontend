@@ -19,14 +19,14 @@ export default function useNotifications() {
         setNotifications(inbox.slice(0, 10));
         const uc = await fetchUnreadCount();
         setUnreadCount(uc);
-      } catch (e) {
+      } catch {
         // ignore for now
       }
     })();
 
     // connect websocket
     if (typeof window !== "undefined") {
-      const ws = connectNotificationSocket((data: any) => {
+      const ws = connectNotificationSocket((data) => {
         // backend payload follows NotificationSerializer shape
         const n: AppNotification = {
           id: data.notification_id,

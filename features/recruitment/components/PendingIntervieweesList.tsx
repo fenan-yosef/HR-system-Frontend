@@ -148,17 +148,24 @@ export function PendingIntervieweesList() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
               >
-                <Card className="p-6 hover:shadow-md transition-shadow group">
+                <Card 
+                  className="p-6 border-none shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer"
+                  onClick={() => {
+                    setSelectedApp(app);
+                    setIsDetailsModalOpen(true);
+                  }}
+                >
+                  <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
                   <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
-                      <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-lg">
+                      <div className="size-14 rounded-2xl bg-muted flex items-center justify-center text-xl font-bold text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary transition-all">
                         {app.full_name?.charAt(0) || "U"}
                       </div>
                       <div>
-                        <h4 className="font-black text-lg group-hover:text-primary transition-colors">
+                        <h4 className="font-black text-lg leading-tight group-hover:text-primary transition-colors">
                           {app.full_name}
                         </h4>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground font-medium">
+                        <div className="flex items-center gap-3 text-xs text-muted-foreground font-medium mt-1">
                           <span>{app.email}</span>
                           <span className="opacity-30">•</span>
                           <span>{app.position?.title}</span>
@@ -166,42 +173,62 @@ export function PendingIntervieweesList() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-8">
                       <div className="flex flex-col items-end">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground mb-1">Status</span>
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(app.status)}`}>
+                        <div className="flex items-center gap-1.5 text-amber-500 mb-1">
+                          <Star className="size-3.5 fill-current" />
+                          <span className="text-xs font-black">
+                            {(() => {
+                              const scoreValue = Number(
+                                app.screening_result?.final_score ||
+                                app.evaluation?.matching_percentage || 0
+                              );
+                              return scoreValue > 0 ? `${scoreValue.toFixed(0)}%` : "N/A";
+                            })()}
+                          </span>
+                        </div>
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getStatusStyle(app.status)}`}>
                           Pending Approval
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
                         {canApprove && (
                           <>
                             <button
                               onClick={() => handleAction("confirm", app)}
-                              className="px-4 py-2 rounded-xl bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 shadow-sm transition-all flex items-center gap-2"
+                              className="px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 shadow-sm transition-all flex items-center gap-2 active:scale-95"
                             >
-                              <Check size={12} /> Approve
+                              <Check size={14} /> Approve
                             </button>
                             <button
                               onClick={() => handleAction("reject", app)}
-                              className="px-4 py-2 rounded-xl bg-red-500/10 text-red-600 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-all flex items-center gap-2"
+                              className="px-4 py-2.5 rounded-xl bg-red-500/10 text-red-600 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-all flex items-center gap-2 active:scale-95"
                             >
-                              <XCircle size={12} /> Reject
+                              <XCircle size={14} /> Reject
                             </button>
                           </>
                         )}
                         <button
-                          onClick={() => {
-                            setSelectedApp(app);
-                            setIsDetailsModalOpen(true);
-                          }}
-                          className="p-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary transition-all"
+                          className="p-2.5 rounded-xl bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-all active:scale-95"
                         >
-                          <ChevronRight size={18} />
+                          <ChevronRight size={20} />
                         </button>
                       </div>
                     </div>
+                  </div>
+
+                  <div className="mt-6 pt-6 border-t border-border/50 flex items-center gap-6">
+                    <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                      <Calendar className="size-3.5" /> Applied:{" "}
+                      {new Date(app.submitted_at || app.created_at).toLocaleDateString()}
+                    </div>
+                    {app.screening_result?.screened_at && (
+                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-l border-border/50 pl-6">
+                        <BrainCircuit className="size-3.5 text-primary" /> AI Evaluated:{" "}
+                        {new Date(app.screening_result.screened_at).toLocaleDateString()}
+                      </div>
+                    )}
                   </div>
                 </Card>
               </motion.div>

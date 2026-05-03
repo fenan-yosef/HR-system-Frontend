@@ -1,10 +1,22 @@
 import { apiFetch, getAccessTokenKey } from "@/services/apiClient";
 import type { AppNotification } from "@/lib/notifications";
 
+interface BackendNotification {
+  notification_id: number;
+  title: string;
+  body: string;
+  created_at: string;
+  read: boolean;
+}
+
+interface UnreadCountResponse {
+  unread_count: number;
+}
+
 export async function fetchInbox(): Promise<AppNotification[]> {
-  const data = await apiFetch<any>("notifications/", { requiresAuth: true });
+  const data = await apiFetch<BackendNotification[]>("notifications/", { requiresAuth: true });
   // transform backend shape to frontend AppNotification
-  return (data || []).map((n: any) => ({
+  return (data || []).map((n) => ({
     id: n.notification_id,
     title: n.title,
     description: n.body,
@@ -14,7 +26,7 @@ export async function fetchInbox(): Promise<AppNotification[]> {
 }
 
 export async function fetchUnreadCount(): Promise<number> {
-  const data = await apiFetch<any>("notifications/unread-count/", { requiresAuth: true });
+  const data = await apiFetch<UnreadCountResponse>("notifications/unread-count/", { requiresAuth: true });
   return data?.unread_count ?? 0;
 }
 
@@ -26,7 +38,7 @@ export async function clearNotifications(): Promise<void> {
   await apiFetch<void>("notifications/clear/", { method: "POST", requiresAuth: true });
 }
 
-export function connectNotificationSocket(onMessage: (payload: any) => void) {
+export function connectNotificationSocket(onMessage: (payload: BackendNotification) => void) {
   if (typeof window === "undefined") return null;
   const token = window.localStorage.getItem(getAccessTokenKey());
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
@@ -34,9 +46,9 @@ export function connectNotificationSocket(onMessage: (payload: any) => void) {
   const ws = new WebSocket(url);
   ws.onmessage = (ev) => {
     try {
-      const data = JSON.parse(ev.data);
+      const data = JSON.parse(ev.data) as BackendNotification;
       onMessage(data);
-    } catch (e) {
+    } catch {
       // ignore parse errors
     }
   };
