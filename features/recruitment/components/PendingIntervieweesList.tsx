@@ -16,6 +16,7 @@ import {
   XCircle,
   Copy,
   MessageSquare,
+  Briefcase,
 } from "lucide-react";
 import {
   fetchApplications,
@@ -23,7 +24,9 @@ import {
   confirmApplication,
   rejectShortlisted,
   batchConfirmInterviews,
+  hireApplicant,
 } from "@/services/recruitmentService";
+import { HireModal } from "./CEOActionModals";
 import {
   Application,
 } from "@/types/recruitment";
@@ -42,6 +45,7 @@ export function PendingIntervieweesList() {
   const [selectedQuestions, setSelectedQuestions] = useState<string[] | null>(null);
   const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
   const [isBatchConfirming, setIsBatchConfirming] = useState(false);
+  const [hireTarget, setHireTarget] = useState<Application | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const canApprove = canApproveRecruitment(user);
@@ -249,6 +253,14 @@ export function PendingIntervieweesList() {
                             </button>
                           </>
                         )}
+                        {canApprove && app.status === "interview_invited" && (
+                          <button
+                            onClick={() => setHireTarget(app)}
+                            className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 shadow-lg shadow-violet-500/20 transition-all flex items-center gap-2 active:scale-95"
+                          >
+                            <Briefcase size={14} /> Hire
+                          </button>
+                        )}
                         <button
                           className="p-2.5 rounded-xl bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-all active:scale-95"
                         >
@@ -281,6 +293,20 @@ export function PendingIntervieweesList() {
         <EvaluationDetailsModal
           onClose={() => setIsDetailsModalOpen(false)}
           application={selectedApp}
+        />
+      )}
+
+      {hireTarget && (
+        <HireModal
+          applicationId={hireTarget.application_id}
+          applicantName={hireTarget.full_name || "Candidate"}
+          onHire={async (data) => {
+            await hireApplicant(hireTarget.application_id, data);
+            toast(`${hireTarget.full_name} has been hired! Welcome email sent.`, "success");
+            setHireTarget(null);
+            loadPendingData();
+          }}
+          onClose={() => setHireTarget(null)}
         />
       )}
 

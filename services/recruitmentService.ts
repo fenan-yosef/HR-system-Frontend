@@ -263,11 +263,18 @@ export function batchConfirmInterviews(applicationIds: number[]) {
   });
 }
 
-export function hireApplicant(applicationId: number) {
-  return apiFetch<{ status: string; application_id: number }>(`/applicant-applications/${applicationId}/hire/`, {
-    method: "POST",
-    requiresAuth: true,
-  });
+export function hireApplicant(
+  applicationId: number,
+  data: { national_id: string; salary: number; start_date: string }
+) {
+  return apiFetch<{ status: string; application_id: number; employee_id: number; username: string | null }>(
+    `/applicant-applications/${applicationId}/hire/`,
+    {
+      method: "POST",
+      body: JSON.stringify(data),
+      requiresAuth: true,
+    }
+  );
 }
 
 export function fetchEvaluations(): Promise<PaginatedResponse<AiEvaluation>> {
