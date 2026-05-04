@@ -120,7 +120,7 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                             </div>
 
                             {/* Broken down scores */}
-                            <div className="flex items-center gap-6 border-x border-border/50 px-6">
+                            <div className="flex items-center justify-around md:justify-start gap-4 md:gap-6 md:border-x border-border/50 md:px-6 py-4 md:py-0 border-y md:border-y-0">
                                 <div className="text-center">
                                     <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-1">Rule</p>
                                     <p className="text-xs font-black">{formatScore(result.rule_score, 0)}%</p>
@@ -165,15 +165,15 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
             </div>
 
             <Dialog open={!!selectedResult} onOpenChange={() => setSelectedResult(null)}>
-                <DialogContent className="max-w-3xl rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
+                <DialogContent className="max-w-3xl w-[95vw] sm:w-full rounded-2xl sm:rounded-[2.5rem] p-0 overflow-hidden border-none shadow-2xl">
                     {selectedResult && (() => {
                                 const selectedScore = Number(selectedResult.final_score) || 0;
                                 const scoreColor = getScoreColor(selectedScore);
                         return (
-                        <div className="flex flex-col h-[80vh]">
-                            <div className="p-8 bg-gradient-to-br from-primary/10 to-transparent border-b border-border/50">
+                        <div className="flex flex-col h-[90vh] sm:h-[80vh]">
+                            <div className="p-4 sm:p-8 bg-gradient-to-br from-primary/10 to-transparent border-b border-border/50">
                                 <DialogHeader>
-                                    <div className="flex items-center justify-between mb-4">
+                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
                                         <div className="flex items-center gap-3">
                                             <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${selectedResult.hard_criteria_met ? 'bg-emerald-500/10 text-emerald-600' : 'bg-red-500/10 text-red-500'}`}>
                                                 {selectedResult.hard_criteria_met ? "PASSED REQUIREMENTS" : "FAILED CRITERIA"}
@@ -183,20 +183,20 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                                             </span>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <div className="text-right">
+                                            <div className="text-left sm:text-right">
                                                 <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Weighted Total</p>
                                                             <p className={`text-2xl font-black ${scoreColor.text}`}>{formatScore(selectedResult.final_score, 1)}%</p>
                                             </div>
                                         </div>
                                     </div>
-                                    <DialogTitle className="text-4xl font-black tracking-tighter uppercase">{selectedResult.applicant_name}</DialogTitle>
-                                    <DialogDescription className="text-muted-foreground font-bold text-base mt-1 flex items-center gap-2">
+                                    <DialogTitle className="text-2xl sm:text-4xl font-black tracking-tighter uppercase">{selectedResult.applicant_name}</DialogTitle>
+                                    <DialogDescription className="text-muted-foreground font-bold text-sm sm:text-base mt-1 flex items-center gap-2">
                                         <Brain className="size-4 text-primary" /> AI-Augmented Screening Audit
                                     </DialogDescription>
                                 </DialogHeader>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-8 space-y-10">
+                            <div className="flex-1 overflow-y-auto p-4 sm:p-8 space-y-6 sm:space-y-10">
                                 {/* Score Breakdown Display */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <Card className="p-5 rounded-3xl bg-muted/20 border-border/40 space-y-2">
@@ -289,11 +289,11 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                                 </section>
                             </div>
 
-                            <div className="p-6 border-t border-border/40 bg-muted/10 flex justify-end gap-3">
-                                <Button variant="ghost" onClick={() => setSelectedResult(null)} className="rounded-2xl px-8 font-black uppercase tracking-widest text-xs h-12">
+                            <div className="p-4 sm:p-6 border-t border-border/40 bg-muted/10 flex flex-col sm:flex-row justify-end gap-3">
+                                <Button variant="ghost" onClick={() => setSelectedResult(null)} className="rounded-2xl px-8 font-black uppercase tracking-widest text-[10px] h-12 order-2 sm:order-1">
                                     Close
                                 </Button>
-                                <Button className="rounded-2xl px-10 font-black uppercase tracking-widest text-xs h-12 shadow-lg shadow-primary/20">
+                                <Button className="rounded-2xl px-10 font-black uppercase tracking-widest text-[10px] h-12 shadow-lg shadow-primary/20 order-1 sm:order-2">
                                     Approve for Interview
                                 </Button>
                             </div>

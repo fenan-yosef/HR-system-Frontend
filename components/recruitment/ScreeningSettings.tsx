@@ -190,7 +190,7 @@ export function ScreeningSettings({ job, onStartScreening, onUpdate }: Screening
             </div>
 
             <div className="relative z-10 space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
                         <div className="p-2 rounded-xl bg-primary/10 text-primary">
                             <BrainCircuit className="size-5" />
@@ -199,14 +199,14 @@ export function ScreeningSettings({ job, onStartScreening, onUpdate }: Screening
                     </div>
 
                     {versionStats && (
-                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${isStale ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                        <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 self-start sm:self-auto ${isStale ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
                             {isStale ? <AlertCircle className="size-3" /> : <CheckCircle2 className="size-3" />}
                             V{job.criteria_version} &bull; {isStale ? `${versionStats.stats.rescreen_required_count} STALE` : 'UP TO DATE'}
                         </div>
                     )}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                         <Label htmlFor="min_gpa" className="text-xs font-black uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                             <GraduationCap className="size-3.5" /> Minimum GPA
@@ -241,7 +241,7 @@ export function ScreeningSettings({ job, onStartScreening, onUpdate }: Screening
                             type="number"
                             value={shortlistSize}
                             onChange={(e) => setShortlistSize(parseInt(e.target.value))}
-                            className="rounded-xl border-border/50 bg-background/50 h-11"
+                            className="rounded-xl border-border/50 bg-background/50 h-11 sm:col-span-2 lg:col-span-1"
                         />
                     </div>
                 </div>
@@ -310,8 +310,8 @@ export function ScreeningSettings({ job, onStartScreening, onUpdate }: Screening
                 </div>
 
                 {/* AI Custom Guidance */}
-                <div className="space-y-4 p-5 rounded-3xl bg-primary/5 border border-primary/10">
-                    <div className="flex items-center justify-between">
+                <div className="space-y-4 p-4 sm:p-5 rounded-3xl bg-primary/5 border border-primary/10">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center gap-2">
                             <Wand2 className="size-4 text-primary" />
                             <h4 className="text-xs font-black uppercase tracking-widest text-primary">AI Guidance (Optional)</h4>

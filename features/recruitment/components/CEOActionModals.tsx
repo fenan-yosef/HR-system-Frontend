@@ -34,7 +34,7 @@ function ModalShell({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
       <ModalBackdrop onClick={onClose} />
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -42,22 +42,24 @@ function ModalShell({
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-md bg-background rounded-2xl border border-border shadow-2xl z-[60]"
+        className="relative w-full max-w-[95vw] sm:max-w-md bg-background rounded-2xl sm:rounded-3xl border border-border shadow-2xl z-[60] overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center gap-3 p-6 pb-4">
-          <div className={`size-10 rounded-xl flex items-center justify-center ${iconColor}`}>
-            <Icon className="size-5" />
+        <div className="flex items-center gap-3 p-4 sm:p-6 pb-2 sm:pb-4">
+          <div className={`size-8 sm:size-10 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 ${iconColor}`}>
+            <Icon className="size-4 sm:size-5" />
           </div>
-          <h3 className="text-lg font-bold flex-1">{title}</h3>
+          <h3 className="text-base sm:text-lg font-bold flex-1 truncate">{title}</h3>
           <button
             onClick={onClose}
-            className="p-2 rounded-xl hover:bg-muted transition-colors"
+            className="p-1.5 sm:p-2 rounded-lg sm:rounded-xl hover:bg-muted transition-colors"
           >
             <X className="size-4" />
           </button>
         </div>
-        <div className="px-6 pb-6">{children}</div>
+        <div className="p-4 sm:p-6 pt-2 sm:pt-0 max-h-[85vh] overflow-y-auto">
+          {children}
+        </div>
       </motion.div>
     </div>
   );

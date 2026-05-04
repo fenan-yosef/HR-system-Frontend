@@ -8,6 +8,7 @@ import { ROLE_LABELS } from "@/constants/roles";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useUI } from "@/context/UIContext";
 import {
   LayoutDashboard,
   Briefcase,
@@ -210,6 +211,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const { isSidebarOpen } = useUI();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
   const toggleSection = (label: string) => {
@@ -236,6 +238,13 @@ export function Sidebar() {
     const isOpen = openSections[item.label];
     const isActive =
       item.href === pathname || item.subItems?.some((s) => s.href === pathname);
+    const { setIsSidebarOpen } = useUI();
+
+    const handleLinkClick = () => {
+      if (window.innerWidth < 1024) {
+        setIsSidebarOpen(false);
+      }
+    };
 
     return (
       <div className="flex flex-col gap-1">
@@ -264,6 +273,7 @@ export function Sidebar() {
         ) : (
           <Link
             href={item.href || "#"}
+            onClick={handleLinkClick}
             className={cn(
               "group relative flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ",
               // isActive
@@ -301,6 +311,7 @@ export function Sidebar() {
                 <Link
                   key={idx}
                   href={sub.href}
+                  onClick={handleLinkClick}
                   className={cn(
                     "flex items-center gap-2 rounded-lg py-2 px-3 text-xs transition-colors",
                     pathname === sub.href
@@ -327,7 +338,10 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="border-border bg-card text-card-foreground flex h-dvh w-72 flex-col border-r shadow-sm relative z-20 overflow-hidden shrink-0 min-h-0">
+    <aside className={cn(
+      "fixed inset-y-0 left-0 z-40 flex h-dvh w-72 flex-col border-r bg-card text-card-foreground shadow-sm transition-transform duration-300 ease-in-out lg:static lg:z-20 lg:translate-x-0 lg:shrink-0",
+      isSidebarOpen ? "translate-x-0" : "-translate-x-full"
+    )}>
       {/* Decorative top gradient */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
 

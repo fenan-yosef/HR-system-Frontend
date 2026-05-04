@@ -87,6 +87,7 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
   const router = useRouter();
 
 
+  const [showFilters, setShowFilters] = useState(false);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -374,9 +375,18 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
     <div className="space-y-8 pb-20">
       <ApplicationMetrics />
 
+      <div className="flex lg:hidden items-center justify-between mb-4">
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl bg-muted/50 border border-border/50 text-xs font-black uppercase tracking-widest"
+        >
+          <Filter size={14} /> {showFilters ? "Hide Filters" : "Show Filters"}
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Sidebar Column */}
-        <aside className="lg:col-span-1 space-y-8">
+        <aside className={`lg:col-span-1 space-y-8 ${showFilters ? 'block' : 'hidden lg:block'}`}>
           <ApplicationFilters
             search={search}
             status={status}
@@ -530,42 +540,41 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className="group relative"
-                      >
-                        <div 
-                          className="p-6 rounded-[2rem] bg-background border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 cursor-pointer"
+                                 <div 
+                          className="p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] bg-background border border-border/50 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 cursor-pointer"
                           onClick={() => handleBrainClick(app)}
                         >
-                          <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                          <div className="flex flex-col xl:flex-row xl:items-center gap-4 sm:gap-6">
                             {/* Candidate Info */}
-                            <div className="flex items-center gap-4 flex-1">
-                              <div className="size-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-lg">
+                            <div className="flex items-start sm:items-center gap-4 flex-1">
+                              <div className="size-10 sm:size-12 rounded-xl sm:rounded-2xl bg-primary/10 flex items-center justify-center text-primary font-black text-base sm:text-lg shrink-0">
                                 {fullName?.charAt(0) || "U"}
                               </div>
-                              <div>
+                              <div className="min-w-0 flex-1">
                                 <Link
                                   href={`/recruitment/applications/${app.application_id}`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   onClick={(e) => e.stopPropagation()}
                                 >
-                                  <h4 className="font-black text-lg group-hover:text-primary transition-colors cursor-pointer">
+                                  <h4 className="font-black text-base sm:text-lg group-hover:text-primary transition-colors cursor-pointer truncate">
                                     {fullName}
                                   </h4>
                                 </Link>
 
-                                <div className="flex items-center gap-3 text-xs text-muted-foreground font-medium">
-                                  {email && <span>{email}</span>}
-                                  {phone && email && <span className="opacity-30">•</span>}
+                                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] sm:text-xs text-muted-foreground font-medium">
+                                  {email && <span className="truncate max-w-[150px] sm:max-w-none">{email}</span>}
+                                  {phone && <span className="hidden sm:inline opacity-30">•</span>}
                                   {phone && <span>{phone}</span>}
-                                  <span className="opacity-30">•</span>
+                                  <span className="hidden sm:inline opacity-30">•</span>
                                   <span>{submittedAt ? new Date(submittedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ""}</span>
-                                  {tracking && <span className="ml-2 px-2 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-widest bg-muted/5 text-muted-foreground">{tracking}</span>}
+                                  {tracking && <span className="px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest bg-muted/5 text-muted-foreground">{tracking}</span>}
                                   {cvUrl && (
                                     <a 
                                       href={cvUrl} 
                                       target="_blank" 
                                       rel="noopener noreferrer" 
-                                      className="ml-2 text-xs text-primary font-black flex items-center gap-1"
+                                      className="text-primary font-black flex items-center gap-1"
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       <Download className="size-3" /> CV
@@ -578,117 +587,95 @@ export function ApplicationsList({ jobPositions: initialJobPositions }: Applicat
                                   {((app.screening_result?.key_strengths as string[]) || app.evaluation?.matched_keywords || [])
                                     .slice(0, 3)
                                     .map((s, idx) => (
-                                      <span key={`${s}-${idx}`} className="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-black">{s}</span>
+                                      <span key={`${s}-${idx}`} className="px-2 py-0.5 sm:py-1 rounded-full bg-emerald-50 text-emerald-700 text-[9px] sm:text-xs font-black">{s}</span>
                                     ))}
                                 </div>
-
-                                {/* Custom field/file summaries */}
-                                {((app as any).custom_field_values && Object.keys((app as any).custom_field_values).length > 0) && (
-                                  <div className="flex gap-2 mt-2">
-                                    {Object.entries((app as any).custom_field_values).map(([k, v]: [string, any]) => (
-                                      v?.file_url ? (
-                                        <a 
-                                          key={k} 
-                                          href={v.file_url} 
-                                          target="_blank" 
-                                          rel="noopener noreferrer" 
-                                          className="px-2 py-1 rounded-full bg-primary/10 text-primary text-xs font-black"
-                                          onClick={(e) => e.stopPropagation()}
-                                        >
-                                          {v.file_name || k}
-                                        </a>
-                                      ) : (
-                                        <span key={k} className="px-2 py-1 rounded-full bg-muted/10 text-muted-foreground text-xs">{k}</span>
-                                      )
-                                    ))}
-                                  </div>
-                                )}
                               </div>
                             </div>
 
-                            {/* AI Insights & Score */}
-                            <div className="flex items-center gap-6">
-                              <div className="flex flex-col items-center">
-                                <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Score</span>
-                                <span className={`text-xl font-black ${scoreValue >= 80 ? 'text-emerald-600' :
-                                  scoreValue >= 60 ? 'text-teal-600' :
-                                    scoreValue >= 40 ? 'text-amber-600' : 'text-red-500'
-                                  }`}>
-                                  {scoreValue.toFixed(0)}%
-
-                                </span>
-                              </div>
-
-                              {app.screening_result && (
-                                <div className={`px-3 py-1.5 rounded-xl border flex items-center gap-1.5 ${app.screening_result.hard_criteria_met
-                                  ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-600"
-                                  : "bg-red-500/5 border-red-500/20 text-red-600"
-                                  }`}>
-                                  {app.screening_result.hard_criteria_met ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
-                                  <span className="text-[10px] font-black uppercase tracking-widest">
-                                    {app.screening_result.hard_criteria_met ? "Qualified" : "Failed Req"}
+                            <div className="flex flex-wrap items-center gap-4 sm:gap-6 justify-between xl:justify-end">
+                              {/* AI Insights & Score */}
+                              <div className="flex items-center gap-4 sm:gap-6">
+                                <div className="flex flex-col items-center">
+                                  <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground">Score</span>
+                                  <span className={`text-lg sm:text-xl font-black ${scoreValue >= 80 ? 'text-emerald-600' :
+                                    scoreValue >= 60 ? 'text-teal-600' :
+                                      scoreValue >= 40 ? 'text-amber-600' : 'text-red-500'
+                                    }`}>
+                                    {scoreValue.toFixed(0)}%
                                   </span>
                                 </div>
-                              )}
 
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); handleBrainClick(app); }}
-                                  className="p-3 rounded-2xl bg-muted/50 hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
-                                  title="Quick AI View"
-                                >
-                                  <BrainCircuit size={18} />
-                                </button>
-                                <Link
-                                  href={`/recruitment/applications/${app.application_id}`}
-                                  target="_blank"
-                                  className="p-3 rounded-2xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-95"
-                                  title="View Full Profile"
-                                  onClick={(e) => e.stopPropagation()}
-                                >
-                                  <ExternalLink size={18} />
-                                </Link>
+                                {app.screening_result && (
+                                  <div className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border flex items-center gap-1.5 ${app.screening_result.hard_criteria_met
+                                    ? "bg-emerald-500/5 border-emerald-500/20 text-emerald-600"
+                                    : "bg-red-500/5 border-red-500/20 text-red-600"
+                                    }`}>
+                                    {app.screening_result.hard_criteria_met ? <CheckCircle2 size={12} /> : <AlertTriangle size={12} />}
+                                    <span className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest">
+                                      {app.screening_result.hard_criteria_met ? "Qualified" : "Failed Req"}
+                                    </span>
+                                  </div>
+                                )}
+
+                                <div className="flex items-center gap-2">
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleBrainClick(app); }}
+                                    className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-muted/50 hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
+                                    title="Quick AI View"
+                                  >
+                                    <BrainCircuit size={16} className="sm:size-[18px]" />
+                                  </button>
+                                  <Link
+                                    href={`/recruitment/applications/${app.application_id}`}
+                                    target="_blank"
+                                    className="p-2 sm:p-3 rounded-xl sm:rounded-2xl bg-primary/10 text-primary hover:bg-primary hover:text-white transition-all active:scale-95"
+                                    title="View Full Profile"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <ExternalLink size={16} className="sm:size-[18px]" />
+                                  </Link>
+                                </div>
+                              </div>
+
+                              {/* Actions Trigger */}
+                              <div className="flex items-center gap-2 w-full sm:w-auto">
+                                  {canPerformRecruitment && (
+                                    <>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleToggleShortlist(app.application_id); }}
+                                        disabled={app.status === "shortlisted" || (app as any).is_shortlisted}
+                                        className={`flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-[9px] sm:text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                                          (app as any).is_shortlisted || app.status === "shortlisted"
+                                            ? "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
+                                            : !app.screening_result 
+                                              ? "bg-amber-500/10 text-amber-700 hover:bg-amber-500/20"
+                                              : "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
+                                        }`}
+                                      >
+                                        <Star size={12} fill={(app as any).is_shortlisted || app.status === "shortlisted" ? "currentColor" : "none"} />
+                                        <span className="truncate">
+                                          {(app as any).is_shortlisted || app.status === "shortlisted" 
+                                            ? "Shortlisted" 
+                                            : !app.screening_result 
+                                              ? "Shortlist (No AI)" 
+                                              : "Shortlist"}
+                                        </span>
+                                      </button>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleRetryExtraction(app.application_id); }}
+                                        disabled={retryingApps.includes(app.application_id)}
+                                        className="px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-muted/10 text-muted-foreground text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-muted/20 transition-all flex items-center gap-2"
+                                      >
+                                        {retryingApps.includes(app.application_id) ? <Loader2 size={12} className="animate-spin" /> : <RotateCcw size={12} />}
+                                        Retry
+                                      </button>
+                                    </>
+                                  )}
                               </div>
                             </div>
-
-                            {/* Actions Trigger */}
-                            <div className="flex items-center gap-2">
-                                {canPerformRecruitment && (
-                                  <>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleToggleShortlist(app.application_id); }}
-                                      disabled={app.status === "shortlisted" || (app as any).is_shortlisted}
-                                      className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2 ${
-                                        (app as any).is_shortlisted || app.status === "shortlisted"
-                                          ? "bg-muted text-muted-foreground cursor-not-allowed opacity-70"
-                                          : !app.screening_result 
-                                            ? "bg-amber-500/10 text-amber-700 hover:bg-amber-500/20"
-                                            : "bg-amber-500 text-white hover:bg-amber-600 shadow-sm"
-                                      }`}
-                                    >
-                                      <Star size={12} fill={(app as any).is_shortlisted || app.status === "shortlisted" ? "currentColor" : "none"} />
-                                      {(app as any).is_shortlisted || app.status === "shortlisted" 
-                                        ? "Shortlisted" 
-                                        : !app.screening_result 
-                                          ? "Shortlist (No AI)" 
-                                          : "Shortlist"}
-                                    </button>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); handleRetryExtraction(app.application_id); }}
-                                      disabled={retryingApps.includes(app.application_id)}
-                                      className="px-4 py-2.5 rounded-xl bg-muted/10 text-muted-foreground text-[10px] font-black uppercase tracking-widest hover:bg-muted/20 transition-all flex items-center gap-2"
-                                    >
-                                      {retryingApps.includes(app.application_id) ? <Loader2 size={12} animate-spin /> : <RotateCcw size={12} />}
-                                      Re-try
-                                    </button>
-                                  </>
-                                )}
-                              {/* <div className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${getStatusStyle(app.status)}`}>
-                                {getStatusIcon(app.status)} {app.status.replace("_", " ")}
-                              </div> */}
-                            </div>
                           </div>
-                        </div>
+                        </div>              </div>
                       </motion.div>
                     )})}
                   </div>

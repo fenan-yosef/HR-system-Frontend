@@ -251,22 +251,22 @@ export function ShortlistList() {
   return (
     <div className="grid gap-8 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h3 className="text-xl font-bold tracking-tight">
             Priority Candidates
           </h3>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
             {shortlist.length > 0 && canManage && (
               <button
                 onClick={handleBatchInvite}
                 disabled={isBatchInviting}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
               >
                 {isBatchInviting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
                 {isBatchInviting ? "Sending..." : "Batch Invite All"}
               </button>
             )}
-            <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
               Total: {shortlist.length}
             </span>
           </div>
@@ -286,29 +286,29 @@ export function ShortlistList() {
                 transition={{ delay: i * 0.1 }}
               >
                 <Card
-                  className="p-6 border-none shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer"
+                  className="p-4 sm:p-6 border-none shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer"
                   onClick={() => handleBrainClick(entry.application)}
                 >
                   <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="size-14 rounded-2xl bg-muted flex items-center justify-center text-xl font-bold text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary transition-all">
+                      <div className="size-12 sm:size-14 rounded-xl sm:rounded-2xl bg-muted flex items-center justify-center text-lg sm:text-xl font-bold text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary transition-all shrink-0">
                         {entry.application?.full_name?.[0] || "U"}
                       </div>
-                      <div>
-                        <h4 className="font-bold text-lg leading-tight">
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-base sm:text-lg leading-tight truncate">
                           {entry.application?.full_name || "Unknown Candidate"}
                         </h4>
-                        <p className="text-sm text-muted-foreground mt-0.5">
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
                           {entry.application.position?.title}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end">
-                      <div className="flex items-center gap-1 text-amber-500 mb-1">
+                    <div className="flex items-center sm:items-end sm:flex-col justify-between sm:justify-start gap-2">
+                      <div className="flex items-center gap-1 text-amber-500">
                         <Star className="size-3 fill-current" />
-                        <span className="text-xs font-bold">
+                        <span className="text-[10px] sm:text-xs font-bold">
                           {(() => {
                             const scoreValue = Number(
                               entry.application?.screening_result?.final_score ||
@@ -321,20 +321,20 @@ export function ShortlistList() {
                         </span>
                       </div>
                       <span
-                        className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(entry.application.status)}`}
+                        className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(entry.application.status)}`}
                       >
                         {entry.application.status.replace("_", " ")}
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-6 border-t border-border/50 flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border/50 flex flex-col xl:flex-row gap-4 xl:items-center justify-between">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                      <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium text-muted-foreground">
                         <Calendar className="size-3.5" /> Evaluated{" "}
                         {new Date(entry.evaluated_at).toLocaleDateString()}
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground border-l border-border/50 pl-4">
+                      <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium text-muted-foreground border-l border-border/50 pl-4">
                         <BrainCircuit className="size-3.5" /> AI Score:{" "}
                         {(() => {
                           const scoreValue = Number(
@@ -348,11 +348,11 @@ export function ShortlistList() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <button
                         onClick={(e) => { e.stopPropagation(); handleBrainClick(entry.application); }}
                         disabled={evaluatingApps.includes(entry.application.application_id)}
-                        className="p-1.5 rounded-lg bg-muted hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+                        className="p-2 rounded-lg bg-muted hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
                         title="Quick AI View"
                       >
                         {evaluatingApps.includes(entry.application.application_id) ? (
@@ -361,36 +361,39 @@ export function ShortlistList() {
                           <BrainCircuit className="size-4" />
                         )}
                       </button>
-                        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          {canManage && (
-                            <>
-                              <button
-                                onClick={() => handleAction("invite", entry)}
-                                disabled={entry.application.status === "interview_pending" || entry.application.status === "interview_invited"}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[10px] font-bold uppercase tracking-wider hover:bg-blue-600 transition-colors disabled:opacity-50"
-                              >
-                                <Send className="size-3" /> {entry.application.status === "interview_pending" ? "Pending Approval" : "Invite to Interview"}
-                              </button>
-                              <button
-                                onClick={() => handleAction("reject", entry)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/10 text-red-600 text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-colors"
-                              >
-                                <XCircle className="size-3" /> Reject
-                              </button>
-                              <button
-                                onClick={() => handleAction("remove", entry)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted text-muted-foreground text-[10px] font-bold uppercase tracking-wider hover:bg-muted-foreground/10 transition-colors"
-                                title="Remove from shortlist"
-                              >
-                                <Trash2 className="size-3" />
-                              </button>
-                            </>
-                          )}
-                        </div>
+                      <div className="flex flex-1 sm:flex-initial gap-2" onClick={(e) => e.stopPropagation()}>
+                        {canManage && (
+                          <>
+                            <button
+                              onClick={() => handleAction("invite", entry)}
+                              disabled={entry.application.status === "interview_pending" || entry.application.status === "interview_invited"}
+                              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider hover:bg-blue-600 transition-colors disabled:opacity-50"
+                            >
+                              <Send className="size-3" /> 
+                              <span className="truncate">
+                                {entry.application.status === "interview_pending" ? "Pending Approval" : "Invite"}
+                              </span>
+                            </button>
+                            <button
+                              onClick={() => handleAction("reject", entry)}
+                              className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-600 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-colors"
+                            >
+                              <XCircle className="size-3" /> Reject
+                            </button>
+                            <button
+                              onClick={() => handleAction("remove", entry)}
+                              className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-muted text-muted-foreground text-[9px] sm:text-[10px] font-bold uppercase tracking-wider hover:bg-muted-foreground/10 transition-colors"
+                              title="Remove from shortlist"
+                            >
+                              <Trash2 className="size-3" />
+                            </button>
+                          </>
+                        )}
+                      </div>
 
                       <button
                         onClick={(e) => { e.stopPropagation(); handleBrainClick(entry.application); }}
-                        className="p-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
+                        className="p-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary transition-all active:scale-95 ml-auto"
                       >
                         <ChevronRight className="size-4" />
                       </button>

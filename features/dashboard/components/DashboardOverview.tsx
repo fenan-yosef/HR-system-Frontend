@@ -166,7 +166,7 @@ export function DashboardOverview() {
         className="grid gap-6 lg:grid-cols-2"
       >
         {/* Recent Activity */}
-        <Card className="border-none bg-card p-8 shadow-md lg:col-span-1">
+        <Card className="border-none bg-card p-6 sm:p-8 shadow-md lg:col-span-1">
           <div className="flex items-center gap-4 mb-6">
             <div className="bg-primary/10 p-3 rounded-2xl">
               <Users className="size-6 text-primary" />
@@ -202,7 +202,7 @@ export function DashboardOverview() {
         </Card>
 
         {/* Hiring Roadmap */}
-        <Card className="border-none bg-primary text-primary-foreground p-8 shadow-lg lg:col-span-1 relative overflow-hidden">
+        <Card className="border-none bg-primary text-primary-foreground p-6 sm:p-8 shadow-lg lg:col-span-1 relative overflow-hidden">
           <div className="relative z-10">
             <Briefcase className="size-12 mb-6 text-white/20" />
             <h3 className="text-2xl font-bold mb-4 tracking-tight">

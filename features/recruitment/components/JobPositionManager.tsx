@@ -508,8 +508,8 @@ export function JobPositionManager() {
       ) : (
         <div className="grid gap-4">
           {(filteredPositions?.length ?? 0) === 0 ? (
-            <div className="text-center p-12 bg-muted/20 rounded-3xl border-2 border-dashed border-border/50">
-              <p className="text-muted-foreground font-medium">
+            <div className="text-center p-8 sm:p-12 bg-muted/20 rounded-3xl border-2 border-dashed border-border/50">
+              <p className="text-muted-foreground font-medium text-sm">
                 {selectedDepartmentFilter === "all"
                   ? "No job positions found. Start by creating one."
                   : "No job positions found for this department."}
@@ -523,19 +523,21 @@ export function JobPositionManager() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
               >
-                <Card className="group relative overflow-hidden flex items-center justify-between p-6 border-none shadow-sm hover:shadow-xl transition-all hover:-translate-y-1">
-                  <div className="flex items-center gap-6">
-                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-4 rounded-2xl group-hover:from-primary group-hover:to-primary/80 group-hover:text-white transition-all duration-300">
-                      <Briefcase className="size-6" />
+                <Card className="group relative overflow-hidden flex flex-col xl:flex-row xl:items-center justify-between p-4 sm:p-6 border-none shadow-sm hover:shadow-xl transition-all hover:-translate-y-1 gap-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-6">
+                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-3 sm:p-4 rounded-xl sm:rounded-2xl group-hover:from-primary group-hover:to-primary/80 group-hover:text-white transition-all duration-300 shrink-0">
+                      <Briefcase className="size-5 sm:size-6" />
                     </div>
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <h4 className="font-black text-xl tracking-tight text-foreground transition-colors group-hover:text-primary">{pos.title}</h4>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-3">
+                        <h4 className="font-black text-lg sm:text-xl tracking-tight text-foreground transition-colors group-hover:text-primary truncate">
+                          {pos.title}
+                        </h4>
                         <select
                           value={pos.status}
                           onChange={(e) => handleStatusChange(pos.position_id, e.target.value as JobPosition["status"])}
                           onClick={(e) => e.stopPropagation()}
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border appearance-none cursor-pointer outline-none hover:opacity-80 transition-opacity ${getStatusColor(pos.status)}`}
+                          className={`px-2 py-0.5 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider border appearance-none cursor-pointer outline-none hover:opacity-80 transition-opacity ${getStatusColor(pos.status)}`}
                         >
                           <option value="open">OPEN</option>
                           <option value="on_hold">ON HOLD</option>
@@ -543,43 +545,43 @@ export function JobPositionManager() {
                           <option value="cancelled">CANCELLED</option>
                         </select>
                       </div>
-                      <div className="flex items-center gap-6 mt-3">
-                        <span className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 mt-3">
+                        <span className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest">
                           <Building2 className="size-3.5" /> {departments.find(d => d.department_id === pos.department)?.name || `Dept #${pos.department}`}
                         </span>
-                        <span className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                        <span className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-widest">
                           <Calendar className="size-3.5" /> Posted {new Date(pos.posted_date).toLocaleDateString()}
                         </span>
                       </div>
-                          {pos.required_skills && pos.required_skills.length > 0 && (
-                            <div className="mt-3 flex flex-wrap gap-2">
-                              {pos.required_skills.slice(0, 8).map((s) => (
-                                <span key={s} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-black uppercase tracking-wider border border-primary/20">{s}</span>
-                              ))}
-                            </div>
-                          )}
+                      {pos.required_skills && pos.required_skills.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {pos.required_skills.slice(0, 8).map((s) => (
+                            <span key={s} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] sm:text-[10px] font-black uppercase tracking-wider border border-primary/20">{s}</span>
+                          ))}
+                        </div>
+                      )}
 
-                          <div className="mt-2 text-xs text-muted-foreground flex gap-4">
-                            <span>Shortlist: <strong className="text-foreground">{pos.shortlist_size ?? '—'}</strong></span>
-                            {pos.min_years_experience ? <span>Min Exp: <strong className="text-foreground">{pos.min_years_experience} yrs</strong></span> : null}
-                            {pos.ai_config?.min_pass_score ? <span>Pass: <strong className="text-foreground">{pos.ai_config.min_pass_score}%</strong></span> : null}
-                            <span>V{pos.criteria_version}</span>
-                          </div>
+                      <div className="mt-3 text-[10px] sm:text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
+                        <span>Shortlist: <strong className="text-foreground">{pos.shortlist_size ?? '—'}</strong></span>
+                        {pos.min_years_experience ? <span>Min Exp: <strong className="text-foreground">{pos.min_years_experience} yrs</strong></span> : null}
+                        {pos.ai_config?.min_pass_score ? <span>Pass: <strong className="text-foreground">{pos.ai_config.min_pass_score}%</strong></span> : null}
+                        <span>V{pos.criteria_version}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-5">
+                  <div className="flex items-center gap-3 sm:gap-5 w-full xl:w-auto border-t xl:border-none pt-4 xl:pt-0">
                     <button
                       onClick={() => handleShare(pos)}
-                      className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
+                      className="flex-1 xl:flex-initial flex items-center justify-center gap-2 p-2.5 rounded-xl bg-primary/5 text-primary hover:bg-primary/10 transition-colors"
                       title="Share link"
                     >
                       <Share2 className="size-4" />
-                      <span className="hidden sm:inline font-bold text-xs uppercase tracking-widest">Share</span>
+                      <span className="font-bold text-[10px] sm:text-xs uppercase tracking-widest">Share</span>
                     </button>
                     <Link
                       href={`/hr/recruitment/job-postings/${pos.position_id}`}
-                      className="hidden md:flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:underline"
+                      className="flex-1 xl:flex-initial flex items-center justify-center gap-2 text-[10px] sm:text-xs font-black text-primary uppercase tracking-widest hover:underline px-4"
                     >
                       View details <MoreVertical className="size-3" />
                     </Link>

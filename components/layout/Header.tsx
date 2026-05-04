@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, Search, HelpCircle, Menu } from "lucide-react";
+import { Bell, Search, HelpCircle, Menu, X } from "lucide-react";
 import { motion } from "framer-motion";
 import useNotifications from "@/hooks/useNotifications";
+import { useUI } from "@/context/UIContext";
 
 export function Header() {
   const { user } = useAuth();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const { isSidebarOpen, toggleSidebar } = useUI();
   const { notifications, unreadCount, markAllAsRead, markSingleAsRead, clearAll } = useNotifications();
   const notificationsRef = useRef<HTMLDivElement | null>(null);
 
@@ -53,12 +55,14 @@ export function Header() {
     await markSingleAsRead(id);
     setIsNotificationsOpen(false);
   };
-
   return (
-    <header className="sticky text-black top-0 z-10 flex h-20 items-center justify-between border-b border-border/50 bg-background/80 px-8 backdrop-blur-xl">
-      <div className="flex items-center gap-4">
-        <button className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors">
-          <Menu className="size-5" />
+    <header className="sticky text-black top-0 z-10 flex h-16 lg:h-20 items-center justify-between border-b border-border/50 bg-background/80 px-4 sm:px-6 lg:px-8 backdrop-blur-xl">
+      <div className="flex items-center gap-2 sm:gap-4">
+        <button 
+          onClick={toggleSidebar}
+          className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
+        >
+          {isSidebarOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
         <div className="flex flex-col">
           <motion.h2

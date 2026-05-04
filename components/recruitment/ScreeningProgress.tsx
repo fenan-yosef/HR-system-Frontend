@@ -14,7 +14,7 @@ export function ScreeningProgressDisplay({ progress }: ScreeningProgressDisplayP
     const isFailed = progress.status === "failed" || progress.status === "error";
 
     return (
-        <Card className="p-8 border-none shadow-2xl rounded-[2rem] bg-gradient-to-br from-primary/5 via-background to-primary/5 overflow-hidden relative">
+        <Card className="p-6 sm:p-8 border-none shadow-2xl rounded-2xl sm:rounded-[2rem] bg-gradient-to-br from-primary/5 via-background to-primary/5 overflow-hidden relative">
             {/* Background Animation */}
             {isRunning && (
                 <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -22,7 +22,7 @@ export function ScreeningProgressDisplay({ progress }: ScreeningProgressDisplayP
                 </div>
             )}
 
-            <div className="relative z-10 flex flex-col items-center text-center space-y-6">
+            <div className="relative z-10 flex flex-col items-center text-center space-y-4 sm:space-y-6">
                 <div className="relative">
                     <div className={`p-6 rounded-full ${isRunning ? 'bg-primary/20 animate-pulse' : isFailed ? 'bg-red-500/20' : 'bg-emerald-500/20'} transition-all duration-500`}>
                         {isRunning ? (

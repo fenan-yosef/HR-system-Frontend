@@ -114,14 +114,14 @@ export function CustomFieldsSettings({ positionId }: CustomFieldsSettingsProps) 
       </div>
 
       <div className="relative z-10 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-xl bg-primary/10 text-primary">
               <Settings2 className="size-5" />
             </div>
             <h3 className="text-xl font-black tracking-tight uppercase tracking-widest">Application Fields</h3>
           </div>
-          <Button onClick={addField} variant="outline" size="sm" className="rounded-xl font-black uppercase tracking-widest text-[10px] h-8">
+          <Button onClick={addField} variant="outline" size="sm" className="rounded-xl font-black uppercase tracking-widest text-[10px] h-8 self-start sm:self-auto">
             <Plus className="w-3 h-3 mr-2" />
             Add Field
           </Button>
@@ -134,12 +134,12 @@ export function CustomFieldsSettings({ positionId }: CustomFieldsSettingsProps) 
             </div>
           )}
           {fields.map((field, index) => (
-            <div key={index} className="flex items-start gap-3 p-4 border border-border/50 rounded-2xl bg-background/50 group/item">
-              <div className="mt-2 text-muted-foreground">
+            <div key={index} className="flex flex-col sm:flex-row items-start gap-3 p-4 border border-border/50 rounded-2xl bg-background/50 group/item">
+              <div className="hidden sm:block mt-2 text-muted-foreground">
                 <GripVertical className="w-4 h-4" />
               </div>
               
-              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
                 <div className="space-y-1.5">
                   <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Label</Label>
                   <Input 
@@ -163,7 +163,7 @@ export function CustomFieldsSettings({ positionId }: CustomFieldsSettingsProps) 
                   </select>
                 </div>
 
-                <div className="flex items-center gap-6 pt-5">
+                <div className="flex items-center gap-4 sm:gap-6 pt-2 sm:pt-5 w-full sm:w-auto">
                   <div className="flex items-center space-x-2">
                     <input
                       type="checkbox"
@@ -189,7 +189,7 @@ export function CustomFieldsSettings({ positionId }: CustomFieldsSettingsProps) 
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className="text-destructive hover:bg-destructive/10 ml-auto h-8 w-8 rounded-lg"
+                    className="text-destructive hover:bg-destructive/10 ml-auto sm:ml-4 h-8 w-8 rounded-lg"
                     onClick={() => removeField(index)}
                   >
                     <Trash2 className="w-4 h-4" />

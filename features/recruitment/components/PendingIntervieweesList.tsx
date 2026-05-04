@@ -144,16 +144,16 @@ export function PendingIntervieweesList() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
-          <h2 className="text-2xl font-black tracking-tight">Interview Approvals</h2>
-          <p className="text-sm text-muted-foreground font-medium">Candidates waiting for CEO/HR-CEO final confirmation.</p>
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight">Interview Approvals</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground font-medium">Candidates waiting for CEO/HR-CEO final confirmation.</p>
         </div>
         {canApprove && pendingCount > 0 && (
           <button
             onClick={handleBatchConfirm}
             disabled={isBatchConfirming}
-            className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-primary text-white text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:hover:scale-100"
+            className="flex items-center justify-center gap-2 px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl sm:rounded-2xl bg-primary text-white text-[10px] sm:text-xs font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 disabled:hover:scale-100"
           >
             {isBatchConfirming ? <Loader2 className="size-4 animate-spin" /> : <Check className="size-4" />}
             Confirm All {pendingCount} Pending
@@ -162,10 +162,10 @@ export function PendingIntervieweesList() {
       </div>
 
       {candidates.length === 0 ? (
-        <Card className="p-12 flex flex-col items-center justify-center text-center border-dashed border-2 bg-muted/5">
-          <Calendar className="size-12 text-muted-foreground/30 mb-4" />
-          <h3 className="text-lg font-bold">Activity Log Empty</h3>
-          <p className="text-sm text-muted-foreground max-w-xs">No interview candidates have been processed yet.</p>
+        <Card className="p-8 sm:p-12 flex flex-col items-center justify-center text-center border-dashed border-2 bg-muted/5">
+          <Calendar className="size-10 sm:size-12 text-muted-foreground/30 mb-4" />
+          <h3 className="text-base sm:text-lg font-bold">Activity Log Empty</h3>
+          <p className="text-xs sm:text-sm text-muted-foreground max-w-xs">No interview candidates have been processed yet.</p>
         </Card>
       ) : (
         <div className="grid gap-4">
@@ -179,35 +179,35 @@ export function PendingIntervieweesList() {
                 exit={{ opacity: 0, scale: 0.95 }}
               >
                 <Card
-                  className="p-6 border-none shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer"
+                  className="p-4 sm:p-6 border-none shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer"
                   onClick={() => {
                     setSelectedApp(app);
                     setIsDetailsModalOpen(true);
                   }}
                 >
                   <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                  <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
                     <div className="flex items-center gap-4">
-                      <div className="size-14 rounded-2xl bg-muted flex items-center justify-center text-xl font-bold text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary transition-all">
+                      <div className="size-12 sm:size-14 rounded-xl sm:rounded-2xl bg-muted flex items-center justify-center text-lg sm:text-xl font-bold text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary transition-all shrink-0">
                         {app.full_name?.charAt(0) || "U"}
                       </div>
-                      <div>
-                        <h4 className="font-black text-lg leading-tight group-hover:text-primary transition-colors">
+                      <div className="min-w-0">
+                        <h4 className="font-black text-base sm:text-lg leading-tight group-hover:text-primary transition-colors truncate">
                           {app.full_name}
                         </h4>
-                        <div className="flex items-center gap-3 text-xs text-muted-foreground font-medium mt-1">
-                          <span>{app.email}</span>
-                          <span className="opacity-30">•</span>
-                          <span>{app.position?.title}</span>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] sm:text-xs text-muted-foreground font-medium mt-1">
+                          <span className="truncate">{app.email}</span>
+                          <span className="hidden sm:inline opacity-30">•</span>
+                          <span className="truncate">{app.position?.title}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-8">
-                      <div className="flex flex-col items-end">
-                        <div className="flex items-center gap-1.5 text-amber-500 mb-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-8">
+                      <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-start w-full sm:w-auto">
+                        <div className="flex items-center gap-1.5 text-amber-500 sm:mb-1">
                           <Star className="size-3.5 fill-current" />
-                          <span className="text-xs font-black">
+                          <span className="text-[10px] sm:text-xs font-black">
                             {(() => {
                               const scoreValue = Number(
                                 app.screening_result?.final_score ||
@@ -217,37 +217,23 @@ export function PendingIntervieweesList() {
                             })()}
                           </span>
                         </div>
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getStatusStyle(app.status)}`}>
-                          {app.status === "interview_pending" ? "Pending Approval" : "Approved & Invited"}
+                        <span className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-wider ${getStatusStyle(app.status)}`}>
+                          {app.status === "interview_pending" ? "Pending Approval" : "Approved"}
                         </span>
-
-                        {(app.screening_result?.scoring_breakdown?.interview_questions?.length ?? 0) > 0 && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedQuestions(app.screening_result?.scoring_breakdown?.interview_questions || []);
-                              setIsQuestionsModalOpen(true);
-                            }}
-                            className="mt-2 flex items-center gap-1.5 text-[10px] font-bold text-primary hover:underline group/btn"
-                          >
-                            <MessageSquare className="size-3 group-hover/btn:scale-110 transition-transform" />
-                            AI Suggested Questions for Interview
-                          </button>
-                        )}
                       </div>
 
-                      <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+                      <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto" onClick={(e) => e.stopPropagation()}>
                         {canApprove && app.status === "interview_pending" && (
                           <>
                             <button
                               onClick={() => handleAction("confirm", app)}
-                              className="px-4 py-2.5 rounded-xl bg-emerald-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 shadow-sm transition-all flex items-center gap-2 active:scale-95"
+                              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-emerald-500 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-emerald-600 shadow-sm transition-all flex items-center justify-center gap-2 active:scale-95"
                             >
                               <Check size={14} /> Confirm
                             </button>
                             <button
                               onClick={() => handleAction("reject", app)}
-                              className="px-4 py-2.5 rounded-xl bg-red-500/10 text-red-600 text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-all flex items-center gap-2 active:scale-95"
+                              className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-red-500/10 text-red-600 text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-red-500/20 transition-all flex items-center justify-center gap-2 active:scale-95"
                             >
                               <XCircle size={14} /> Reject
                             </button>
@@ -256,27 +242,27 @@ export function PendingIntervieweesList() {
                         {canApprove && app.status === "interview_invited" && (
                           <button
                             onClick={() => setHireTarget(app)}
-                            className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 shadow-lg shadow-violet-500/20 transition-all flex items-center gap-2 active:scale-95"
+                            className="flex-1 sm:flex-initial px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-violet-600 text-white text-[9px] sm:text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 shadow-lg shadow-violet-500/20 transition-all flex items-center justify-center gap-2 active:scale-95"
                           >
                             <Briefcase size={14} /> Hire
                           </button>
                         )}
                         <button
-                          className="p-2.5 rounded-xl bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-all active:scale-95"
+                          className="p-2 sm:p-2.5 rounded-xl bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-all active:scale-95 ml-auto sm:ml-0"
                         >
-                          <ChevronRight size={20} />
+                          <ChevronRight size={18} />
                         </button>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-6 border-t border-border/50 flex items-center gap-6">
-                    <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                  <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border/50 flex flex-wrap items-center gap-x-6 gap-y-2">
+                    <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                       <Calendar className="size-3.5" /> Applied:{" "}
                       {new Date(app.submitted_at || app.created_at).toLocaleDateString()}
                     </div>
                     {app.screening_result?.screened_at && (
-                      <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-muted-foreground border-l border-border/50 pl-6">
+                      <div className="flex items-center gap-1.5 text-[9px] sm:text-[10px] font-black uppercase tracking-widest text-muted-foreground sm:border-l sm:border-border/50 sm:pl-6">
                         <BrainCircuit className="size-3.5 text-primary" /> AI Evaluated:{" "}
                         {new Date(app.screening_result.screened_at).toLocaleDateString()}
                       </div>
