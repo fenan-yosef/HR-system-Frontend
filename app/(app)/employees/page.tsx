@@ -39,6 +39,18 @@ function humanize(value: string) {
   return value.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function getCompletionTone(completion: number) {
+  if (completion >= 100) return "bg-emerald-500/10 text-emerald-700 border-emerald-500/20";
+  if (completion >= 80) return "bg-amber-500/10 text-amber-700 border-amber-500/20";
+  return "bg-rose-500/10 text-rose-700 border-rose-500/20";
+}
+
+function getMissingFields(employee: Employee) {
+  const fields = employee.onboarding_data?.completion_missing_fields;
+  if (!Array.isArray(fields) || fields.length === 0) return "All tracked fields completed";
+  return `Missing: ${fields.join(", ")}`;
+}
+
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
@@ -181,6 +193,11 @@ export default function EmployeesPage() {
     }
   };
 
+  const getCompletionLabel = (completion?: number) => {
+    const value = Math.max(0, Math.min(100, Math.round(completion || 0)));
+    return `${value}%`;
+  };
+
   return (
     <section className="space-y-8 pb-12">
       {/* Header Section */}
@@ -319,6 +336,24 @@ export default function EmployeesPage() {
                         </div>
                       </div>
 
+                      <div className="space-y-2 rounded-xl border border-border/40 bg-muted/20 p-3">
+                        <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+                          <span>Account Completion</span>
+                          <span className={cn("rounded-full border px-2 py-0.5", getCompletionTone(emp.onboarding_completion))}>
+                            {getCompletionLabel(emp.onboarding_completion)}
+                          </span>
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-background/70">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all"
+                            style={{ width: `${Math.max(0, Math.min(100, emp.onboarding_completion || 0))}%` }}
+                          />
+                        </div>
+                        <p className="text-[10px] leading-relaxed text-muted-foreground" title={getMissingFields(emp)}>
+                          {getMissingFields(emp)}
+                        </p>
+                      </div>
+
                       <div className="w-full flex items-center justify-center gap-2 pt-2 px-6">
                         <div className="h-0.5 flex-1 bg-gradient-to-r from-transparent via-border/50 to-transparent" />
                         <Users className="size-3.5 text-muted-foreground/30" />
@@ -339,6 +374,7 @@ export default function EmployeesPage() {
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Employee</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Department</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Type</th>
+                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Completion</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</th>
                 <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Actions</th>
               </tr>
@@ -366,6 +402,22 @@ export default function EmployeesPage() {
                   </td>
                   <td className="px-6 py-4 text-xs font-bold uppercase tracking-tight text-muted-foreground">
                     {humanize(emp.employment_type)}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3 min-w-[160px]">
+                      <div className="h-2 flex-1 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${Math.max(0, Math.min(100, emp.onboarding_completion || 0))}%` }}
+                        />
+                      </div>
+                      <span className={cn("text-[10px] font-black uppercase tracking-widest rounded-full border px-2 py-1", getCompletionTone(emp.onboarding_completion))}>
+                        {getCompletionLabel(emp.onboarding_completion)}
+                      </span>
+                    </div>
+                    <div className="mt-1 text-[10px] font-medium text-muted-foreground" title={getMissingFields(emp)}>
+                      {getMissingFields(emp)}
+                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <span className={cn(
