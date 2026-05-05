@@ -6,6 +6,10 @@ export interface ProfileData {
   last_name: string;
   email: string;
   phone?: string;
+  position?: string;
+  department_name?: string;
+  national_id?: string;
+  pension_id?: string;
   onboarding_data?: {
     profile_photo_url?: string;
     [key: string]: any;

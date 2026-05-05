@@ -22,9 +22,16 @@ import { cn } from "@/lib/utils";
 type Tab = "account" | "security";
 
 export default function ProfilePage() {
-  const { updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("account");
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(user ? {
+    first_name: user.firstName || "",
+    last_name: user.lastName || "",
+    email: user.email || "",
+    onboarding_data: {
+      profile_photo_url: user.profilePictureUrl || ""
+    }
+  } : null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -42,7 +49,8 @@ export default function ProfilePage() {
 
   async function loadProfile() {
     try {
-      setLoading(true);
+      // Don't set loading true if we already have base user data
+      if (!profile) setLoading(true);
       const data = await fetchProfile();
       setProfile(data);
     } catch (error) {
@@ -63,6 +71,8 @@ export default function ProfilePage() {
         last_name: profile.last_name,
         email: profile.email,
         phone: profile.phone,
+        national_id: profile.national_id,
+        pension_id: profile.pension_id,
       });
       setProfile(updated);
       updateUser({
@@ -180,12 +190,18 @@ export default function ProfilePage() {
               </h1>
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                 <div className="px-4 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest border border-primary/10">
-                  Active Associate
+                  {profile?.position || "System User"}
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground font-medium">
                   <Mail className="size-4" />
                   {profile?.email}
                 </div>
+                {profile?.department_name && (
+                  <div className="flex items-center gap-2 text-muted-foreground font-medium border-l border-border pl-3">
+                    <UserCircle2 className="size-4" />
+                    {profile.department_name}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -291,10 +307,51 @@ export default function ProfilePage() {
                             value={profile?.phone || ""} 
                             onChange={e => setProfile(p => p ? { ...p, phone: e.target.value } : null)}
                             className="h-14 pl-12 rounded-2xl bg-muted/50 border-none font-bold focus-visible:ring-primary/20" 
+                            placeholder="+251 ..."
                           />
                         </div>
                       </div>
                     </div>
+
+                    <div className="pt-6 border-t border-border/50">
+                      <h3 className="text-sm font-bold mb-6">Identification Details</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">National ID</label>
+                          <Input 
+                            value={profile?.national_id || ""} 
+                            onChange={e => setProfile(p => p ? { ...p, national_id: e.target.value } : null)}
+                            className="h-14 rounded-2xl bg-muted/50 border-none font-bold focus-visible:ring-primary/20" 
+                            placeholder="NID-..."
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground px-1">Pension ID</label>
+                          <Input 
+                            value={profile?.pension_id || ""} 
+                            onChange={e => setProfile(p => p ? { ...p, pension_id: e.target.value } : null)}
+                            className="h-14 rounded-2xl bg-muted/50 border-none font-bold focus-visible:ring-primary/20" 
+                            placeholder="PEN-..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {profile?.position && (
+                      <div className="pt-6 border-t border-border/50">
+                        <h3 className="text-sm font-bold mb-6">Employment Info (Read-only)</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="space-y-1 p-4 rounded-2xl bg-muted/30 border border-border/50">
+                            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Department</label>
+                            <p className="font-bold">{profile.department_name}</p>
+                          </div>
+                          <div className="space-y-1 p-4 rounded-2xl bg-muted/30 border border-border/50">
+                            <label className="text-[9px] font-black uppercase tracking-widest text-muted-foreground">Position</label>
+                            <p className="font-bold">{profile.position}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </form>
                 </Card>
               </motion.div>
