@@ -187,23 +187,23 @@ const NAVIGATION_CONFIG: NavSection[] = [
   //     },
   //   ],
   // },
-  // {
-  //   section: "Personal",
-  //   items: [
-  //     {
-  //       label: "My Profile",
-  //       href: ROUTES.MY_PROFILE,
-  //       icon: UserCircle,
-  //       roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "APPLICANT"],
-  //     },
-  //     {
-  //       label: "Documents",
-  //       href: ROUTES.MY_DOCUMENTS,
-  //       icon: FileText,
-  //       roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "APPLICANT"],
-  //     },
-  //   ],
-  // },
+  {
+    section: "Personal",
+    items: [
+      {
+        label: "My Profile",
+        href: ROUTES.MY_PROFILE,
+        icon: UserCircle,
+        roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "HR_CEO"],
+      },
+      {
+        label: "Documents",
+        href: ROUTES.MY_DOCUMENTS,
+        icon: FileText,
+        roles: ["ADMIN", "HR_STAFF", "EMPLOYEE"],
+      },
+    ],
+  },
   // {
   //   section: "Control",
   //   items: [
