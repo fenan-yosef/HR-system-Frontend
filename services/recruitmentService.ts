@@ -277,6 +277,27 @@ export function hireApplicant(
   );
 }
 
+export function approveHire(applicationId: number) {
+  return apiFetch<{ status: string; application_id: number; employee_id: number; username: string | null }>(
+    `/applicant-applications/${applicationId}/approve-hire/`,
+    {
+      method: "POST",
+      requiresAuth: true,
+    }
+  );
+}
+
+export function rejectHire(applicationId: number, reason?: string) {
+  return apiFetch<{ status: string; application_id: number }>(
+    `/applicant-applications/${applicationId}/reject-hire/`,
+    {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+      requiresAuth: true,
+    }
+  );
+}
+
 export function fetchEvaluations(): Promise<PaginatedResponse<AiEvaluation>> {
   return apiFetch<PaginatedResponse<AiEvaluation>>("/recruitment/evaluations/", { requiresAuth: true });
 }

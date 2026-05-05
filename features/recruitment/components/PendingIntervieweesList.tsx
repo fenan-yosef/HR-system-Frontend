@@ -24,14 +24,12 @@ import {
   confirmApplication,
   rejectShortlisted,
   batchConfirmInterviews,
-  hireApplicant,
 } from "@/services/recruitmentService";
-import { HireModal } from "./CEOActionModals";
 import {
   Application,
 } from "@/types/recruitment";
 import { useAuth } from "@/hooks/useAuth";
-import { canApproveRecruitment } from "@/lib/permissions";
+import { canApproveRecruitment, isHRStaff } from "@/lib/permissions";
 import { EvaluationDetailsModal } from "./EvaluationDetailsModal";
 import { getApiErrorStatus } from "@/services/apiClient";
 import { useToast } from "@/components/ui/toast";
@@ -45,10 +43,10 @@ export function PendingIntervieweesList() {
   const [selectedQuestions, setSelectedQuestions] = useState<string[] | null>(null);
   const [isQuestionsModalOpen, setIsQuestionsModalOpen] = useState(false);
   const [isBatchConfirming, setIsBatchConfirming] = useState(false);
-  const [hireTarget, setHireTarget] = useState<Application | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
   const canApprove = canApproveRecruitment(user);
+  const isStaff = isHRStaff(user);
 
   useEffect(() => {
     loadPendingData();
@@ -63,7 +61,7 @@ export function PendingIntervieweesList() {
 
       const allCandidates = [
         ...(pendingRes.results || []),
-        ...(invitedRes.results || [])
+        ...(invitedRes.results || []),
       ].sort((a, b) =>
         new Date(b.updated_at || b.submitted_at).getTime() -
         new Date(a.updated_at || a.submitted_at).getTime()
@@ -108,8 +106,8 @@ export function PendingIntervieweesList() {
         toast("Candidate rejected.", "success");
       }
       loadPendingData();
-    } catch (error) {
-      toast("Action failed.", "error");
+    } catch (error: any) {
+      toast(`Action failed: ${error.message || "Unknown error"}`, "error");
     }
   };
 
@@ -218,7 +216,8 @@ export function PendingIntervieweesList() {
                           </span>
                         </div>
                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${getStatusStyle(app.status)}`}>
-                          {app.status === "interview_pending" ? "Pending Approval" : "Approved & Invited"}
+                          {app.status === "interview_pending" ? "Pending Approval" : 
+                           app.status === "hire_pending" ? "Pending Hire Approval" : "Approved & Invited"}
                         </span>
 
                         {(app.screening_result?.scoring_breakdown?.interview_questions?.length ?? 0) > 0 && (
@@ -252,14 +251,6 @@ export function PendingIntervieweesList() {
                               <XCircle size={14} /> Reject
                             </button>
                           </>
-                        )}
-                        {canApprove && app.status === "interview_invited" && (
-                          <button
-                            onClick={() => setHireTarget(app)}
-                            className="px-4 py-2.5 rounded-xl bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 shadow-lg shadow-violet-500/20 transition-all flex items-center gap-2 active:scale-95"
-                          >
-                            <Briefcase size={14} /> Hire
-                          </button>
                         )}
                         <button
                           className="p-2.5 rounded-xl bg-muted group-hover:bg-primary/10 group-hover:text-primary transition-all active:scale-95"
@@ -296,19 +287,6 @@ export function PendingIntervieweesList() {
         />
       )}
 
-      {hireTarget && (
-        <HireModal
-          applicationId={hireTarget.application_id}
-          applicantName={hireTarget.full_name || "Candidate"}
-          onHire={async (data) => {
-            await hireApplicant(hireTarget.application_id, data);
-            toast(`${hireTarget.full_name} has been hired! Welcome email sent.`, "success");
-            setHireTarget(null);
-            loadPendingData();
-          }}
-          onClose={() => setHireTarget(null)}
-        />
-      )}
 
       {selectedQuestions && isQuestionsModalOpen && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
