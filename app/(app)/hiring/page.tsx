@@ -99,11 +99,21 @@ export default function HiringPage() {
         ...(pending.results || []),
         ...(hired.results || []),
         ...(rejected.results || []),
-      ].sort(
-        (a, b) =>
-          new Date(b.updated_at || b.submitted_at).getTime() -
-          new Date(a.updated_at || a.submitted_at).getTime()
-      );
+      ]
+        .map((app: any) => ({
+          ...app,
+          full_name:
+            app.full_name ||
+            app.applicant?.full_name ||
+            app.applicant_name ||
+            app.email ||
+            "Unknown Candidate",
+        }))
+        .sort(
+          (a, b) =>
+            new Date(b.updated_at || b.submitted_at).getTime() -
+            new Date(a.updated_at || a.submitted_at).getTime()
+        );
 
       setApplications(all);
     } catch {
@@ -120,7 +130,7 @@ export default function HiringPage() {
   const handleApprove = async (app: Application) => {
     try {
       await approveHire(app.application_id);
-      toast(`${app.full_name} hire approved. Employee record created.`, "success");
+      toast(`${app.full_name || "Hire"} approved. Employee record created.`, "success");
       loadAll();
     } catch (e: any) {
       toast(`Approval failed: ${e.message}`, "error");
