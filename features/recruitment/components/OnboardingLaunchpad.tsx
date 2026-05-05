@@ -33,6 +33,7 @@ export function OnboardingLaunchpad({ employee, onUpdate }: LaunchpadProps) {
   const [formData, setFormData] = useState({
     bank_name: employee.onboarding_data?.bank_name || "",
     account_number: employee.onboarding_data?.account_number || "",
+    pension_id: employee.onboarding_data?.pension_id || employee.pension_id || "",
     emergency_contact: employee.onboarding_data?.emergency_contact || "",
     emergency_phone: employee.onboarding_data?.emergency_phone || "",
     address: employee.onboarding_data?.address || "",
@@ -51,6 +52,7 @@ export function OnboardingLaunchpad({ employee, onUpdate }: LaunchpadProps) {
     try {
       const newCompletion = Math.min(100, completion + 33.4);
       await updateEmployee(employee.employee_id, {
+        pension_id: formData.pension_id.trim() || undefined,
         onboarding_data: { ...employee.onboarding_data, ...formData },
         // Simple logic: if they finish a step, we bump completion
         // In a real app, we'd count non-empty fields
@@ -187,6 +189,15 @@ export function OnboardingLaunchpad({ employee, onUpdate }: LaunchpadProps) {
                         className="h-12 rounded-xl bg-muted/50"
                         value={formData.account_number}
                         onChange={(e) => setFormData({ ...formData, account_number: e.target.value })}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest">Pension ID (optional)</label>
+                      <Input 
+                        placeholder="PEN-123456"
+                        className="h-12 rounded-xl bg-muted/50"
+                        value={formData.pension_id}
+                        onChange={(e) => setFormData({ ...formData, pension_id: e.target.value })}
                       />
                     </div>
                   </>

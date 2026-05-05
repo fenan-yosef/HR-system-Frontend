@@ -85,6 +85,7 @@ export default function OnboardingPage() {
     salary: number;
     monthly_salary: number;
     national_id: string;
+    pension_id?: string;
     onboarding_data: {
       emergency_contact?: string;
       emergency_phone?: string;
@@ -92,6 +93,7 @@ export default function OnboardingPage() {
       bank_name?: string;
       account_number?: string;
       profile_photo_url?: string;
+      pension_id?: string;
     };
   }) => {
     if (!hireTarget) return;

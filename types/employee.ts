@@ -14,6 +14,7 @@ export interface Employee {
   hire_date: string;
   status: EmployeeStatus;
   national_id?: string | null;
+  pension_id?: string | null;
   onboarding_completion: number;
   onboarding_data: Record<string, any>;
   created_at: string;
@@ -60,5 +61,6 @@ export interface UpdateEmployee {
   hire_date?: string;
   status?: EmployeeStatus;
   national_id?: string;
+  pension_id?: string;
   onboarding_data?: Record<string, any>;
 }

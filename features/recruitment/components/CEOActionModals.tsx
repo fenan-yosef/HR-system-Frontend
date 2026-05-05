@@ -325,6 +325,7 @@ export function HireModal({
     salary: number;
     monthly_salary: number;
     national_id: string;
+    pension_id?: string;
     onboarding_data: {
       emergency_contact?: string;
       emergency_phone?: string;
@@ -332,6 +333,7 @@ export function HireModal({
       bank_name?: string;
       account_number?: string;
       profile_photo_url?: string;
+      pension_id?: string;
     };
   }) => Promise<void>;
   onClose: () => void;
@@ -339,6 +341,7 @@ export function HireModal({
   const [startDate, setStartDate] = useState("");
   const [monthlySalary, setMonthlySalary] = useState("");
   const [nationalId, setNationalId] = useState("");
+  const [pensionId, setPensionId] = useState("");
   const [emergencyContact, setEmergencyContact] = useState("");
   const [emergencyPhone, setEmergencyPhone] = useState("");
   const [address, setAddress] = useState("");
@@ -365,7 +368,9 @@ export function HireModal({
         salary: Number(monthlySalary),
         monthly_salary: Number(monthlySalary),
         national_id: nationalId.trim(),
+        pension_id: pensionId.trim() || undefined,
         onboarding_data: {
+          pension_id: pensionId.trim() || undefined,
           emergency_contact: emergencyContact.trim() || undefined,
           emergency_phone: emergencyPhone.trim() || undefined,
           address: address.trim() || undefined,
@@ -399,6 +404,17 @@ export function HireModal({
             placeholder="e.g. ID12345678"
             value={nationalId}
             onChange={(e) => setNationalId(e.target.value)}
+            className="h-11 rounded-xl bg-muted/50 border-border/50 focus:ring-2 focus:ring-violet-500 transition-all"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Pension ID (optional)
+          </label>
+          <Input
+            placeholder="e.g. PEN-123456"
+            value={pensionId}
+            onChange={(e) => setPensionId(e.target.value)}
             className="h-11 rounded-xl bg-muted/50 border-border/50 focus:ring-2 focus:ring-violet-500 transition-all"
           />
         </div>

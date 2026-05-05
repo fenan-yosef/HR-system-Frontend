@@ -267,6 +267,7 @@ export function hireApplicant(
   applicationId: number,
   data: {
     national_id: string;
+    pension_id?: string;
     salary: number;
     monthly_salary?: number;
     start_date: string;
@@ -277,6 +278,7 @@ export function hireApplicant(
       bank_name?: string;
       account_number?: string;
       profile_photo_url?: string;
+      pension_id?: string;
     };
   }
 ) {
