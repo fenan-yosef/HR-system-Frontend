@@ -1,4 +1,5 @@
 import { apiFetch } from "@/services/apiClient";
+import { fetchCurrentUserEmployee } from "@/services/employeeService";
 import type {
   AttendanceCreatePayload,
   AttendanceEntry,
@@ -8,6 +9,20 @@ import type {
 } from "@/types/attendance";
 
 const ATTENDANCE_ENDPOINT = "/attendance-logs/";
+
+let cachedEmployeeId: number | null = null;
+
+async function resolveCurrentEmployeeId(): Promise<number | null> {
+  if (cachedEmployeeId !== null) return cachedEmployeeId;
+  try {
+    const employee = await fetchCurrentUserEmployee();
+    cachedEmployeeId = employee.employee_id;
+    return cachedEmployeeId;
+  } catch (error) {
+    console.error("Failed to resolve current employee ID", error);
+    return null;
+  }
+}
 
 function pad(value: number) {
   return String(value).padStart(2, "0");
@@ -61,10 +76,15 @@ export async function fetchAttendanceLogs(): Promise<AttendanceLog[]> {
   return response.results ?? [];
 }
 
-export function createAttendanceLog(data: AttendanceCreatePayload): Promise<AttendanceLog> {
+export async function createAttendanceLog(data: AttendanceCreatePayload): Promise<AttendanceLog> {
+  const employeeId = data.employee ?? (await resolveCurrentEmployeeId());
+  if (employeeId === null) {
+    throw new Error("Unable to determine employee ID. Please try again or contact support.");
+  }
+  const payload: AttendanceCreatePayload = { ...data, employee: employeeId };
   return apiFetch<AttendanceLog>(ATTENDANCE_ENDPOINT, {
     method: "POST",
-    body: JSON.stringify(data),
+    body: JSON.stringify(payload),
     requiresAuth: true,
   });
 }
