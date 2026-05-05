@@ -137,6 +137,12 @@ const NAVIGATION_CONFIG: NavSection[] = [
         roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
       },
       {
+        label: "ID Cards",
+        href: ROUTES.HR_ID_CARDS,
+        icon: CreditCard,
+        roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
+      },
+      {
         label: "Disciplinary Records",
         icon: ShieldAlert,
         roles: ["ADMIN", "HR_STAFF"],

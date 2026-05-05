@@ -33,6 +33,7 @@ export const ROUTES = {
 
   // HR Letters
   HR_LETTER_REQUESTS: "/hr/letter-requests",
+  HR_ID_CARDS: "/hr/id-cards",
 
   // Disciplinary Management
   HR_DISCIPLINARY: "/hr/disciplinary",
