@@ -6,16 +6,17 @@ import {
   Briefcase,
   CheckCircle,
   XCircle,
-  Clock,
-  RefreshCw,
-  Loader2,
-  ChevronRight,
-  AlertTriangle,
-  UserCheck,
   Search,
+  Users,
+  Calendar,
+  AlertTriangle,
+  RefreshCw,
+  Clock,
+  ArrowRight,
   Filter,
-  TrendingUp,
-  RotateCcw,
+  Download,
+  Loader2,
+  UserCheck,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,6 @@ import { canApproveRecruitment, isHRStaff } from "@/lib/permissions";
 import { useToast } from "@/components/ui/toast";
 
 type HireStatus =
-  | "interview_invited"
   | "hire_pending"
   | "hired"
   | "hire_rejected";
@@ -44,12 +44,6 @@ const STATUS_META: Record<
   HireStatus,
   { label: string; color: string; bg: string; icon: React.ElementType }
 > = {
-  interview_invited: {
-    label: "Interview Done",
-    color: "text-blue-600",
-    bg: "bg-blue-500/10 border-blue-200",
-    icon: UserCheck,
-  },
   hire_pending: {
     label: "Pending Approval",
     color: "text-amber-600",
@@ -71,7 +65,6 @@ const STATUS_META: Record<
 };
 
 const PIPELINE_STAGES: HireStatus[] = [
-  "interview_invited",
   "hire_pending",
   "hired",
   "hire_rejected",
@@ -96,15 +89,13 @@ export default function HiringPage() {
   const loadAll = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [invited, pending, hired, rejected] = await Promise.all([
-        fetchApplications({ status: "interview_invited" }),
+      const [pending, hired, rejected] = await Promise.all([
         fetchApplications({ status: "hire_pending" }),
         fetchApplications({ status: "hired" }),
         fetchApplications({ status: "hire_rejected" }),
       ]);
 
       const all = [
-        ...(invited.results || []),
         ...(pending.results || []),
         ...(hired.results || []),
         ...(rejected.results || []),
@@ -405,16 +396,6 @@ export default function HiringPage() {
                         {/* Actions */}
                         <td className="py-4 px-5">
                           <div className="flex items-center justify-end gap-2">
-                            {/* HR Staff: initiate hire for interview_invited */}
-                            {status === "interview_invited" && isStaff && (
-                              <button
-                                onClick={() => setHireTarget(app)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-violet-700 transition-all"
-                              >
-                                <Briefcase className="size-3.5" />
-                                Initiate Hire
-                              </button>
-                            )}
 
                             {/* CEO/Admin: approve or reject hire_pending */}
                             {status === "hire_pending" && canApprove && (
@@ -436,22 +417,23 @@ export default function HiringPage() {
                               </>
                             )}
 
-                            {/* HR Staff: re-request on hire_rejected */}
-                            {status === "hire_rejected" && isStaff && (
-                              <button
-                                onClick={() => setReRequestTarget(app)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-700 text-[10px] font-black uppercase tracking-widest hover:bg-amber-500/20 transition-all border border-amber-200"
-                              >
-                                <RotateCcw className="size-3.5" />
-                                Re-request
-                              </button>
-                            )}
 
                             {/* CEO sees rejection reason for rejected */}
                             {status === "hire_rejected" && canApprove && !isStaff && (
                               <span className="text-xs text-muted-foreground italic">
                                 Recorded
                               </span>
+                            )}
+
+                            {/* HR Staff: Re-initiate if rejected */}
+                            {status === "hire_rejected" && isStaff && (
+                              <button
+                                onClick={() => setReRequestTarget(app)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-sm"
+                              >
+                                <RefreshCw className="size-3.5" />
+                                Re-initiate
+                              </button>
                             )}
 
                             {status === "hired" && (

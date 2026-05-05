@@ -15,8 +15,9 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { fetchApplications } from "@/services/recruitmentService";
+import { fetchApplications, hireApplicant } from "@/services/recruitmentService";
 import { Application } from "@/types/recruitment";
+import { HireModal } from "@/features/recruitment/components/CEOActionModals";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/components/ui/toast";
 
@@ -36,31 +37,67 @@ const DEFAULT_STEPS: OnboardingStep[] = [
 
 export default function OnboardingPage() {
   const [hired, setHired] = useState<Application[]>([]);
+  const [hiringQueue, setHiringQueue] = useState<Application[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [hireTarget, setHireTarget] = useState<Application | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
-  const loadHired = useCallback(async () => {
+  const isStaff = user?.role === "HR_STAFF";
+
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetchApplications({ status: "hired" });
+      const [hiredRes, invitedRes, rejectedRes] = await Promise.all([
+        fetchApplications({ status: "hired" }),
+        fetchApplications({ status: "interview_invited" }),
+        fetchApplications({ status: "hire_rejected" }),
+      ]);
+
       setHired(
-        (res.results || []).sort(
+        (hiredRes.results || []).sort(
+          (a, b) =>
+            new Date(b.updated_at || b.submitted_at).getTime() -
+            new Date(a.updated_at || a.submitted_at).getTime()
+        )
+      );
+
+      setHiringQueue(
+        [...(invitedRes.results || []), ...(rejectedRes.results || [])].sort(
           (a, b) =>
             new Date(b.updated_at || b.submitted_at).getTime() -
             new Date(a.updated_at || a.submitted_at).getTime()
         )
       );
     } catch {
-      toast("Unable to load onboarded employees.", "error");
+      toast("Unable to load data.", "error");
     } finally {
       setIsLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    loadHired();
-  }, [loadHired]);
+    loadData();
+  }, [loadData]);
+
+  const handleHire = async (data: {
+    start_date: string;
+    salary: number;
+    national_id: string;
+  }) => {
+    if (!hireTarget) return;
+    try {
+      await hireApplicant(hireTarget.application_id, data);
+      toast(
+        `Hire request for ${hireTarget.full_name} submitted for CEO approval.`,
+        "success"
+      );
+      setHireTarget(null);
+      loadData();
+    } catch (e: any) {
+      toast(`Submission failed: ${e.message}`, "error");
+    }
+  };
 
   // Group: joined within last 30 days vs older
   const now = Date.now();
@@ -141,24 +178,37 @@ export default function OnboardingPage() {
           </motion.div>
         ))}
       </div>
-
-      {/* ── Onboarding Cards ── */}
       {isLoading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
+        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+          <Loader2 className="size-8 animate-spin mb-4 opacity-20" />
+          <p className="text-sm font-medium">Loading onboarding data...</p>
         </div>
-      ) : hired.length === 0 ? (
-        <Card className="border-none shadow-sm">
-          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-            <UserCheck className="size-12 mb-3 opacity-20" />
-            <p className="text-sm font-semibold">No employees onboarded yet.</p>
-            <p className="text-xs mt-1 opacity-60">
-              Approved hires will appear here.
-            </p>
-          </div>
-        </Card>
       ) : (
-        <div className="space-y-8">
+        <div className="space-y-12">
+          {/* ── Hiring Queue (HR Staff only) ── */}
+          {isStaff && hiringQueue.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Users className="size-4 text-primary" />
+                <h2 className="text-sm font-bold uppercase tracking-widest text-primary">
+                  Ready for Hire
+                </h2>
+              </div>
+              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                <AnimatePresence>
+                  {hiringQueue.map((app, idx) => (
+                    <HiringQueueCard
+                      key={app.application_id}
+                      app={app}
+                      idx={idx}
+                      onInitiate={() => setHireTarget(app)}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          )}
+
           {recentHires.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -193,7 +243,75 @@ export default function OnboardingPage() {
           )}
         </div>
       )}
+
+      {/* ── Modals ── */}
+      <AnimatePresence>
+        {hireTarget && (
+          <HireModal
+            applicationId={hireTarget.application_id}
+            applicantName={hireTarget.full_name || "Candidate"}
+            onHire={handleHire}
+            onClose={() => setHireTarget(null)}
+          />
+        )}
+      </AnimatePresence>
     </section>
+  );
+}
+
+function HiringQueueCard({
+  app,
+  idx,
+  onInitiate,
+}: {
+  app: Application;
+  idx: number;
+  onInitiate: () => void;
+}) {
+  const isRejected = app.status === "hire_rejected";
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: idx * 0.05 }}
+    >
+      <Card className="p-5 border-none shadow-sm hover:shadow-md transition-shadow group">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className={`size-10 rounded-xl flex items-center justify-center font-bold text-sm ${isRejected ? 'bg-red-50 text-red-600' : 'bg-primary/10 text-primary'}`}>
+              {app.full_name?.[0]?.toUpperCase()}
+            </div>
+            <div>
+              <p className="font-bold text-sm">{app.full_name}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-tight font-semibold">
+                {app.position?.title}
+              </p>
+            </div>
+          </div>
+          {isRejected && (
+            <Badge className="bg-red-50 text-red-600 border-red-100 hover:bg-red-50 text-[9px] px-1.5 uppercase font-black">
+              Rejected
+            </Badge>
+          )}
+        </div>
+
+        {isRejected && app.rejection_reason && (
+          <div className="mb-4 p-3 rounded-lg bg-red-50/50 border border-red-100 text-[11px] text-red-700 italic">
+            <span className="font-bold not-italic block mb-0.5 text-[9px] uppercase tracking-widest text-red-500">CEO Feedback:</span>
+            "{app.rejection_reason}"
+          </div>
+        )}
+
+        <button
+          onClick={onInitiate}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-lg bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest hover:bg-primary transition-all shadow-sm"
+        >
+          <Briefcase className="size-3.5" />
+          {isRejected ? "Re-initiate Hire" : "Initiate Hire"}
+        </button>
+      </Card>
+    </motion.div>
   );
 }
 
