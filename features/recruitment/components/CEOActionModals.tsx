@@ -42,7 +42,7 @@ function ModalShell({
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-md bg-background rounded-2xl border border-border shadow-2xl z-[60]"
+        className="relative w-full max-w-2xl bg-background rounded-2xl border border-border shadow-2xl z-[60] max-h-[80vh] overflow-y-auto"
       >
         {/* Header */}
         <div className="flex items-center gap-3 p-6 pb-4">
