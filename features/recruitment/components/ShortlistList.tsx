@@ -175,9 +175,6 @@ export function ShortlistList() {
       } else if (action === "invite") {
         await inviteToInterview(appId);
         toast("Added to pending interview approval.", "success");
-      } else if (action === "hire") {
-        await hireApplicant(appId);
-        toast("Candidate marked as HIRED!", "success");
       } else if (action === "remove") {
         await removeFromShortlist(appId);
         toast("Removed from shortlist.", "success");

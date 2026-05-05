@@ -265,13 +265,47 @@ export function batchConfirmInterviews(applicationIds: number[]) {
 
 export function hireApplicant(
   applicationId: number,
-  data: { national_id: string; salary: number; start_date: string }
+  data: {
+    national_id: string;
+    salary: number;
+    monthly_salary?: number;
+    start_date: string;
+    onboarding_data?: {
+      emergency_contact?: string;
+      emergency_phone?: string;
+      address?: string;
+      bank_name?: string;
+      account_number?: string;
+      profile_photo_url?: string;
+    };
+  }
 ) {
   return apiFetch<{ status: string; application_id: number; employee_id: number; username: string | null }>(
     `/applicant-applications/${applicationId}/hire/`,
     {
       method: "POST",
       body: JSON.stringify(data),
+      requiresAuth: true,
+    }
+  );
+}
+
+export function approveHire(applicationId: number) {
+  return apiFetch<{ status: string; application_id: number; employee_id: number; username: string | null }>(
+    `/applicant-applications/${applicationId}/approve-hire/`,
+    {
+      method: "POST",
+      requiresAuth: true,
+    }
+  );
+}
+
+export function rejectHire(applicationId: number, reason?: string) {
+  return apiFetch<{ status: string; application_id: number }>(
+    `/applicant-applications/${applicationId}/reject-hire/`,
+    {
+      method: "POST",
+      body: JSON.stringify({ reason }),
       requiresAuth: true,
     }
   );

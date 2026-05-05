@@ -132,12 +132,11 @@ export default function ApplicationDetailPage() {
   
   const canManage = canManageRecruitment(user);
 
-  const handleAction = async (action: "confirm" | "invite" | "hire") => {
+  const handleAction = async (action: "confirm" | "invite") => {
     if (!app) return;
     try {
       if (action === "confirm") await confirmApplication(app.application_id);
       else if (action === "invite") await inviteToInterview(app.application_id);
-      else if (action === "hire") await hireApplicant(app.application_id);
       
       toast(`Successfully updated status: ${action}`, "success");
       loadApplication();
