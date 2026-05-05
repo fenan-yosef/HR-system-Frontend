@@ -1,26 +1,122 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { Clock, Calendar, FileText, User, ChevronRight, Zap, CheckCircle2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Clock, Calendar, FileText, User, ChevronRight, Zap } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatCard } from "../widgets/StatCard";
+import { createAttendanceLog, fetchAttendanceLogs, summarizeAttendanceLog, updateAttendanceLog } from "@/services/attendanceService";
+import type { AttendanceEntry } from "@/types/attendance";
+
+interface DashboardStat {
+  title: string;
+  value: string | number;
+  icon: string;
+  color: string;
+}
+
+interface EmployeeDashboardMetrics {
+  stats: DashboardStat[];
+  personal_stats: {
+    attendance: string;
+    profile_completion: number;
+  };
+}
 
 interface EmployeeDashboardProps {
-  metrics: any;
+  metrics: EmployeeDashboardMetrics;
+}
+
+async function resolveLocationLabel() {
+  if (typeof navigator === "undefined" || !navigator.geolocation) {
+    return null;
+  }
+
+  return new Promise<string | null>((resolve) => {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        resolve(`${latitude.toFixed(7)}, ${longitude.toFixed(7)}`);
+      },
+      () => resolve(null),
+      {
+        enableHighAccuracy: true,
+        timeout: 8000,
+        maximumAge: 0,
+      },
+    );
+  });
 }
 
 export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
+  const [attendanceActivity, setAttendanceActivity] = useState<AttendanceEntry[]>([]);
+  const [loadingAttendance, setLoadingAttendance] = useState(true);
+  const [actionState, setActionState] = useState<"check-in" | "check-out" | null>(null);
+  const [attendanceError, setAttendanceError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function loadAttendance() {
+      try {
+        setLoadingAttendance(true);
+        setAttendanceError(null);
+        const logs = await fetchAttendanceLogs();
+        setAttendanceActivity(logs.map((log) => summarizeAttendanceLog(log)));
+      } catch (error) {
+        console.error("Failed to load employee attendance", error);
+        setAttendanceError("Attendance status could not be loaded.");
+      } finally {
+        setLoadingAttendance(false);
+      }
+    }
+
+    void loadAttendance();
+  }, []);
+
+  const activeEntry = attendanceActivity.find((entry) => entry.status === "active") ?? null;
+  const latestEntry = attendanceActivity[0] ?? null;
+  const attendanceLabel = activeEntry ? "Clocked In" : metrics.personal_stats.attendance;
+  const statusIsActive = attendanceLabel === "Clocked In";
+
+  const handleAttendanceAction = async () => {
+    if (loadingAttendance || actionState) return;
+
+    setAttendanceError(null);
+
+    try {
+      if (activeEntry) {
+        setActionState("check-out");
+        await updateAttendanceLog(activeEntry.attendanceId, {
+          check_out: new Date().toISOString(),
+        });
+      } else {
+        setActionState("check-in");
+        const location = await resolveLocationLabel();
+        await createAttendanceLog({
+          check_in: new Date().toISOString(),
+          location,
+        });
+      }
+
+      const logs = await fetchAttendanceLogs();
+      setAttendanceActivity(logs.map((log) => summarizeAttendanceLog(log)));
+    } catch (error) {
+      console.error("Failed to update attendance from dashboard", error);
+      setAttendanceError(activeEntry ? "Clock-out failed." : "Clock-in failed.");
+    } finally {
+      setActionState(null);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold tracking-tight text-orange-600">Welcome Back!</h2>
-          <p className="text-muted-foreground">Here's an overview of your work status.</p>
+          <p className="text-muted-foreground">Here is an overview of your work status.</p>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {metrics.stats.map((stat: any, i: number) => (
+        {metrics.stats.map((stat, i) => (
           <StatCard key={i} {...stat} delay={i * 0.1} />
         ))}
       </div>
@@ -34,16 +130,33 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
                 <Clock className="size-6 text-orange-500" />
               </div>
               <span className={`text-xs font-black uppercase px-2 py-1 rounded-full ${
-                metrics.personal_stats.attendance === 'Clocked In' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
+                statusIsActive ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
               }`}>
-                {metrics.personal_stats.attendance}
+                {loadingAttendance ? 'Loading...' : attendanceLabel}
               </span>
             </div>
             <h3 className="text-2xl font-bold mb-2">Punch Card</h3>
-            <p className="text-muted-foreground text-sm mb-8">Remember to clock out when you finish.</p>
+            <p className="text-muted-foreground text-sm mb-2">
+              {activeEntry
+                ? `Checked in at ${activeEntry.checkIn}`
+                : latestEntry
+                  ? `Last attendance at ${latestEntry.checkIn}`
+                  : "Remember to clock out when you finish."}
+            </p>
+            {attendanceError && <p className="text-xs font-medium text-rose-600">{attendanceError}</p>}
           </div>
-          <button className="relative z-10 w-full py-4 bg-orange-500 text-white rounded-2xl font-black text-sm hover:bg-orange-600 transition-all active:scale-95 shadow-lg shadow-orange-500/20">
-            Clock Out Now
+          <button
+            onClick={handleAttendanceAction}
+            disabled={loadingAttendance || Boolean(actionState)}
+            className="relative z-10 w-full py-4 bg-orange-500 text-white rounded-2xl font-black text-sm hover:bg-orange-600 transition-all active:scale-95 shadow-lg shadow-orange-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {actionState === "check-in"
+              ? "Clocking In..."
+              : actionState === "check-out"
+                ? "Clocking Out..."
+                : activeEntry
+                  ? "Clock Out Now"
+                  : "Clock In Now"}
           </button>
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-orange-500/10 transition-colors" />
         </Card>

@@ -4,16 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, CheckSquare, Clock, LogIn, LogOut, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
-
-type AttendanceStatus = "present" | "active";
-
-interface AttendanceEntry {
-   dateKey: string;
-   checkIn: string;
-   checkOut: string | null;
-   totalMinutes: number;
-   status: AttendanceStatus;
-}
+import { createAttendanceLog, fetchAttendanceLogs, summarizeAttendanceLog, updateAttendanceLog } from "@/services/attendanceService";
+import type { AttendanceEntry } from "@/types/attendance";
 
 function pad(value: number) {
    return String(value).padStart(2, "0");
@@ -21,10 +13,6 @@ function pad(value: number) {
 
 function getDateKey(date: Date) {
    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-function formatTime(value: Date) {
-   return value.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 function formatDateLabel(dateKey: string) {
@@ -56,16 +44,33 @@ function getWeekDates(referenceDate: Date) {
    });
 }
 
+async function resolveLocationLabel() {
+   if (typeof navigator === "undefined" || !navigator.geolocation) {
+      return null;
+   }
+
+   return new Promise<string | null>((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+         (position) => {
+            const { latitude, longitude } = position.coords;
+            resolve(`${latitude.toFixed(7)}, ${longitude.toFixed(7)}`);
+         },
+         () => resolve(null),
+         {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 0,
+         },
+      );
+   });
+}
+
 export default function AttendancePage() {
    const [now, setNow] = useState(new Date());
-   const [activeSessionStart, setActiveSessionStart] = useState<Date | null>(null);
-   const [activity, setActivity] = useState<AttendanceEntry[]>([
-      { dateKey: "2026-03-14", checkIn: "09:00 AM", checkOut: "05:30 PM", totalMinutes: 510, status: "present" },
-      { dateKey: "2026-03-13", checkIn: "08:45 AM", checkOut: "05:10 PM", totalMinutes: 505, status: "present" },
-      { dateKey: "2026-03-12", checkIn: "09:15 AM", checkOut: "05:40 PM", totalMinutes: 505, status: "present" },
-      { dateKey: "2026-03-11", checkIn: "09:05 AM", checkOut: "05:20 PM", totalMinutes: 495, status: "present" },
-      { dateKey: "2026-03-10", checkIn: "08:55 AM", checkOut: "05:25 PM", totalMinutes: 510, status: "present" },
-   ]);
+   const [activity, setActivity] = useState<AttendanceEntry[]>([]);
+   const [loading, setLoading] = useState(true);
+   const [error, setError] = useState<string | null>(null);
+   const [actionState, setActionState] = useState<"check-in" | "check-out" | null>(null);
 
    useEffect(() => {
       const timer = window.setInterval(() => {
@@ -75,67 +80,97 @@ export default function AttendancePage() {
       return () => window.clearInterval(timer);
    }, []);
 
+   useEffect(() => {
+      async function loadAttendance() {
+         try {
+            setLoading(true);
+            setError(null);
+            const logs = await fetchAttendanceLogs();
+            setActivity(logs.map((log) => summarizeAttendanceLog(log, new Date())));
+         } catch (loadError) {
+            console.error("Failed to load attendance logs", loadError);
+            setError("Unable to load attendance logs. Please try again.");
+         } finally {
+            setLoading(false);
+         }
+      }
+
+      void loadAttendance();
+   }, []);
+
    const todayKey = getDateKey(now);
+   const activeEntry = activity.find((entry) => entry.status === "active") ?? null;
+   const activeSessionStart = activeEntry ? new Date(activeEntry.checkInAt) : null;
    const activeMinutes = activeSessionStart ? differenceInMinutes(activeSessionStart, now) : 0;
 
-   const handleCheckIn = () => {
-      if (activeSessionStart) return;
-
-      const checkInTime = new Date();
-      const nextDateKey = getDateKey(checkInTime);
-
-      setActiveSessionStart(checkInTime);
-      setActivity((previous) => {
-         const existingIndex = previous.findIndex((entry) => entry.dateKey === nextDateKey);
-         const nextEntry: AttendanceEntry = {
-            dateKey: nextDateKey,
-            checkIn: formatTime(checkInTime),
-            checkOut: null,
-            totalMinutes: 0,
-            status: "active",
-         };
-
-         if (existingIndex === -1) {
-            return [nextEntry, ...previous].sort((a, b) => b.dateKey.localeCompare(a.dateKey));
-         }
-
-         return previous.map((entry, index) => (index === existingIndex ? nextEntry : entry));
-      });
+   const refreshAttendance = async () => {
+      const logs = await fetchAttendanceLogs();
+      setActivity(logs.map((log) => summarizeAttendanceLog(log, new Date())));
    };
 
-   const handleCheckOut = () => {
-      if (!activeSessionStart) return;
+   const handleCheckIn = async () => {
+      if (loading || actionState || activeEntry) return;
+
+      const checkInTime = new Date();
+      setActionState("check-in");
+      setError(null);
+
+      try {
+         const location = await resolveLocationLabel();
+         await createAttendanceLog({
+            check_in: checkInTime.toISOString(),
+            location,
+         });
+         await refreshAttendance();
+         setNow(new Date());
+      } catch (checkInError) {
+         console.error("Failed to check in", checkInError);
+         setError("Check-in failed. Please try again.");
+      } finally {
+         setActionState(null);
+      }
+   };
+
+   const handleCheckOut = async () => {
+      if (loading || actionState || !activeEntry) return;
 
       const checkOutTime = new Date();
-      const totalMinutes = differenceInMinutes(activeSessionStart, checkOutTime);
-      const nextDateKey = getDateKey(checkOutTime);
+      setActionState("check-out");
+      setError(null);
 
-      setActivity((previous) =>
-         previous.map((entry) =>
-            entry.dateKey === nextDateKey
-               ? {
-                     ...entry,
-                     checkOut: formatTime(checkOutTime),
-                     totalMinutes,
-                     status: "present",
-                  }
-               : entry,
-         ),
-      );
-      setActiveSessionStart(null);
-      setNow(checkOutTime);
+      try {
+         await updateAttendanceLog(activeEntry.attendanceId, {
+            check_out: checkOutTime.toISOString(),
+         });
+         await refreshAttendance();
+         setNow(checkOutTime);
+      } catch (checkOutError) {
+         console.error("Failed to check out", checkOutError);
+         setError("Check-out failed. Please try again.");
+      } finally {
+         setActionState(null);
+      }
    };
 
    const weeklyData = useMemo(() => {
-      const entriesByDate = new Map(activity.map((entry) => [entry.dateKey, entry]));
+      const entriesByDate = new Map<string, AttendanceEntry[]>();
+
+      for (const entry of activity) {
+         const bucket = entriesByDate.get(entry.dateKey) ?? [];
+         bucket.push(entry);
+         entriesByDate.set(entry.dateKey, bucket);
+      }
 
       return getWeekDates(now).map((date) => {
          const dateKey = getDateKey(date);
-         const matchingEntry = entriesByDate.get(dateKey);
-         const totalMinutes =
-            matchingEntry?.status === "active" && dateKey === todayKey
-               ? activeMinutes
-               : (matchingEntry?.totalMinutes ?? 0);
+         const matchingEntries = entriesByDate.get(dateKey) ?? [];
+         const totalMinutes = matchingEntries.reduce((sum, entry) => {
+            if (entry.status === "active" && dateKey === todayKey) {
+               return sum + activeMinutes;
+            }
+
+            return sum + entry.totalMinutes;
+         }, 0);
 
          return {
             label: date.toLocaleDateString([], { weekday: "short" }),
@@ -146,12 +181,10 @@ export default function AttendancePage() {
    }, [activity, activeMinutes, now, todayKey]);
 
    const recentActivity = useMemo(() => {
-      return [...activity]
-         .sort((a, b) => b.dateKey.localeCompare(a.dateKey))
-         .slice(0, 6);
+      return [...activity].sort((a, b) => b.checkInAt.localeCompare(a.checkInAt)).slice(0, 6);
    }, [activity]);
 
-   const todayEntry = activity.find((entry) => entry.dateKey === todayKey);
+   const todayEntry = activity.find((entry) => entry.dateKey === todayKey) ?? null;
 
    return (
       <section className="space-y-8">
@@ -163,20 +196,26 @@ export default function AttendancePage() {
             <div className="flex gap-2">
                <button
                   onClick={handleCheckIn}
-                  disabled={Boolean(activeSessionStart)}
+                  disabled={Boolean(activeEntry) || loading || Boolean(actionState)}
                   className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                >
-                  <LogIn className="size-4" /> Check In
+                  <LogIn className="size-4" /> {actionState === "check-in" ? "Checking In..." : "Check In"}
                </button>
                <button
                   onClick={handleCheckOut}
-                  disabled={!activeSessionStart}
+                  disabled={!activeEntry || loading || Boolean(actionState)}
                   className="flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                >
-                  <LogOut className="size-4" /> Check Out
+                  <LogOut className="size-4" /> {actionState === "check-out" ? "Checking Out..." : "Check Out"}
                </button>
             </div>
          </div>
+
+         {error && (
+            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+               {error}
+            </div>
+         )}
 
          <div className="grid gap-6 md:grid-cols-4">
             <Card className="flex flex-col items-center justify-center border-none p-6 text-center shadow-sm">
@@ -184,17 +223,20 @@ export default function AttendancePage() {
                   <div className="text-center">
                      <span className="text-xs font-bold uppercase text-muted-foreground">Current Session</span>
                      <p className="tabular-nums text-3xl font-black text-foreground">{formatMinutes(activeMinutes)}</p>
-                     <span className={`text-xs font-bold ${activeSessionStart ? "text-emerald-500" : "text-muted-foreground"}`}>
-                        {activeSessionStart ? "Active" : "Offline"}
+                     <span className={`text-xs font-bold ${activeEntry ? "text-emerald-500" : "text-muted-foreground"}`}>
+                        {activeEntry ? "Active" : "Offline"}
                      </span>
                   </div>
-                  {activeSessionStart && (
+                  {activeEntry && (
                      <div className="absolute right-0 top-0 size-4 rounded-full border-2 border-background bg-emerald-500 animate-pulse" />
                   )}
                </div>
                <p className="text-sm font-medium text-muted-foreground">
                   {todayEntry?.checkIn ? `Checked in at ${todayEntry.checkIn}` : "No check-in recorded for today"}
                </p>
+               {todayEntry?.location && (
+                  <p className="mt-2 text-xs font-medium text-muted-foreground">Location: {todayEntry.location}</p>
+               )}
             </Card>
 
             <Card className="border-none p-6 shadow-sm md:col-span-3">
@@ -238,7 +280,7 @@ export default function AttendancePage() {
                   </thead>
                   <tbody className="divide-y divide-border/50">
                      {recentActivity.map((entry) => (
-                        <tr key={entry.dateKey} className="transition-colors hover:bg-muted/30">
+                        <tr key={entry.attendanceId} className="transition-colors hover:bg-muted/30">
                            <td className="flex items-center gap-2 px-6 py-4 font-medium">
                               <Calendar className="size-4 text-muted-foreground" /> {formatDateLabel(entry.dateKey)}
                            </td>
@@ -260,7 +302,7 @@ export default function AttendancePage() {
                            </td>
                         </tr>
                      ))}
-                     {recentActivity.length === 0 && (
+                     {!loading && recentActivity.length === 0 && (
                         <tr>
                            <td colSpan={5} className="px-6 py-8 text-center text-sm text-muted-foreground">
                               <span className="inline-flex items-center gap-2">
