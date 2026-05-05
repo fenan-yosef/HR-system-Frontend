@@ -46,10 +46,10 @@ function ModalShell({
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-2xl bg-background rounded-2xl border border-border shadow-2xl z-[60] max-h-[80vh] overflow-y-auto"
+        className="relative w-full max-w-2xl bg-background rounded-2xl border border-border shadow-2xl z-[60] flex flex-col max-h-[90vh] overflow-hidden"
       >
-        {/* Header */}
-        <div className="flex items-center gap-3 p-4 sm:p-6 pb-2 sm:pb-4">
+        {/* Header - Fixed at top */}
+        <div className="flex items-center gap-3 p-4 sm:p-6 pb-2 sm:pb-4 border-b border-border/50">
           <div
             className={`size-8 sm:size-10 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 ${iconColor}`}
           >
@@ -65,7 +65,9 @@ function ModalShell({
             <X className="size-4" />
           </button>
         </div>
-        <div className="p-4 sm:p-6 pt-2 sm:pt-0 max-h-[85vh] overflow-y-auto">
+
+        {/* Scrollable Content */}
+        <div className="p-4 sm:p-6 pt-4 flex-1 overflow-y-auto scroll-smooth custom-scrollbar">
           {children}
         </div>
       </motion.div>
