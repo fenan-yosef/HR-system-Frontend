@@ -13,6 +13,7 @@ import {
   Briefcase,
   Users,
   UserCheck,
+  UserPlus,
   GalleryVerticalEnd,
   LogOut,
   ChevronRight,
@@ -81,7 +82,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
         subItems: [
           { label: "Interviews", href: ROUTES.RECRUITMENT_PENDING_INTERVIEWEES },
-          { label: "Hiring", href: ROUTES.ONBOARDING },
+          { label: "Hiring", href: ROUTES.HIRING },
         ],
       },
       {

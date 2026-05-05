@@ -219,6 +219,77 @@ export function InviteInterviewModal({
   );
 }
 
+/* ═══════════ REJECT HIRE MODAL ═══════════ */
+export function RejectHireModal({
+  applicationId,
+  applicantName,
+  onReject,
+  onClose,
+}: {
+  applicationId: number;
+  applicantName: string;
+  onReject: (reason: string) => Promise<void>;
+  onClose: () => void;
+}) {
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const isValid = reason.trim().length >= 10;
+
+  const handleSubmit = async () => {
+    if (!isValid) return;
+    setLoading(true);
+    try {
+      await onReject(reason.trim());
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <ModalShell
+      title="Reject Hire Request"
+      icon={X}
+      iconColor="bg-red-500/10 text-red-600"
+      onClose={onClose}
+    >
+      <p className="text-sm text-muted-foreground mb-4">
+        You are rejecting the hire request for{" "}
+        <strong className="text-foreground">{applicantName}</strong>. A reason
+        is required and will be recorded and visible to HR Staff.
+      </p>
+      <div className="space-y-3">
+        <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+          Rejection Reason <span className="text-red-500">*</span>
+        </label>
+        <textarea
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+          placeholder="Explain why this hire request is being rejected (min. 10 characters)..."
+          rows={4}
+          className="w-full px-4 py-3 bg-muted/50 border border-border/50 rounded-xl text-sm resize-none focus:ring-2 focus:ring-red-500 outline-none transition-all"
+        />
+        <p className="text-[10px] text-muted-foreground">
+          {reason.trim().length}/10 minimum characters
+        </p>
+      </div>
+      <div className="flex items-center justify-end gap-3 mt-6">
+        <Button variant="ghost" onClick={onClose} className="rounded-xl">
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={loading || !isValid}
+          className="rounded-xl bg-red-600 hover:bg-red-700 text-white gap-2"
+        >
+          {loading && <Loader2 className="size-4 animate-spin" />}
+          Confirm Rejection
+        </Button>
+      </div>
+    </ModalShell>
+  );
+}
+
 /* ═══════════ HIRE MODAL ═══════════ */
 export function HireModal({
   applicationId,
