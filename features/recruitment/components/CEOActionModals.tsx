@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, CheckCircle2, Calendar, Briefcase, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { uploadProfileImage } from "@/services/uploadService";
 
 /* ── Overlay backdrop ────────────────────────────────────────── */
 function ModalBackdrop({ onClick }: { onClick: () => void }) {
@@ -324,6 +325,9 @@ export function HireModal({
   const [bankName, setBankName] = useState("");
   const [accountNumber, setAccountNumber] = useState("");
   const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const isValid =
@@ -457,14 +461,74 @@ export function HireModal({
         </div>
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            Profile Photo URL
+            Profile Photo (optional)
           </label>
-          <Input
-            placeholder="https://..."
-            value={profilePhotoUrl}
-            onChange={(e) => setProfilePhotoUrl(e.target.value)}
-            className="h-11 rounded-xl bg-muted/50 border-border/50"
-          />
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            <div className="w-28 h-28 bg-muted/40 rounded-xl overflow-hidden flex items-center justify-center border border-border">
+              {previewUrl || profilePhotoUrl ? (
+                <img src={previewUrl || profilePhotoUrl} alt="preview" className="w-full h-full object-cover" />
+              ) : (
+                <div className="text-xs text-muted-foreground text-center px-2">No image</div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2 w-full">
+              <input
+                id={`profile-upload-${applicationId}`}
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const f = e.target.files && e.target.files[0];
+                  if (!f) return;
+                  setSelectedFile(f);
+                  // show local preview
+                  const localUrl = URL.createObjectURL(f);
+                  setPreviewUrl(localUrl);
+                  setUploading(true);
+                  try {
+                    const res = await uploadProfileImage(f);
+                    // prefer returned file_url, otherwise set to upload id path
+                    if (res.file_url) {
+                      setProfilePhotoUrl(res.file_url);
+                    } else if (res.upload_id) {
+                      setProfilePhotoUrl(`${window.location.origin}/api/media/document:${res.upload_id}`);
+                    }
+                  } catch (err) {
+                    console.error("Upload failed", err);
+                    // keep preview but clear profilePhotoUrl
+                    setProfilePhotoUrl("");
+                    alert("Image upload failed. Please try again.");
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+                className="text-sm"
+              />
+
+              <div className="flex items-center gap-2">
+                <Button onClick={() => document.getElementById(`profile-upload-${applicationId}`)?.click()} className="rounded-xl">
+                  {uploading ? "Uploading..." : previewUrl || profilePhotoUrl ? "Change" : "Upload"}
+                </Button>
+                {(previewUrl || profilePhotoUrl) && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      try {
+                        if (previewUrl && previewUrl.startsWith("blob:")) URL.revokeObjectURL(previewUrl);
+                      } catch (e) {}
+                      setPreviewUrl(null);
+                      setProfilePhotoUrl("");
+                    }}
+                    className="rounded-xl"
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground">Optional. You can change or remove later from the employee profile.</p>
+            </div>
+          </div>
         </div>
       </div>
       <div className="flex items-center justify-end gap-3 mt-6">

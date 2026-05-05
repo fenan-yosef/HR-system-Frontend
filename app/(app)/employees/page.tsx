@@ -10,6 +10,7 @@ import {
   UserCheck2,
   UserCog
 } from "lucide-react";
+import { getMediaUrl } from "@/services/apiClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ import {
   fetchAllEmployees, createEmployee,
   updateEmployee, deleteEmployee
 } from "@/services/employeeService";
+import { uploadProfileImage } from "@/services/uploadService";
 import { fetchDepartmentsAll } from "@/services/departmentService";
 import { cn } from "@/lib/utils";
 
@@ -147,6 +149,42 @@ export default function EmployeesPage() {
       hire_date: emp.hire_date
     });
     setIsModalOpen(true);
+  };
+
+  const handleUploadAndSetPhoto = async (emp: Employee) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async () => {
+      const f = input.files && input.files[0];
+      if (!f) return;
+      try {
+        const res = await uploadProfileImage(f);
+        let url = "";
+        if (res.file_url) url = res.file_url;
+        else if (res.upload_id) url = `${window.location.origin}/api/media/document:${res.upload_id}`;
+        const newOnboarding = { ...(emp.onboarding_data || {}), profile_photo_url: url };
+        const updated = await updateEmployee(emp.employee_id, { onboarding_data: newOnboarding } as any);
+        setEmployees(prev => prev.map(e => e.employee_id === updated.employee_id ? updated : e));
+      } catch (err) {
+        console.error("Failed to upload/set photo", err);
+        alert("Upload failed");
+      }
+    };
+    input.click();
+  };
+
+  const handleRemovePhoto = async (emp: Employee) => {
+    if (!confirm("Remove profile photo?")) return;
+    try {
+      const newOnboarding = { ...(emp.onboarding_data || {}) };
+      delete newOnboarding.profile_photo_url;
+      const updated = await updateEmployee(emp.employee_id, { onboarding_data: newOnboarding } as any);
+      setEmployees(prev => prev.map(e => e.employee_id === updated.employee_id ? updated : e));
+    } catch (err) {
+      console.error("Failed to remove photo", err);
+      alert("Could not remove photo");
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -310,9 +348,36 @@ export default function EmployeesPage() {
                   <div className="flex flex-col items-center text-center">
                     <div className="size-24 rounded-[3rem] bg-gradient-to-br from-primary/10 to-primary/5 mb-6 flex items-center justify-center text-primary shadow-sm group-hover:rotate-6 transition-transform duration-500 border-4 border-background relative overflow-hidden">
                       <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <span className="text-3xl font-black relative z-10">
-                        {emp.first_name[0]}{emp.last_name[0]}
-                      </span>
+                      {emp.onboarding_data?.profile_photo_url ? (
+                        <img
+                          src={getMediaUrl(emp.onboarding_data.profile_photo_url) || emp.onboarding_data.profile_photo_url}
+                          alt={`${emp.first_name} ${emp.last_name}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-3xl font-black relative z-10">
+                          {emp.first_name[0]}{emp.last_name[0]}
+                        </span>
+                      )}
+
+                      <div className="absolute top-2 left-2 flex gap-2 z-20 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          title="Change photo"
+                          onClick={() => handleUploadAndSetPhoto(emp)}
+                          className="p-1 rounded-md bg-white/60 hover:bg-white"
+                        >
+                          <UserCog className="size-4 text-primary" />
+                        </button>
+                        {emp.onboarding_data?.profile_photo_url && (
+                          <button
+                            title="Remove photo"
+                            onClick={() => handleRemovePhoto(emp)}
+                            className="p-1 rounded-md bg-white/60 hover:bg-white"
+                          >
+                            <Trash2 className="size-4 text-destructive" />
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     <h3 className="font-extrabold text-xl mb-1 line-clamp-1 group-hover:text-primary transition-colors">
@@ -384,8 +449,12 @@ export default function EmployeesPage() {
                 <tr key={emp.employee_id} className="group hover:bg-muted/20 border-b border-border/50 last:border-none transition-all">
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs border border-primary/5">
-                        {emp.first_name[0]}{emp.last_name[0]}
+                      <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs border border-primary/5 overflow-hidden">
+                        {emp.onboarding_data?.profile_photo_url ? (
+                          <img src={getMediaUrl(emp.onboarding_data.profile_photo_url) || emp.onboarding_data.profile_photo_url} alt={`${emp.first_name} ${emp.last_name}`} className="w-full h-full object-cover" />
+                        ) : (
+                          <>{emp.first_name[0]}{emp.last_name[0]}</>
+                        )}
                       </div>
                       <div className="flex flex-col">
                         <span className="font-bold group-hover:text-primary transition-colors">

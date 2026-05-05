@@ -47,6 +47,7 @@ export async function uploadProfileImage(file: File): Promise<{ upload_id?: numb
   const resp = await fetch(`${base}/uploads/`, {
     method: "POST",
     body: fd,
+    credentials: "include",
   });
   if (!resp.ok) {
     const txt = await resp.text();
