@@ -47,6 +47,7 @@ export interface AuthUser {
   role: UserRole;
   roleName?: string;
   roleId?: number | null;
+  profilePictureUrl?: string | null;
 }
 
 export interface AuthContextState {
@@ -55,4 +56,5 @@ export interface AuthContextState {
   isLoading: boolean;
   login: (username: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (updates: Partial<AuthUser>) => void;
 }

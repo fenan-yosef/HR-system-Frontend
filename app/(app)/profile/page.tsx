@@ -14,6 +14,7 @@ import {
   fetchProfile, updateProfile, changePassword, 
   ProfileData, PasswordChangeData 
 } from "@/services/profileService";
+import { useAuth } from "@/hooks/useAuth";
 import { uploadProfileImage } from "@/services/uploadService";
 import { getMediaUrl } from "@/services/apiClient";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 type Tab = "account" | "security";
 
 export default function ProfilePage() {
+  const { updateUser } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("account");
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +65,11 @@ export default function ProfilePage() {
         phone: profile.phone,
       });
       setProfile(updated);
+      updateUser({
+        firstName: updated.first_name,
+        lastName: updated.last_name,
+        email: updated.email,
+      });
       setMessage({ type: "success", text: "Profile updated successfully!" });
     } catch (error: any) {
       setMessage({ type: "error", text: error.message || "Failed to update profile" });
@@ -109,6 +116,9 @@ export default function ProfilePage() {
           onboarding_data: { ...profile.onboarding_data, profile_photo_url: url }
         });
         setProfile(updated);
+        updateUser({
+          profilePictureUrl: url
+        });
         setMessage({ type: "success", text: "Profile photo updated!" });
       } catch (error: any) {
         setMessage({ type: "error", text: error.message || "Failed to upload photo" });

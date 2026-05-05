@@ -87,12 +87,22 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     setUser(null);
   }, []);
 
+  const updateUser = useCallback((updates: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updates };
+      persistUser(updated);
+      return updated;
+    });
+  }, []);
+
   const value: AuthContextState = {
     user,
     isAuthenticated: Boolean(user),
     isLoading,
     login,
     logout,
+    updateUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

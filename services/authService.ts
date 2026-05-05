@@ -84,6 +84,7 @@ export function buildAuthUserFromAccessToken(access: string): AuthUser | null {
     role,
     roleName: roleName?.toString(),
     roleId,
+    profilePictureUrl: payload.profile_photo_url?.toString(),
   };
 }
 

@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { UserRole } from "@/types/auth";
 import Image from "next/image";
+import { getMediaUrl } from "@/services/apiClient";
 
 interface NavSubItem {
   label: string;
@@ -190,12 +191,6 @@ const NAVIGATION_CONFIG: NavSection[] = [
   {
     section: "Personal",
     items: [
-      {
-        label: "My Profile",
-        href: ROUTES.MY_PROFILE,
-        icon: UserCircle,
-        roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "HR_CEO"],
-      },
       {
         label: "Documents",
         href: ROUTES.MY_DOCUMENTS,
@@ -397,36 +392,49 @@ export function Sidebar() {
       </nav>
 
       <div className="mt-auto p-4 shrink-0 border-t border-border/40 bg-muted/20">
-        <div className="rounded-2xl bg-background p-4 border border-border/50 transition-all hover:shadow-inner">
+        <div className="rounded-2xl bg-background border border-border/50 transition-all hover:shadow-inner overflow-hidden">
           {user ? (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="size-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary border border-primary/20">
-                  <span className="text-sm font-bold">
-                    {user.firstName?.[0]}
-                    {user.lastName?.[0]}
-                  </span>
+            <div className="flex flex-col">
+              <Link 
+                href={ROUTES.MY_PROFILE}
+                className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors group/user"
+              >
+                <div className="size-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary border border-primary/20 overflow-hidden shrink-0">
+                  {user.profilePictureUrl ? (
+                    <img 
+                      src={getMediaUrl(user.profilePictureUrl) || user.profilePictureUrl} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover transition-transform group-hover/user:scale-110" 
+                    />
+                  ) : (
+                    <span className="text-sm font-bold uppercase">
+                      {user.firstName?.[0]}{user.lastName?.[0]}
+                    </span>
+                  )}
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <p className="font-bold text-sm truncate">
+                  <p className="font-bold text-sm truncate group-hover/user:text-primary transition-colors">
                     {user.firstName} {user.lastName}
                   </p>
                   <p className="text-[10px] font-medium text-primary uppercase tracking-wide">
                     {ROLE_LABELS[user.role]}
                   </p>
                 </div>
-              </div>
+                <ChevronRight className="size-3.5 ml-auto opacity-0 -translate-x-2 group-hover/user:opacity-50 group-hover/user:translate-x-0 transition-all" />
+              </Link>
 
-              <button
-                onClick={logout}
-                className="flex w-full items-center justify-between gap-2 rounded-xl bg-background px-3 py-2.5 text-xs font-semibold text-muted-foreground transition-all hover:bg-destructive/5 hover:text-destructive border border-border group"
-              >
-                <div className="flex items-center gap-2">
-                  <LogOut className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
-                  Sign Out
-                </div>
-                <ChevronRight className="size-3 opacity-50 group-hover:translate-x-0.5 transition-transform" />
-              </button>
+              <div className="px-4 pb-4">
+                <button
+                  onClick={logout}
+                  className="flex w-full items-center justify-between gap-2 rounded-xl bg-muted/30 px-3 py-2.5 text-xs font-semibold text-muted-foreground transition-all hover:bg-destructive/5 hover:text-destructive border border-border/50 group/logout"
+                >
+                  <div className="flex items-center gap-2">
+                    <LogOut className="size-3.5 transition-transform group-hover/logout:translate-x-0.5" />
+                    Sign Out
+                  </div>
+                  <ChevronRight className="size-3 opacity-50 group-hover/logout:translate-x-0.5 transition-transform" />
+                </button>
+              </div>
             </div>
           ) : (
             <p className="text-center text-xs text-muted-foreground">
