@@ -82,7 +82,10 @@ const NAVIGATION_CONFIG: NavSection[] = [
         icon: CalendarDays,
         roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
         subItems: [
-          { label: "Interviews", href: ROUTES.RECRUITMENT_PENDING_INTERVIEWEES },
+          {
+            label: "Interviews",
+            href: ROUTES.RECRUITMENT_PENDING_INTERVIEWEES,
+          },
           { label: "Hiring", href: ROUTES.HIRING },
         ],
       },
@@ -247,11 +250,11 @@ export function Sidebar() {
     const isOpen = openSections[item.label];
     const isActive =
       item.href === pathname || item.subItems?.some((s) => s.href === pathname);
-    const { setIsSidebarOpen } = useUI();
+    const { closeSidebar } = useUI();
 
     const handleLinkClick = () => {
       if (window.innerWidth < 1024) {
-        setIsSidebarOpen(false);
+        closeSidebar();
       }
     };
 
@@ -347,10 +350,12 @@ export function Sidebar() {
   };
 
   return (
-    <aside className={cn(
-      "fixed inset-y-0 left-0 z-40 flex h-dvh w-72 flex-col border-r bg-card text-card-foreground shadow-sm transition-transform duration-300 ease-in-out lg:static lg:z-20 lg:translate-x-0 lg:shrink-0",
-      isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-    )}>
+    <aside
+      className={cn(
+        "fixed inset-y-0 left-0 z-40 flex h-dvh w-72 flex-col border-r bg-card text-card-foreground shadow-sm transition-transform duration-300 ease-in-out lg:static lg:z-20 lg:translate-x-0 lg:shrink-0",
+        isSidebarOpen ? "translate-x-0" : "-translate-x-full",
+      )}
+    >
       {/* Decorative top gradient */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
 
