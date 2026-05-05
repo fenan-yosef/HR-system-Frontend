@@ -8,7 +8,7 @@ import {
   Calendar, Hash, Check, X, Loader2,
   Building2, Search, Filter, ShieldCheck,
   UserCheck2,
-  UserCog
+  UserCog, Key
 } from "lucide-react";
 import { getMediaUrl } from "@/services/apiClient";
 import { Card } from "@/components/ui/card";
@@ -28,7 +28,8 @@ import {
 import { Department } from "@/types/department";
 import {
   fetchAllEmployees, createEmployee,
-  updateEmployee, deleteEmployee
+  updateEmployee, deleteEmployee,
+  resendCredentials
 } from "@/services/employeeService";
 import { uploadProfileImage } from "@/services/uploadService";
 import { fetchDepartmentsAll } from "@/services/departmentService";
@@ -216,6 +217,16 @@ export default function EmployeesPage() {
     }
   };
 
+  const handleResendCredentials = async (emp: Employee) => {
+    if (!confirm(`Are you sure you want to resend credentials to ${emp.first_name} ${emp.last_name}? This will generate a new password and email it to ${emp.email}.`)) return;
+    try {
+      await resendCredentials(emp.employee_id);
+      alert("Credentials resent successfully!");
+    } catch (error: any) {
+      alert(error.message || "Failed to resend credentials");
+    }
+  };
+
   const getDeptName = (id?: number | null) => {
     if (!id) return "Unassigned";
     return departments.find(d => d.department_id === id)?.name || "Unknown";
@@ -326,6 +337,15 @@ export default function EmployeesPage() {
                 <Card className="group p-6 border-none shadow-sm hover:shadow-xl transition-all relative overflow-hidden bg-white dark:bg-card">
                   <div className="absolute top-0 right-0 p-3">
                     <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleResendCredentials(emp)}
+                        title="Resend Credentials"
+                        className="rounded-lg hover:bg-amber-500/10 hover:text-amber-600"
+                      >
+                        <Key className="size-3.5" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon-sm"
@@ -498,6 +518,15 @@ export default function EmployeesPage() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-1.5">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => handleResendCredentials(emp)}
+                        title="Resend Credentials"
+                        className="rounded-lg hover:bg-amber-500/10 hover:text-amber-600"
+                      >
+                        <Key className="size-3.5" />
+                      </Button>
                       <Button
                         variant="ghost"
                         size="icon-sm"

@@ -184,3 +184,11 @@ export function updateEmployeeStatus(
     requiresAuth: true,
   });
 }
+
+// Resend credentials
+export function resendCredentials(employeeId: number): Promise<{ detail: string }> {
+  return apiFetch<{ detail: string }>(`${EMPLOYEES_ENDPOINT}${employeeId}/resend-credentials/`, {
+    method: "POST",
+    requiresAuth: true,
+  });
+}
