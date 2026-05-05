@@ -1,6 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+
+/**
+ * Custom hook to manage form drafts in localStorage.
+ * Automatically saves state on change and provides a clear function.
+ */
+function useDraft<T>(key: string, initialState: T) {
+  const [state, setState] = useState<T>(() => {
+    if (typeof window === "undefined") return initialState;
+    try {
+      const saved = localStorage.getItem(key);
+      return saved ? JSON.parse(saved) : initialState;
+    } catch (e) {
+      return initialState;
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(state));
+  }, [key, state]);
+
+  const clearDraft = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(key);
+    }
+  };
+
+  return [state, setState, clearDraft] as const;
+}
 import { motion, AnimatePresence } from "framer-motion";
 import { X, CheckCircle2, Calendar, Briefcase, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -87,13 +115,14 @@ export function ConfirmModal({
   onConfirm: (note: string) => Promise<void>;
   onClose: () => void;
 }) {
-  const [note, setNote] = useState("");
+  const [note, setNote, clearDraft] = useDraft(`confirm_note_${applicationId}`, "");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
       await onConfirm(note);
+      clearDraft();
     } finally {
       setLoading(false);
     }
@@ -157,22 +186,25 @@ export function InviteInterviewModal({
   }) => Promise<void>;
   onClose: () => void;
 }) {
-  const [datetime, setDatetime] = useState("");
-  const [location, setLocation] = useState("");
-  const [message, setMessage] = useState("");
+  const [form, setForm, clearDraft] = useDraft(`invite_draft_${applicationId}`, {
+    datetime: "",
+    location: "",
+    message: "",
+  });
   const [loading, setLoading] = useState(false);
 
-  const isValid = datetime && location;
+  const isValid = form.datetime && form.location;
 
   const handleSubmit = async () => {
     if (!isValid) return;
     setLoading(true);
     try {
       await onInvite({
-        datetime: new Date(datetime).toISOString(),
-        location,
-        message,
+        datetime: new Date(form.datetime).toISOString(),
+        location: form.location,
+        message: form.message,
       });
+      clearDraft();
     } finally {
       setLoading(false);
     }
@@ -196,8 +228,8 @@ export function InviteInterviewModal({
           </label>
           <Input
             type="datetime-local"
-            value={datetime}
-            onChange={(e) => setDatetime(e.target.value)}
+            value={form.datetime}
+            onChange={(e) => setForm({ ...form, datetime: e.target.value })}
             className="h-11 rounded-xl bg-muted/50 border-border/50"
           />
         </div>
@@ -207,8 +239,8 @@ export function InviteInterviewModal({
           </label>
           <Input
             placeholder="e.g. Zoom link, Office Room 3A"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
+            value={form.location}
+            onChange={(e) => setForm({ ...form, location: e.target.value })}
             className="h-11 rounded-xl bg-muted/50 border-border/50"
           />
         </div>
@@ -217,8 +249,8 @@ export function InviteInterviewModal({
             Message (optional)
           </label>
           <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            value={form.message}
+            onChange={(e) => setForm({ ...form, message: e.target.value })}
             placeholder="Additional details for the candidate..."
             rows={3}
             className="w-full px-4 py-3 bg-muted/50 border border-border/50 rounded-xl text-sm resize-none focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -254,7 +286,7 @@ export function RejectHireModal({
   onReject: (reason: string) => Promise<void>;
   onClose: () => void;
 }) {
-  const [reason, setReason] = useState("");
+  const [reason, setReason, clearDraft] = useDraft(`reject_draft_${applicationId}`, "");
   const [loading, setLoading] = useState(false);
 
   const isValid = reason.trim().length >= 10;
@@ -264,6 +296,7 @@ export function RejectHireModal({
     setLoading(true);
     try {
       await onReject(reason.trim());
+      clearDraft();
     } finally {
       setLoading(false);
     }
@@ -340,16 +373,18 @@ export function HireModal({
   }) => Promise<void>;
   onClose: () => void;
 }) {
-  const [startDate, setStartDate] = useState("");
-  const [monthlySalary, setMonthlySalary] = useState("");
-  const [nationalId, setNationalId] = useState("");
-  const [pensionId, setPensionId] = useState("");
-  const [emergencyContact, setEmergencyContact] = useState("");
-  const [emergencyPhone, setEmergencyPhone] = useState("");
-  const [address, setAddress] = useState("");
-  const [bankName, setBankName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
+  const [form, setForm, clearDraft] = useDraft(`hire_draft_${applicationId}`, {
+    startDate: "",
+    monthlySalary: "",
+    nationalId: "",
+    pensionId: "",
+    emergencyContact: "",
+    emergencyPhone: "",
+    address: "",
+    bankName: "",
+    accountNumber: "",
+    profilePhotoUrl: "",
+  });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -357,31 +392,32 @@ export function HireModal({
   const [loading, setLoading] = useState(false);
 
   const isValid =
-    startDate &&
-    monthlySalary &&
-    Number(monthlySalary) > 0 &&
-    nationalId.trim().length > 0;
+    form.startDate &&
+    form.monthlySalary &&
+    Number(form.monthlySalary) > 0 &&
+    form.nationalId.trim().length > 0;
 
   const handleSubmit = async () => {
     if (!isValid) return;
     setLoading(true);
     try {
       await onHire({
-        start_date: startDate,
-        salary: Number(monthlySalary),
-        monthly_salary: Number(monthlySalary),
-        national_id: nationalId.trim(),
-        pension_id: pensionId.trim() || undefined,
+        start_date: form.startDate,
+        salary: Number(form.monthlySalary),
+        monthly_salary: Number(form.monthlySalary),
+        national_id: form.nationalId.trim(),
+        pension_id: form.pensionId.trim() || undefined,
         onboarding_data: {
-          pension_id: pensionId.trim() || undefined,
-          emergency_contact: emergencyContact.trim() || undefined,
-          emergency_phone: emergencyPhone.trim() || undefined,
-          address: address.trim() || undefined,
-          bank_name: bankName.trim() || undefined,
-          account_number: accountNumber.trim() || undefined,
-          profile_photo_url: profilePhotoUrl.trim() || undefined,
+          pension_id: form.pensionId.trim() || undefined,
+          emergency_contact: form.emergencyContact.trim() || undefined,
+          emergency_phone: form.emergencyPhone.trim() || undefined,
+          address: form.address.trim() || undefined,
+          bank_name: form.bankName.trim() || undefined,
+          account_number: form.accountNumber.trim() || undefined,
+          profile_photo_url: form.profilePhotoUrl.trim() || undefined,
         },
       });
+      clearDraft();
     } finally {
       setLoading(false);
     }
@@ -405,8 +441,8 @@ export function HireModal({
           </label>
           <Input
             placeholder="e.g. ID12345678"
-            value={nationalId}
-            onChange={(e) => setNationalId(e.target.value)}
+            value={form.nationalId}
+            onChange={(e) => setForm({ ...form, nationalId: e.target.value })}
             className="h-11 rounded-xl bg-muted/50 border-border/50 focus:ring-2 focus:ring-violet-500 transition-all"
           />
         </div>
@@ -416,8 +452,8 @@ export function HireModal({
           </label>
           <Input
             placeholder="e.g. PEN-123456"
-            value={pensionId}
-            onChange={(e) => setPensionId(e.target.value)}
+            value={form.pensionId}
+            onChange={(e) => setForm({ ...form, pensionId: e.target.value })}
             className="h-11 rounded-xl bg-muted/50 border-border/50 focus:ring-2 focus:ring-violet-500 transition-all"
           />
         </div>
@@ -427,8 +463,8 @@ export function HireModal({
           </label>
           <Input
             type="date"
-            value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            value={form.startDate}
+            onChange={(e) => setForm({ ...form, startDate: e.target.value })}
             className="h-11 rounded-xl bg-muted/50 border-border/50"
           />
         </div>
@@ -439,8 +475,8 @@ export function HireModal({
           <Input
             type="number"
             placeholder="e.g. 6000"
-            value={monthlySalary}
-            onChange={(e) => setMonthlySalary(e.target.value)}
+            value={form.monthlySalary}
+            onChange={(e) => setForm({ ...form, monthlySalary: e.target.value })}
             className="h-11 rounded-xl bg-muted/50 border-border/50"
           />
         </div>
@@ -450,8 +486,8 @@ export function HireModal({
           </label>
           <Input
             placeholder="e.g. Jane Doe"
-            value={emergencyContact}
-            onChange={(e) => setEmergencyContact(e.target.value)}
+            value={form.emergencyContact}
+            onChange={(e) => setForm({ ...form, emergencyContact: e.target.value })}
             className="h-11 rounded-xl bg-muted/50 border-border/50"
           />
         </div>
@@ -461,8 +497,8 @@ export function HireModal({
           </label>
           <Input
             placeholder="e.g. +2519..."
-            value={emergencyPhone}
-            onChange={(e) => setEmergencyPhone(e.target.value)}
+            value={form.emergencyPhone}
+            onChange={(e) => setForm({ ...form, emergencyPhone: e.target.value })}
             className="h-11 rounded-xl bg-muted/50 border-border/50"
           />
         </div>
@@ -472,8 +508,8 @@ export function HireModal({
           </label>
           <Input
             placeholder="Street, City, Country"
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
+            value={form.address}
+            onChange={(e) => setForm({ ...form, address: e.target.value })}
             className="h-11 rounded-xl bg-muted/50 border-border/50"
           />
         </div>
@@ -483,8 +519,8 @@ export function HireModal({
           </label>
           <Input
             placeholder="e.g. Commercial Bank"
-            value={bankName}
-            onChange={(e) => setBankName(e.target.value)}
+            value={form.bankName}
+            onChange={(e) => setForm({ ...form, bankName: e.target.value })}
             className="h-11 rounded-xl bg-muted/50 border-border/50"
           />
         </div>
@@ -494,8 +530,8 @@ export function HireModal({
           </label>
           <Input
             placeholder="e.g. 1000..."
-            value={accountNumber}
-            onChange={(e) => setAccountNumber(e.target.value)}
+            value={form.accountNumber}
+            onChange={(e) => setForm({ ...form, accountNumber: e.target.value })}
             className="h-11 rounded-xl bg-muted/50 border-border/50"
           />
         </div>
@@ -505,9 +541,9 @@ export function HireModal({
           </label>
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
             <div className="w-28 h-28 bg-muted/40 rounded-xl overflow-hidden flex items-center justify-center border border-border">
-              {previewUrl || profilePhotoUrl ? (
+              {previewUrl || form.profilePhotoUrl ? (
                 <img
-                  src={previewUrl || profilePhotoUrl}
+                  src={previewUrl || form.profilePhotoUrl}
                   alt="preview"
                   className="w-full h-full object-cover"
                 />
@@ -538,16 +574,17 @@ export function HireModal({
                     });
                     // prefer returned file_url, otherwise set to upload id path
                     if (res.file_url) {
-                      setProfilePhotoUrl(res.file_url);
+                      setForm({ ...form, profilePhotoUrl: res.file_url });
                     } else if (res.upload_id) {
-                      setProfilePhotoUrl(
-                        `${window.location.origin}/api/media/document:${res.upload_id}`,
-                      );
+                      setForm({
+                        ...form,
+                        profilePhotoUrl: `${window.location.origin}/api/media/document:${res.upload_id}`,
+                      });
                     }
                   } catch (err) {
                     console.error("Upload failed", err);
                     // keep preview but clear profilePhotoUrl
-                    setProfilePhotoUrl("");
+                    setForm({ ...form, profilePhotoUrl: "" });
                     alert("Image upload failed. Please try again.");
                   } finally {
                     setUploading(false);
@@ -568,7 +605,7 @@ export function HireModal({
                   <span className="relative z-10">
                     {uploading
                       ? `Uploading ${uploadProgress}%`
-                      : previewUrl || profilePhotoUrl
+                      : previewUrl || form.profilePhotoUrl
                         ? "Change"
                         : "Upload"}
                   </span>
@@ -580,7 +617,7 @@ export function HireModal({
                     />
                   )}
                 </Button>
-                {(previewUrl || profilePhotoUrl) && (
+                {(previewUrl || form.profilePhotoUrl) && (
                   <Button
                     variant="ghost"
                     onClick={() => {
@@ -590,7 +627,7 @@ export function HireModal({
                           URL.revokeObjectURL(previewUrl);
                       } catch (e) {}
                       setPreviewUrl(null);
-                      setProfilePhotoUrl("");
+                      setForm({ ...form, profilePhotoUrl: "" });
                     }}
                     className="rounded-xl"
                   >
