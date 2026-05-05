@@ -15,6 +15,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Loader2, ArrowRightLeft } from "lucide-react";
+import { ApiError } from "@/services/apiClient";
+import { createTransferRequest } from "@/services/transferRequestService";
 import type { Department } from "@/types/department";
 
 export default function RequestTransferPage() {
@@ -25,8 +27,8 @@ export default function RequestTransferPage() {
 
   const [formData, setFormData] = useState({
     to_department: "",
+    requested_position: "",
     reason: "",
-    effective_date: "",
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,7 +39,7 @@ export default function RequestTransferPage() {
       try {
         setIsLoadingDepartments(true);
         const departmentsRes = await fetchDepartmentsAll();
-        setDepartments(departmentsRes.results);
+        setDepartments(departmentsRes.results ?? []);
       } catch (err) {
         console.error("Failed to load departments", err);
         toast("Failed to load departments.", "error");
@@ -67,27 +69,52 @@ export default function RequestTransferPage() {
       return;
     }
 
-    if (!formData.effective_date) {
-      setError("Effective date is required.");
-      return;
-    }
-
     try {
       setIsSubmitting(true);
 
-      // TODO: call your API here
-      // await createTransferRequest(formData);
+      const payload = {
+        target_department: Number(formData.to_department),
+        requested_position: formData.requested_position.trim() || null,
+        reason: formData.reason,
+      };
+
+      await createTransferRequest(payload);
 
       toast("Transfer request submitted successfully.", "success");
 
       setFormData({
         to_department: "",
+        requested_position: "",
         reason: "",
-        effective_date: "",
       });
     } catch (err) {
       console.error("Failed to submit transfer request", err);
-      toast("Failed to submit transfer request.", "error");
+
+      let message = "Failed to submit transfer request.";
+      if (err instanceof ApiError && err.detail) {
+        try {
+          const parsed = JSON.parse(err.detail);
+          if (typeof parsed?.detail === "string") {
+            message = parsed.detail;
+          } else {
+            const firstField = Object.keys(parsed || {})[0];
+            const fieldValue = firstField ? parsed[firstField] : null;
+            if (
+              Array.isArray(fieldValue) &&
+              typeof fieldValue[0] === "string"
+            ) {
+              message = fieldValue[0];
+            } else if (typeof fieldValue === "string") {
+              message = fieldValue;
+            }
+          }
+        } catch {
+          message = err.detail || message;
+        }
+      }
+
+      setError(message);
+      toast(message, "error");
     } finally {
       setIsSubmitting(false);
     }
@@ -130,7 +157,7 @@ export default function RequestTransferPage() {
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="to_department">To Department</Label>
+                <Label htmlFor="to_department">Target Department</Label>
                 <select
                   id="to_department"
                   value={formData.to_department}
@@ -152,14 +179,19 @@ export default function RequestTransferPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="effective_date">Effective Date</Label>
+                <Label htmlFor="requested_position">
+                  Requested Position{" "}
+                  <span className="text-muted-foreground">(optional)</span>
+                </Label>
                 <Input
-                  id="effective_date"
-                  type="date"
-                  value={formData.effective_date}
+                  id="requested_position"
+                  type="text"
+                  value={formData.requested_position}
                   onChange={(e) =>
-                    handleChange("effective_date", e.target.value)
+                    handleChange("requested_position", e.target.value)
                   }
+                  placeholder="e.g. Senior HR Officer"
+                  maxLength={100}
                 />
               </div>
 
