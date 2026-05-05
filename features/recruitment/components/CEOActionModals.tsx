@@ -299,15 +299,38 @@ export function HireModal({
 }: {
   applicationId: number;
   applicantName: string;
-  onHire: (data: { start_date: string; salary: number; national_id: string }) => Promise<void>;
+  onHire: (data: {
+    start_date: string;
+    salary: number;
+    monthly_salary: number;
+    national_id: string;
+    onboarding_data: {
+      emergency_contact?: string;
+      emergency_phone?: string;
+      address?: string;
+      bank_name?: string;
+      account_number?: string;
+      profile_photo_url?: string;
+    };
+  }) => Promise<void>;
   onClose: () => void;
 }) {
   const [startDate, setStartDate] = useState("");
-  const [salary, setSalary] = useState("");
+  const [monthlySalary, setMonthlySalary] = useState("");
   const [nationalId, setNationalId] = useState("");
+  const [emergencyContact, setEmergencyContact] = useState("");
+  const [emergencyPhone, setEmergencyPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const isValid = startDate && salary && Number(salary) > 0 && nationalId.trim().length > 0;
+  const isValid =
+    startDate &&
+    monthlySalary &&
+    Number(monthlySalary) > 0 &&
+    nationalId.trim().length > 0;
 
   const handleSubmit = async () => {
     if (!isValid) return;
@@ -315,8 +338,17 @@ export function HireModal({
     try {
       await onHire({ 
         start_date: startDate, 
-        salary: Number(salary),
-        national_id: nationalId.trim()
+        salary: Number(monthlySalary),
+        monthly_salary: Number(monthlySalary),
+        national_id: nationalId.trim(),
+        onboarding_data: {
+          emergency_contact: emergencyContact.trim() || undefined,
+          emergency_phone: emergencyPhone.trim() || undefined,
+          address: address.trim() || undefined,
+          bank_name: bankName.trim() || undefined,
+          account_number: accountNumber.trim() || undefined,
+          profile_photo_url: profilePhotoUrl.trim() || undefined,
+        },
       });
     } finally {
       setLoading(false);
@@ -358,13 +390,79 @@ export function HireModal({
         </div>
         <div className="space-y-2">
           <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
-            Salary (Annual) *
+            Salary (Monthly) *
           </label>
           <Input
             type="number"
-            placeholder="e.g. 70000"
-            value={salary}
-            onChange={(e) => setSalary(e.target.value)}
+            placeholder="e.g. 6000"
+            value={monthlySalary}
+            onChange={(e) => setMonthlySalary(e.target.value)}
+            className="h-11 rounded-xl bg-muted/50 border-border/50"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Emergency Contact Name
+          </label>
+          <Input
+            placeholder="e.g. Jane Doe"
+            value={emergencyContact}
+            onChange={(e) => setEmergencyContact(e.target.value)}
+            className="h-11 rounded-xl bg-muted/50 border-border/50"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Emergency Contact Phone
+          </label>
+          <Input
+            placeholder="e.g. +2519..."
+            value={emergencyPhone}
+            onChange={(e) => setEmergencyPhone(e.target.value)}
+            className="h-11 rounded-xl bg-muted/50 border-border/50"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Home Address
+          </label>
+          <Input
+            placeholder="Street, City, Country"
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="h-11 rounded-xl bg-muted/50 border-border/50"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Bank Name
+          </label>
+          <Input
+            placeholder="e.g. Commercial Bank"
+            value={bankName}
+            onChange={(e) => setBankName(e.target.value)}
+            className="h-11 rounded-xl bg-muted/50 border-border/50"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Account Number
+          </label>
+          <Input
+            placeholder="e.g. 1000..."
+            value={accountNumber}
+            onChange={(e) => setAccountNumber(e.target.value)}
+            className="h-11 rounded-xl bg-muted/50 border-border/50"
+          />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Profile Photo URL
+          </label>
+          <Input
+            placeholder="https://..."
+            value={profilePhotoUrl}
+            onChange={(e) => setProfilePhotoUrl(e.target.value)}
             className="h-11 rounded-xl bg-muted/50 border-border/50"
           />
         </div>

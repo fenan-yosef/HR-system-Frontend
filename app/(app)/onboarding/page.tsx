@@ -83,7 +83,16 @@ export default function OnboardingPage() {
   const handleHire = async (data: {
     start_date: string;
     salary: number;
+    monthly_salary: number;
     national_id: string;
+    onboarding_data: {
+      emergency_contact?: string;
+      emergency_phone?: string;
+      address?: string;
+      bank_name?: string;
+      account_number?: string;
+      profile_photo_url?: string;
+    };
   }) => {
     if (!hireTarget) return;
     try {
