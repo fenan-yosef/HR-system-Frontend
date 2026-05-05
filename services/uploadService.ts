@@ -1,3 +1,5 @@
+import { apiFetch } from "./apiClient";
+
 export async function resizeImageFile(file: File, maxWidth = 800, quality = 0.75): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -43,15 +45,9 @@ export async function uploadProfileImage(file: File): Promise<{ upload_id?: numb
   fd.append("document_type", "profile_photo");
   fd.append("entity_type", "employee");
 
-  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
-  const resp = await fetch(`${base}/uploads/`, {
+  return apiFetch<any>("/uploads/", {
     method: "POST",
     body: fd,
-    credentials: "include",
+    requiresAuth: true,
   });
-  if (!resp.ok) {
-    const txt = await resp.text();
-    throw new Error(txt || "Upload failed");
-  }
-  return resp.json();
 }
