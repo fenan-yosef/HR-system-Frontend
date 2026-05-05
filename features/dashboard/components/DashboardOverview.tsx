@@ -7,7 +7,6 @@ import { AdminDashboard } from "./roles/AdminDashboard";
 import { CEODashboard } from "./roles/CEODashboard";
 import { HRStaffDashboard } from "./roles/HRStaffDashboard";
 import { EmployeeDashboard } from "./roles/EmployeeDashboard";
-import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardOverview() {
   const { user } = useAuth();
@@ -58,7 +57,7 @@ export function DashboardOverview() {
           <span className="text-3xl text-rose-500">⚠️</span>
         </div>
         <h3 className="text-xl font-bold">{error}</h3>
-        <button 
+        <button
           onClick={() => window.location.reload()}
           className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-lg font-bold"
         >
