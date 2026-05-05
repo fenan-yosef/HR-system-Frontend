@@ -353,6 +353,7 @@ export function HireModal({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const isValid =
@@ -530,8 +531,11 @@ export function HireModal({
                   const localUrl = URL.createObjectURL(f);
                   setPreviewUrl(localUrl);
                   setUploading(true);
+                  setUploadProgress(0);
                   try {
-                    const res = await uploadProfileImage(f);
+                    const res = await uploadProfileImage(f, (percent) => {
+                      setUploadProgress(percent);
+                    });
                     // prefer returned file_url, otherwise set to upload id path
                     if (res.file_url) {
                       setProfilePhotoUrl(res.file_url);
@@ -559,13 +563,22 @@ export function HireModal({
                       .getElementById(`profile-upload-${applicationId}`)
                       ?.click()
                   }
-                  className="rounded-xl"
+                  className="rounded-xl relative overflow-hidden"
                 >
-                  {uploading
-                    ? "Uploading..."
-                    : previewUrl || profilePhotoUrl
-                      ? "Change"
-                      : "Upload"}
+                  <span className="relative z-10">
+                    {uploading
+                      ? `Uploading ${uploadProgress}%`
+                      : previewUrl || profilePhotoUrl
+                        ? "Change"
+                        : "Upload"}
+                  </span>
+                  {uploading && (
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${uploadProgress}%` }}
+                      className="absolute inset-0 bg-primary/20 pointer-events-none"
+                    />
+                  )}
                 </Button>
                 {(previewUrl || profilePhotoUrl) && (
                   <Button
