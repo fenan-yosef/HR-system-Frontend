@@ -11,6 +11,7 @@ export interface ProfileData {
   role_name?: string;
   national_id?: string;
   pension_id?: string;
+  profile_photo_url?: string | null;
   onboarding_data?: {
     profile_photo_url?: string;
     [key: string]: any;

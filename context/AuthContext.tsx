@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import type { AuthContextState, AuthUser } from "@/types/auth";
 import { buildAuthUserFromAccessToken, loginRequest, mapRoleNameToUserRole } from "@/services/authService";
 import { clearTokens, persistTokens } from "@/services/apiClient";
+import { fetchProfile } from "@/services/profileService";
 
 const AuthContext = createContext<AuthContextState | undefined>(undefined);
 
@@ -62,6 +63,34 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     }
     setIsLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (!user) return;
+
+    let cancelled = false;
+
+    async function hydrateProfile() {
+      try {
+        const profile = await fetchProfile();
+        if (cancelled) return;
+
+        updateUser({
+          firstName: profile.first_name || user.firstName,
+          lastName: profile.last_name || user.lastName,
+          email: profile.email || user.email,
+          profilePictureUrl: profile.profile_photo_url || profile.onboarding_data?.profile_photo_url || user.profilePictureUrl || null,
+        });
+      } catch (error) {
+        console.warn("Failed to hydrate profile data", error);
+      }
+    }
+
+    void hydrateProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [updateUser, user]);
 
   const login = useCallback(async (username: string, password: string) => {
     setIsLoading(true);

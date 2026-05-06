@@ -31,7 +31,8 @@ export default function ProfilePage() {
     email: user.email || "",
     onboarding_data: {
       profile_photo_url: user.profilePictureUrl || ""
-    }
+    },
+    profile_photo_url: user.profilePictureUrl || ""
   } : null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -161,9 +162,9 @@ export default function ProfilePage() {
           <div className="flex flex-col md:flex-row items-center gap-10">
             <div className="relative group/avatar">
               <div className="size-32 md:size-40 rounded-[3rem] bg-muted flex items-center justify-center overflow-hidden border-4 border-background shadow-xl relative transition-transform duration-500 group-hover/avatar:scale-105">
-                {profile?.onboarding_data?.profile_photo_url ? (
+                {profile?.profile_photo_url || profile?.onboarding_data?.profile_photo_url ? (
                   <img 
-                    src={getMediaUrl(profile.onboarding_data.profile_photo_url) || profile.onboarding_data.profile_photo_url} 
+                    src={getMediaUrl(profile.profile_photo_url || profile.onboarding_data?.profile_photo_url) || profile.profile_photo_url || profile.onboarding_data?.profile_photo_url || ""} 
                     alt="Profile" 
                     className="w-full h-full object-cover"
                   />

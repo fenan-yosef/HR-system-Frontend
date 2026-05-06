@@ -245,6 +245,10 @@ export function Sidebar() {
   }, [pathname]);
 
   const userRole = user?.role || "UNKNOWN";
+  const userDisplayName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.username || ROLE_LABELS[userRole] || "User";
+  const userInitials = user?.profilePictureUrl
+    ? ""
+    : (user?.firstName?.[0] || user?.lastName?.[0] || user?.username?.[0] || userDisplayName[0] || "U").toUpperCase();
 
   const SidebarItem = ({ item, index }: { item: NavItem; index: number }) => {
     const hasSubItems = item.subItems && item.subItems.length > 0;
@@ -414,13 +418,13 @@ export function Sidebar() {
                     />
                   ) : (
                     <span className="text-sm font-bold uppercase">
-                      {user.firstName?.[0]}{user.lastName?.[0]}
+                      {userInitials}
                     </span>
                   )}
                 </div>
                 <div className="flex flex-col min-w-0">
                   <p className="font-bold text-sm truncate group-hover/user:text-primary transition-colors">
-                    {user.firstName} {user.lastName}
+                    {userDisplayName}
                   </p>
                   <p className="text-[10px] font-medium text-primary uppercase tracking-wide">
                     {ROLE_LABELS[user.role]}
