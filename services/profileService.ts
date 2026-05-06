@@ -8,6 +8,7 @@ export interface ProfileData {
   phone?: string;
   position?: string;
   department_name?: string;
+  role_name?: string;
   national_id?: string;
   pension_id?: string;
   onboarding_data?: {

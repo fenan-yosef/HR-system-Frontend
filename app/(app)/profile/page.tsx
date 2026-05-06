@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { uploadProfileImage } from "@/services/uploadService";
 import { getMediaUrl } from "@/services/apiClient";
+import { ROLE_LABELS } from "@/constants/roles";
 import { cn } from "@/lib/utils";
 
 type Tab = "account" | "security";
@@ -186,11 +187,13 @@ export default function ProfilePage() {
 
             <div className="text-center md:text-left space-y-3">
               <h1 className="text-4xl font-black tracking-tight">
-                {profile?.first_name} {profile?.last_name}
+                {profile?.first_name || profile?.last_name 
+                  ? `${profile.first_name} ${profile.last_name}` 
+                  : user?.username || "Account Profile"}
               </h1>
               <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                 <div className="px-4 py-1.5 rounded-xl bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest border border-primary/10">
-                  {profile?.position || "System User"}
+                  {profile?.position || (profile?.role_name ? ROLE_LABELS[profile.role_name as keyof typeof ROLE_LABELS] : "System User")}
                 </div>
                 <div className="flex items-center gap-2 text-muted-foreground font-medium">
                   <Mail className="size-4" />
