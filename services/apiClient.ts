@@ -82,9 +82,16 @@ export async function apiFetch<TResponse>(
 
   if (options.requiresAuth) {
     const token = await getStoredAccessToken();
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+    if (!token) {
+      if (options.redirectOnUnauthorized !== false && typeof window !== "undefined") {
+        try {
+          clearTokens();
+        } catch {}
+        window.location.assign("/login");
+      }
+      throw new ApiError(401, "Missing access token");
     }
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   const response = await fetch(url, {
