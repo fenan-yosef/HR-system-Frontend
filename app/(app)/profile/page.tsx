@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  User, Lock, Mail, Phone, Camera, 
+  Lock, Mail, Phone, Camera, 
   Save, Loader2, CheckCircle2, AlertCircle,
-  ShieldCheck, UserCog, UserCircle2, Trash2
+  ShieldCheck, UserCog, UserCircle2
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,21 +46,20 @@ export default function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   useEffect(() => {
-    loadProfile();
-  }, []);
-
-  async function loadProfile() {
-    try {
-      // Don't set loading true if we already have base user data
-      if (!profile) setLoading(true);
-      const data = await fetchProfile();
-      setProfile(data);
-    } catch (error) {
-      console.error("Failed to load profile", error);
-    } finally {
-      setLoading(false);
+    async function loadProfile() {
+      try {
+        setLoading(true);
+        const data = await fetchProfile();
+        setProfile(data);
+      } catch (error) {
+        console.error("Failed to load profile", error);
+      } finally {
+        setLoading(false);
+      }
     }
-  }
+
+    void loadProfile();
+  }, []);
 
   async function handleUpdateProfile(e: React.FormEvent) {
     e.preventDefault();
@@ -83,8 +82,9 @@ export default function ProfilePage() {
         email: updated.email,
       });
       setMessage({ type: "success", text: "Profile updated successfully!" });
-    } catch (error: any) {
-      setMessage({ type: "error", text: error.message || "Failed to update profile" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to update profile";
+      setMessage({ type: "error", text: message });
     } finally {
       setSaving(false);
     }
@@ -103,8 +103,9 @@ export default function ProfilePage() {
       setMessage({ type: "success", text: "Password changed successfully!" });
       setPasswordData({ old_password: "", new_password: "" });
       setConfirmPassword("");
-    } catch (error: any) {
-      setMessage({ type: "error", text: error.message || "Failed to change password" });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to change password";
+      setMessage({ type: "error", text: message });
     } finally {
       setSaving(false);
     }
@@ -132,8 +133,9 @@ export default function ProfilePage() {
           profilePictureUrl: url
         });
         setMessage({ type: "success", text: "Profile photo updated!" });
-      } catch (error: any) {
-        setMessage({ type: "error", text: error.message || "Failed to upload photo" });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Failed to upload photo";
+        setMessage({ type: "error", text: message });
       } finally {
         setSaving(false);
       }

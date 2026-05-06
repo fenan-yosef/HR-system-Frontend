@@ -14,7 +14,7 @@ export interface ProfileData {
   profile_photo_url?: string | null;
   onboarding_data?: {
     profile_photo_url?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

@@ -12,23 +12,15 @@ import { useUI } from "@/context/UIContext";
 import {
   LayoutDashboard,
   Briefcase,
-  Users,
   UserCheck,
-  UserPlus,
-  GalleryVerticalEnd,
   LogOut,
   ChevronRight,
   ChevronDown,
   Users2,
   CalendarDays,
   CreditCard,
-  Settings,
   ShieldAlert,
-  GraduationCap,
-  Target,
   FileText,
-  UserCircle,
-  HelpCircle,
   Clock,
 } from "lucide-react";
 import { UserRole } from "@/types/auth";
@@ -244,13 +236,13 @@ export function Sidebar() {
     setOpenSections((prev) => ({ ...prev, ...newOpenSections }));
   }, [pathname]);
 
-  const userRole = user?.role || "UNKNOWN";
+  const userRole: UserRole = user?.role || "UNKNOWN";
   const userDisplayName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.username || ROLE_LABELS[userRole] || "User";
   const userInitials = user?.profilePictureUrl
     ? ""
     : (user?.firstName?.[0] || user?.lastName?.[0] || user?.username?.[0] || userDisplayName[0] || "U").toUpperCase();
 
-  const SidebarItem = ({ item, index }: { item: NavItem; index: number }) => {
+  const SidebarItem = ({ item }: { item: NavItem }) => {
     const hasSubItems = item.subItems && item.subItems.length > 0;
     const isOpen = openSections[item.label];
     const isActive =
@@ -381,7 +373,7 @@ export function Sidebar() {
       <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-6 px-4 py-2 custom-scrollbar">
         {NAVIGATION_CONFIG.map((section, sIdx) => {
           const visibleItems = section.items.filter(
-            (item) => !item.roles || item.roles.includes(userRole as any),
+            (item) => !item.roles || item.roles.includes(userRole),
           );
 
           if (visibleItems.length === 0) return null;
@@ -393,7 +385,7 @@ export function Sidebar() {
               </h3> */}
               <div className="space-y-1">
                 {visibleItems.map((item, iIdx) => (
-                  <SidebarItem key={iIdx} item={item} index={iIdx} />
+                  <SidebarItem key={iIdx} item={item} />
                 ))}
               </div>
             </div>

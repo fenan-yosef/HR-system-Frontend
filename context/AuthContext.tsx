@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { AuthContextState, AuthUser } from "@/types/auth";
 import { buildAuthUserFromAccessToken, loginRequest, mapRoleNameToUserRole } from "@/services/authService";
 import { clearTokens, persistTokens } from "@/services/apiClient";
@@ -22,6 +22,7 @@ function persistUser(user: AuthUser | null) {
 export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const hydratedUserIdRef = useRef<number | null>(null);
 
   // On first load, hydrate authentication state from localStorage.
   useEffect(() => {
@@ -64,9 +65,26 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     setIsLoading(false);
   }, []);
 
-  useEffect(() => {
-    if (!user) return;
+  const updateUser = useCallback((updates: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updates };
+      persistUser(updated);
+      return updated;
+    });
+  }, []);
 
+  useEffect(() => {
+    if (!user?.id) {
+      hydratedUserIdRef.current = null;
+      return;
+    }
+
+    if (hydratedUserIdRef.current === user.id) {
+      return;
+    }
+
+    const safeUser = user as AuthUser;
     let cancelled = false;
 
     async function hydrateProfile() {
@@ -75,11 +93,12 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         if (cancelled) return;
 
         updateUser({
-          firstName: profile.first_name || user.firstName,
-          lastName: profile.last_name || user.lastName,
-          email: profile.email || user.email,
-          profilePictureUrl: profile.profile_photo_url || profile.onboarding_data?.profile_photo_url || user.profilePictureUrl || null,
+          firstName: profile.first_name || safeUser.firstName,
+          lastName: profile.last_name || safeUser.lastName,
+          email: profile.email || safeUser.email,
+          profilePictureUrl: profile.profile_photo_url || profile.onboarding_data?.profile_photo_url || safeUser.profilePictureUrl || null,
         });
+        hydratedUserIdRef.current = safeUser.id;
       } catch (error) {
         console.warn("Failed to hydrate profile data", error);
       }
@@ -116,14 +135,6 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     setUser(null);
   }, []);
 
-  const updateUser = useCallback((updates: Partial<AuthUser>) => {
-    setUser((prev) => {
-      if (!prev) return null;
-      const updated = { ...prev, ...updates };
-      persistUser(updated);
-      return updated;
-    });
-  }, []);
 
   const value: AuthContextState = {
     user,
