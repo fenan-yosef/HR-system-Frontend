@@ -21,8 +21,8 @@ export interface PasswordChangeData {
   new_password: string;
 }
 
-const PROFILE_ENDPOINT = "/accounts/profile/me/";
-const PASSWORD_ENDPOINT = "/accounts/profile/change-password/";
+const PROFILE_ENDPOINT = "/auth/profile/me/";
+const PASSWORD_ENDPOINT = "/auth/profile/change-password/";
 
 export function fetchProfile(): Promise<ProfileData> {
   return apiFetch<ProfileData>(PROFILE_ENDPOINT, {
