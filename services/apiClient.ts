@@ -159,6 +159,11 @@ export async function apiFetch<TResponse>(
     // has not explicitly opted out. Login requests need to surface the error
     // in-place instead of bouncing back to the page.
     if (options.redirectOnUnauthorized !== false && typeof window !== "undefined") {
+      // Avoid infinite redirect loops if we're already on the login page.
+      if (window.location.pathname === "/login") {
+        throw new ApiError(401, "Unauthorized on login page");
+      }
+
       try {
         clearTokens();
       } catch {}

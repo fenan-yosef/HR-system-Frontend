@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Clock, Calendar, FileText, User, ChevronRight, Zap } from "lucide-react";
+import { useEffect, useState, useMemo } from "react";
+import { Clock, Calendar, FileText, User, ChevronRight, Zap, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatCard } from "../widgets/StatCard";
-import { createAttendanceLog, fetchAttendanceLogs, summarizeAttendanceLog, updateAttendanceLog } from "@/services/attendanceService";
+import { clockIn, clockOut, fetchAttendanceLogs, summarizeAttendanceLog } from "@/services/attendanceService";
+import { SimpleBarChart } from "../widgets/AnalyticsWidgets";
+import { getDateKey, getWeekDates } from "@/lib/utils-date";
 import type { AttendanceEntry } from "@/types/attendance";
 
 interface DashboardStat {
@@ -19,6 +21,8 @@ interface EmployeeDashboardMetrics {
   personal_stats: {
     attendance: string;
     profile_completion: number;
+    weekly_hours: number;
+    total_days: number;
   };
 }
 
@@ -71,6 +75,35 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
     void loadAttendance();
   }, []);
 
+  const todayKey = new Date().toISOString().split('T')[0];
+
+  const weeklyData = useMemo(() => {
+    const entriesByDate = new Map<string, AttendanceEntry[]>();
+    for (const entry of attendanceActivity) {
+      const bucket = entriesByDate.get(entry.dateKey) ?? [];
+      bucket.push(entry);
+      entriesByDate.set(entry.dateKey, bucket);
+    }
+
+    return getWeekDates(new Date()).map((date: Date) => {
+      const dateKey = getDateKey(date);
+      const matchingEntries = entriesByDate.get(dateKey) ?? [];
+      const totalMinutes = matchingEntries.reduce((sum, entry) => {
+        if (entry.status === "active" && dateKey === todayKey) {
+          const activeSessionStart = new Date(entry.checkInAt);
+          const activeMins = Math.max(0, Math.floor((new Date().getTime() - activeSessionStart.getTime()) / 60000));
+          return sum + activeMins;
+        }
+        return sum + entry.totalMinutes;
+      }, 0);
+
+      return {
+        label: date.toLocaleDateString([], { weekday: "short" }),
+        value: totalMinutes,
+      };
+    });
+  }, [attendanceActivity]);
+
   const activeEntry = attendanceActivity.find((entry) => entry.status === "active") ?? null;
   const latestEntry = attendanceActivity[0] ?? null;
   const attendanceLabel = activeEntry ? "Clocked In" : metrics.personal_stats.attendance;
@@ -84,15 +117,15 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
     try {
       if (activeEntry) {
         setActionState("check-out");
-        await updateAttendanceLog(activeEntry.attendanceId, {
+        await clockOut({
           check_out: new Date().toISOString(),
         });
       } else {
         setActionState("check-in");
         const location = await resolveLocationLabel();
-        await createAttendanceLog({
+        await clockIn({
           check_in: new Date().toISOString(),
-          location,
+          location: location ?? "Unknown",
         });
       }
 
@@ -129,9 +162,8 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
               <div className="p-3 bg-orange-500/10 rounded-xl">
                 <Clock className="size-6 text-orange-500" />
               </div>
-              <span className={`text-xs font-black uppercase px-2 py-1 rounded-full ${
-                statusIsActive ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
-              }`}>
+              <span className={`text-xs font-black uppercase px-2 py-1 rounded-full ${statusIsActive ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
+                }`}>
                 {loadingAttendance ? 'Loading...' : attendanceLabel}
               </span>
             </div>
@@ -175,7 +207,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
               { label: "Request Letter", icon: FileText, color: "text-indigo-500" },
               { label: "Update Profile", icon: User, color: "text-emerald-500" },
             ].map((service, i) => (
-              <button 
+              <button
                 key={i}
                 className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/50 hover:bg-white transition-all group"
               >
@@ -208,14 +240,32 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
               </div>
             </div>
             <p className="text-indigo-200 text-xs text-center">
-              {metrics.personal_stats.profile_completion === 100 
-                ? "Perfect! All steps completed." 
+              {metrics.personal_stats.profile_completion === 100
+                ? "Perfect! All steps completed."
                 : "Almost there! Complete your profile to unlock all features."}
             </p>
           </div>
           <div className="absolute top-0 left-0 size-32 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl" />
         </Card>
       </div>
+
+      {/* Weekly Attendance Chart */}
+      <Card className="p-6 border-none bg-card/50 backdrop-blur-sm shadow-xl">
+        <div className="flex items-center gap-4 mb-8">
+          <div className="p-3 bg-primary/10 rounded-xl">
+            <TrendingUp className="size-6 text-primary" />
+          </div>
+          <h3 className="text-lg font-black">Weekly Attendance Overview</h3>
+        </div>
+        <div className="h-64">
+          <SimpleBarChart
+            data={weeklyData.map((d: { label: string; value: number }) => ({ label: d.label, value: Math.round(d.value / 60 * 10) / 10 }))}
+            color="bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)] group-hover:bg-orange-400"
+            height={240}
+          />
+          <p className="text-[10px] text-center font-bold text-muted-foreground mt-4 uppercase tracking-widest">Hours worked per day</p>
+        </div>
+      </Card>
     </div>
   );
 }

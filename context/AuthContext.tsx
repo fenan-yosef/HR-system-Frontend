@@ -3,7 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { AuthContextState, AuthUser } from "@/types/auth";
 import { buildAuthUserFromAccessToken, loginRequest, mapRoleNameToUserRole } from "@/services/authService";
-import { clearTokens, persistTokens } from "@/services/apiClient";
+import { clearTokens, persistTokens, getApiErrorStatus } from "@/services/apiClient";
 import { fetchProfile } from "@/services/profileService";
 
 const AuthContext = createContext<AuthContextState | undefined>(undefined);
@@ -90,6 +90,10 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         hydratedUserIdRef.current = safeUser.id;
       } catch (error) {
         console.warn("Failed to hydrate profile data", error);
+        // If profile fetch fails with 401, it means our session is likely invalid.
+        if (getApiErrorStatus(error) === 401) {
+          logout();
+        }
       }
     }
 
