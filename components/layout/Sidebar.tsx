@@ -7,20 +7,22 @@ import { ROUTES } from "@/constants/routes";
 import { ROLE_LABELS } from "@/constants/roles";
 import { useAuth } from "@/hooks/useAuth";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState, useEffect } from "react";
-import { useUI } from "@/context/UIContext";
+import { useMemo, useState } from "react";
 import {
   LayoutDashboard,
   Briefcase,
   UserCheck,
+  GalleryVerticalEnd,
   LogOut,
   ChevronRight,
   ChevronDown,
   Users2,
-  CalendarDays,
   CreditCard,
-  ShieldAlert,
+  Settings,
+  GraduationCap,
+  Target,
   FileText,
+  UserCircle,
   Clock,
 } from "lucide-react";
 import { UserRole } from "@/types/auth";
@@ -53,7 +55,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "Dashboard",
         href: ROUTES.DASHBOARD,
         icon: LayoutDashboard,
-        roles: ["ADMIN", "HR_STAFF", "EMPLOYEE", "HR_CEO"],
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
       },
     ],
   },
@@ -71,22 +73,10 @@ const NAVIGATION_CONFIG: NavSection[] = [
         ],
       },
       {
-        label: "Pending Requests",
-        icon: CalendarDays,
-        roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
-        subItems: [
-          {
-            label: "Interviews",
-            href: ROUTES.RECRUITMENT_PENDING_INTERVIEWEES,
-          },
-          { label: "Hiring", href: ROUTES.HIRING },
-        ],
-      },
-      {
         label: "Onboarding",
         href: ROUTES.ONBOARDING,
         icon: UserCheck,
-        roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
+        roles: ["ADMIN", "HR_MANAGER"],
       },
     ],
   },
@@ -94,7 +84,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
     section: "",
     items: [
       {
-        label: "Employees",
+        label: "People",
         icon: Users2,
         roles: ["ADMIN", "HR_STAFF"],
         subItems: [
@@ -113,14 +103,30 @@ const NAVIGATION_CONFIG: NavSection[] = [
         ],
       },
       {
-        label: "Letters",
-        icon: FileText,
-        roles: ["EMPLOYEE"],
+        label: "Finance",
+        icon: CreditCard,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
         subItems: [
-          { label: "Request Letter", href: ROUTES.EMPLOYEE_REQUEST_LETTER },
-          { label: "Request Transfer", href: ROUTES.EMPLOYEE_REQUEST_TRANSFER },
-          { label: "My Requests", href: ROUTES.EMPLOYEE_MY_LETTERS },
+          { label: "Payroll", href: ROUTES.PAYROLL },
+          { label: "Tax Info", href: "#" },
         ],
+      },
+    ],
+  },
+  {
+    section: "Growth",
+    items: [
+      {
+        label: "Performance",
+        href: ROUTES.PERFORMANCE,
+        icon: Target,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
+      },
+      {
+        label: "Academy",
+        href: ROUTES.LEARNING,
+        icon: GraduationCap,
+        roles: ["EMPLOYEE", "ADMIN", "HR_MANAGER"],
       },
       {
         label: "Letter Requests",
@@ -190,10 +196,30 @@ const NAVIGATION_CONFIG: NavSection[] = [
     section: "Personal",
     items: [
       {
+        label: "My Profile",
+        href: ROUTES.MY_PROFILE,
+        icon: UserCircle,
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
+      },
+      {
         label: "Documents",
         href: ROUTES.MY_DOCUMENTS,
         icon: FileText,
-        roles: ["ADMIN", "HR_STAFF", "EMPLOYEE"],
+        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
+      },
+    ],
+  },
+  {
+    section: "Control",
+    items: [
+      {
+        label: "System",
+        icon: Settings,
+        roles: ["ADMIN"],
+        subItems: [
+          { label: "Security", href: ROUTES.SECURITY },
+          { label: "Config", href: ROUTES.SETTINGS },
+        ],
       },
     ],
   },
@@ -216,44 +242,43 @@ const NAVIGATION_CONFIG: NavSection[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
-  const { isSidebarOpen } = useUI();
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
 
-  const toggleSection = (label: string) => {
-    setOpenSections((prev) => ({ ...prev, [label]: !prev[label] }));
-  };
-
-  // Pre-open sections that contain the active route
-  useEffect(() => {
-    const newOpenSections: Record<string, boolean> = {};
+  const autoOpenSections = useMemo(() => {
+    const nextAutoOpen: Record<string, boolean> = {};
     NAVIGATION_CONFIG.forEach((sec) => {
       sec.items.forEach((item) => {
         if (item.subItems?.some((sub) => sub.href === pathname)) {
-          newOpenSections[item.label] = true;
+          nextAutoOpen[item.label] = true;
         }
       });
     });
-    setOpenSections((prev) => ({ ...prev, ...newOpenSections }));
+    return nextAutoOpen;
   }, [pathname]);
 
-  const userRole: UserRole = user?.role || "UNKNOWN";
-  const userDisplayName = [user?.firstName, user?.lastName].filter(Boolean).join(" ").trim() || user?.username || ROLE_LABELS[userRole] || "User";
-  const userInitials = user?.profilePictureUrl
-    ? ""
-    : (user?.firstName?.[0] || user?.lastName?.[0] || user?.username?.[0] || userDisplayName[0] || "U").toUpperCase();
+  const [sectionOverrides, setSectionOverrides] = useState<
+    Record<string, boolean | undefined>
+  >({});
+
+  const getIsSectionOpen = (label: string) => {
+    const overridden = sectionOverrides[label];
+    if (typeof overridden === "boolean") return overridden;
+    return Boolean(autoOpenSections[label]);
+  };
+
+  const toggleSection = (label: string) => {
+    setSectionOverrides((prev) => ({
+      ...prev,
+      [label]: !getIsSectionOpen(label),
+    }));
+  };
+
+  const userRole: UserRole | "UNKNOWN" = user?.role ?? "UNKNOWN";
 
   const SidebarItem = ({ item }: { item: NavItem }) => {
     const hasSubItems = item.subItems && item.subItems.length > 0;
-    const isOpen = openSections[item.label];
+    const isOpen = getIsSectionOpen(item.label);
     const isActive =
       item.href === pathname || item.subItems?.some((s) => s.href === pathname);
-    const { closeSidebar } = useUI();
-
-    const handleLinkClick = () => {
-      if (window.innerWidth < 1024) {
-        closeSidebar();
-      }
-    };
 
     return (
       <div className="flex flex-col gap-1">
@@ -261,13 +286,17 @@ export function Sidebar() {
           <button
             onClick={() => toggleSection(item.label)}
             className={cn(
-              "group flex items-center justify-between rounded-xl px-4 py-3 transition-all duration-300 text-primary font-bold",
+              "group flex items-center justify-between rounded-xl px-4 py-3 transition-all duration-300",
+              isActive
+                ? "text-primary font-bold"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             <div className="flex items-center gap-3">
               <item.icon
                 className={cn(
-                  "size-5 transition-transform group-hover:scale-110 text-primary",
+                  "size-5 transition-transform group-hover:scale-110",
+                  isActive ? "text-primary" : "text-muted-foreground",
                 )}
               />
               <span className="font-medium text-sm">{item.label}</span>
@@ -284,20 +313,19 @@ export function Sidebar() {
             href={item.href || "#"}
             onClick={handleLinkClick}
             className={cn(
-              "group relative flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300 ",
-              // isActive
-              //   ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
-              //   : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              "group relative flex items-center gap-3 rounded-xl px-4 py-3 transition-all duration-300",
+              isActive
+                ? "bg-primary text-primary-foreground shadow-md shadow-primary/10"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             <item.icon
               className={cn(
-                "size-5 transition-transform group-hover:scale-110 text-primary",
+                "size-5 transition-transform group-hover:scale-110",
+                isActive ? "text-primary-foreground" : "text-muted-foreground",
               )}
             />
-            <span className="font-medium text-sm text-primary">
-              {item.label}
-            </span>
+            <span className="font-medium text-sm">{item.label}</span>
             {isActive && (
               <motion.div
                 layoutId="activeNav"
@@ -354,18 +382,22 @@ export function Sidebar() {
       )}
     >
       {/* Decorative top gradient */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
+      <div className="absolute top-0 left-0 w-full h-1 bg-linear-to-r from-primary/0 via-primary to-primary/0 opacity-50" />
 
       <div className="flex items-center gap-3 px-6 py-8 shrink-0 relative group cursor-default">
-        <motion.div transition={{ type: "spring", stiffness: 200 }}>
-          <Image src={"/logo.svg"} alt="HRMS" width={50} height={50} />
+        <motion.div
+          whileHover={{ rotate: 180 }}
+          transition={{ type: "spring", stiffness: 200 }}
+          className="bg-primary text-primary-foreground flex size-10 items-center justify-center rounded-2xl shadow-xl shadow-primary/20 ring-4 ring-primary/5"
+        >
+          <GalleryVerticalEnd className="size-6" />
         </motion.div>
         <div className="flex flex-col">
           <span className="text-xl font-black tracking-tight leading-none">
-            GUEST<span className="text-primary italic">HOME</span>
+            HR<span className="text-primary italic">Flow</span>
           </span>
           <span className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-black mt-1">
-            HRMS
+            Intelligence
           </span>
         </div>
       </div>
@@ -373,7 +405,9 @@ export function Sidebar() {
       <nav className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-6 px-4 py-2 custom-scrollbar">
         {NAVIGATION_CONFIG.map((section, sIdx) => {
           const visibleItems = section.items.filter(
-            (item) => !item.roles || item.roles.includes(userRole),
+            (item) =>
+              !item.roles ||
+              (userRole !== "UNKNOWN" && item.roles.includes(userRole)),
           );
 
           if (visibleItems.length === 0) return null;
@@ -396,27 +430,17 @@ export function Sidebar() {
       <div className="mt-auto p-4 shrink-0 border-t border-border/40 bg-muted/20">
         <div className="rounded-2xl bg-background border border-border/50 transition-all hover:shadow-inner overflow-hidden">
           {user ? (
-            <div className="flex flex-col">
-              <Link 
-                href={ROUTES.MY_PROFILE}
-                className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors group/user"
-              >
-                <div className="size-10 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary border border-primary/20 overflow-hidden shrink-0">
-                  {user.profilePictureUrl ? (
-                    <img 
-                      src={getMediaUrl(user.profilePictureUrl) || user.profilePictureUrl} 
-                      alt="Profile" 
-                      className="w-full h-full object-cover transition-transform group-hover/user:scale-110" 
-                    />
-                  ) : (
-                    <span className="text-sm font-bold uppercase">
-                      {userInitials}
-                    </span>
-                  )}
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="size-10 rounded-xl bg-linear-to-br from-primary/20 to-primary/5 flex items-center justify-center text-primary border border-primary/20">
+                  <span className="text-sm font-bold">
+                    {user.firstName?.[0]}
+                    {user.lastName?.[0]}
+                  </span>
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <p className="font-bold text-sm truncate group-hover/user:text-primary transition-colors">
-                    {userDisplayName}
+                  <p className="font-bold text-sm truncate">
+                    {user.firstName} {user.lastName}
                   </p>
                   <p className="text-[10px] font-medium text-primary uppercase tracking-wide">
                     {ROLE_LABELS[user.role]}
@@ -437,6 +461,17 @@ export function Sidebar() {
                   <ChevronRight className="size-3 opacity-50 group-hover/logout:translate-x-0.5 transition-transform" />
                 </button>
               </div>
+
+              <button
+                onClick={logout}
+                className="flex w-full items-center justify-between gap-2 rounded-xl bg-background px-3 py-2.5 text-xs font-semibold text-muted-foreground transition-all hover:bg-destructive/5 hover:text-destructive border border-border group"
+              >
+                <div className="flex items-center gap-2">
+                  <LogOut className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
+                  Sign Out
+                </div>
+                <ChevronRight className="size-3 opacity-50 group-hover:translate-x-0.5 transition-transform" />
+              </button>
             </div>
           ) : (
             <p className="text-center text-xs text-muted-foreground">

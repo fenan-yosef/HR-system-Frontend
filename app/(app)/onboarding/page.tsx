@@ -1,18 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import {
-  UserCheck,
-  Sparkles,
-  CheckCircle,
-  Loader2,
-  Users,
-  Calendar,
-  Briefcase,
-  Star,
-  ArrowRight,
-} from "lucide-react";
+import { motion } from "framer-motion";
+import { UserPlus, Sparkles } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { fetchApplications, hireApplicant } from "@/services/recruitmentService";
@@ -36,135 +25,41 @@ const DEFAULT_STEPS: OnboardingStep[] = [
 ];
 
 export default function OnboardingPage() {
-  const [hired, setHired] = useState<Application[]>([]);
-  const [hiringQueue, setHiringQueue] = useState<Application[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hireTarget, setHireTarget] = useState<Application | null>(null);
-  const { user } = useAuth();
-  const { toast } = useToast();
-
-  const isStaff = user?.role === "HR_STAFF";
-
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const [hiredRes, invitedRes, rejectedRes] = await Promise.all([
-        fetchApplications({ status: "hired" }),
-        fetchApplications({ status: "interview_invited" }),
-        fetchApplications({ status: "hire_rejected" }),
-      ]);
-
-      setHired(
-        (hiredRes.results || []).sort(
-          (a, b) =>
-            new Date(b.updated_at || b.submitted_at).getTime() -
-            new Date(a.updated_at || a.submitted_at).getTime()
-        )
-      );
-
-      setHiringQueue(
-        [...(invitedRes.results || []), ...(rejectedRes.results || [])].sort(
-          (a, b) =>
-            new Date(b.updated_at || b.submitted_at).getTime() -
-            new Date(a.updated_at || a.submitted_at).getTime()
-        )
-      );
-    } catch {
-      toast("Unable to load data.", "error");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const handleHire = async (data: {
-    start_date: string;
-    salary: number;
-    monthly_salary: number;
-    national_id: string;
-    pension_id?: string;
-    onboarding_data: {
-      emergency_contact?: string;
-      emergency_phone?: string;
-      address?: string;
-      bank_name?: string;
-      account_number?: string;
-      profile_photo_url?: string;
-      pension_id?: string;
-    };
-  }) => {
-    if (!hireTarget) return;
-    try {
-      await hireApplicant(hireTarget.application_id, data);
-      toast(
-        `Hire request for ${hireTarget.full_name} submitted for CEO approval.`,
-        "success"
-      );
-      setHireTarget(null);
-      loadData();
-    } catch (e: any) {
-      toast(`Submission failed: ${e.message}`, "error");
-    }
-  };
-
-  // Group: joined within last 30 days vs older
-  const now = Date.now();
-  const recentHires = hired.filter(
-    (h) =>
-      now - new Date(h.updated_at || h.submitted_at).getTime() <
-      30 * 24 * 3600 * 1000
-  );
-  const previousHires = hired.filter(
-    (h) =>
-      now - new Date(h.updated_at || h.submitted_at).getTime() >=
-      30 * 24 * 3600 * 1000
-  );
-
   return (
     <section className="space-y-8">
-      {/* ── Header ── */}
-      <div className="flex flex-col gap-1.5">
-        <div className="flex items-center gap-3">
-          <div className="size-11 rounded-2xl bg-emerald-500/10 border border-emerald-200 flex items-center justify-center">
-            <UserCheck className="size-6 text-emerald-600" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-extrabold tracking-tight">
-              Onboarding
-            </h1>
-            <p className="text-muted-foreground text-sm">
-              Newly hired employees and their onboarding progress.
-            </p>
-          </div>
-        </div>
+      <div className="flex flex-col gap-2">
+        <h1 className="text-4xl font-extrabold tracking-tight">Onboarding</h1>
+        <p className="text-muted-foreground">
+          Welcome new talent with a structured journey.
+        </p>
       </div>
 
       {/* ── Stats ── */}
       <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {[
           {
-            label: "Total Hired",
-            value: hired.length,
-            color: "text-emerald-600",
-            bg: "bg-emerald-500/10",
-            icon: Users,
-          },
-          {
-            label: "Joined This Month",
-            value: recentHires.length,
-            color: "text-blue-600",
+            label: "New Hires",
+            value: "12",
+            color: "text-blue-500",
             bg: "bg-blue-500/10",
-            icon: Calendar,
           },
           {
-            label: "Avg. Onboarding",
+            label: "Pending Docs",
+            value: "8",
+            color: "text-amber-500",
+            bg: "bg-amber-500/10",
+          },
+          {
+            label: "Completed",
+            value: "24",
+            color: "text-emerald-500",
+            bg: "bg-emerald-500/10",
+          },
+          {
+            label: "Avg. Time",
             value: "3 Days",
-            color: "text-violet-600",
-            bg: "bg-violet-500/10",
-            icon: Star,
+            color: "text-purple-500",
+            bg: "bg-purple-500/10",
           },
         ].map((stat, i) => (
           <motion.div
@@ -175,7 +70,7 @@ export default function OnboardingPage() {
           >
             <Card className="p-5 border-none shadow-sm flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                <p className="text-xs font-bold uppercase text-muted-foreground tracking-wider">
                   {stat.label}
                 </p>
                 <p className={`text-2xl font-black mt-1 ${stat.color}`}>
@@ -220,52 +115,51 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {recentHires.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Sparkles className="size-4 text-emerald-500" />
-                <h2 className="text-sm font-bold uppercase tracking-widest text-emerald-600">
-                  New This Month
-                </h2>
+      <div className="grid gap-8 lg:grid-cols-3">
+        <Card className="lg:col-span-2 p-6 border-none shadow-sm">
+          <h3 className="text-lg font-bold mb-6">Active Workflows</h3>
+          <div className="space-y-4">
+            {[1, 2, 3].map((_, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-4 p-4 rounded-xl bg-muted/30 border border-border/50"
+              >
+                <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">
+                  AB
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-sm">Abebe Bikila</h4>
+                  <p className="text-xs text-muted-foreground">
+                    Software Engineer • Joined 2 days ago
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <span className="text-xs font-bold text-primary">
+                    60% Complete
+                  </span>
+                  <div className="h-1.5 w-24 bg-muted rounded-full overflow-hidden">
+                    <div className="h-full w-[60%] bg-primary" />
+                  </div>
+                </div>
               </div>
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                <AnimatePresence>
-                  {recentHires.map((app, idx) => (
-                    <EmployeeOnboardingCard key={app.application_id} app={app} idx={idx} isNew />
-                  ))}
-                </AnimatePresence>
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
+        </Card>
 
-          {previousHires.length > 0 && (
-            <div className="space-y-4">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-muted-foreground">
-                Previous Hires
-              </h2>
-              <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-                <AnimatePresence>
-                  {previousHires.map((app, idx) => (
-                    <EmployeeOnboardingCard key={app.application_id} app={app} idx={idx} isNew={false} />
-                  ))}
-                </AnimatePresence>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ── Modals ── */}
-      <AnimatePresence>
-        {hireTarget && (
-          <HireModal
-            applicationId={hireTarget.application_id}
-            applicantName={hireTarget.full_name || "Candidate"}
-            onHire={handleHire}
-            onClose={() => setHireTarget(null)}
-          />
-        )}
-      </AnimatePresence>
+        <Card className="p-6 border-none bg-primary text-primary-foreground shadow-lg relative overflow-hidden">
+          <div className="relative z-10">
+            <Sparkles className="size-8 mb-4 text-white/40" />
+            <h3 className="text-xl font-bold mb-2">Assign Mentors</h3>
+            <p className="text-sm text-primary-foreground/80 mb-6">
+              Pair new hires with experienced team members to boost retention.
+            </p>
+            <button className="w-full bg-background text-foreground py-2.5 rounded-lg text-sm font-bold hover:bg-muted transition-colors">
+              Start Pairing
+            </button>
+          </div>
+          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl translate-x-10 -translate-y-10" />
+        </Card>
+      </div>
     </section>
   );
 }

@@ -9,29 +9,31 @@ import type {
   ShortlistEntry,
   CreateApplicant,
   ApplicantResponse,
-  AiEvaluation,
-  ScreeningResult,
-  ScreeningProgress,
-  VersionStats,
-  SuggestSkillsResponse,
-  CustomApplicationField,
-  RecruiterInstructionTemplate
+  ApplicantTrackingResult,
 } from "@/types/recruitment";
 import { apiFetch } from "@/services/apiClient";
 
 export function fetchJobPostings(): Promise<PaginatedResponse<JobPosting>> {
-  return apiFetch<PaginatedResponse<JobPosting>>("/job-posts/", { requiresAuth: true });
+  return apiFetch<PaginatedResponse<JobPosting>>("/job-posts/", {
+    requiresAuth: true,
+  });
 }
 
 export function fetchJobPositions(): Promise<PaginatedResponse<JobPosition>> {
-  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions/", { requiresAuth: true });
+  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions/", {
+    requiresAuth: true,
+  });
 }
 
 export function fetchJobPosition(positionId: number): Promise<JobPosition> {
-  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, { requiresAuth: true });
+  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, {
+    requiresAuth: true,
+  });
 }
 
-export function createJobPosition(data: CreateJobPosition): Promise<JobPosition> {
+export function createJobPosition(
+  data: CreateJobPosition,
+): Promise<JobPosition> {
   return apiFetch<JobPosition>("/job-positions/", {
     method: "POST",
     body: JSON.stringify(data),
@@ -65,89 +67,21 @@ export function updateCustomApplicationFields(positionId: number, data: { custom
 }
 
 export function fetchDepartments(): Promise<PaginatedResponse<Department>> {
-  return apiFetch<PaginatedResponse<Department>>("/departments/", { requiresAuth: true });
-}
-
-export function fetchDepartmentsAll(): Promise<PaginatedResponse<Department>> {
-  return apiFetch<PaginatedResponse<Department>>("/departments/?page_size=1000", { requiresAuth: true });
-}
-
-export interface FetchApplicationsParams {
-  page?: number;
-  search?: string;
-  status?: string;
-  min_score?: number;
-  max_score?: number;
-  ordering?: string;
-  starts_with?: string;
-  applied_today?: boolean;
-  position_id?: number | string;
-  is_shortlisted?: boolean;
-}
-
-export interface IncludeFlags {
-  includeHistory?: boolean;
-  includeDeleted?: boolean;
-}
-
-export function fetchApplications(params: FetchApplicationsParams = {}): Promise<PaginatedResponse<Application>> {
-  const query = new URLSearchParams();
-  if (params.page) query.append("page", params.page.toString());
-  if (params.search) query.append("search", params.search);
-  if (params.status) query.append("status", params.status);
-  if (params.min_score !== undefined) query.append("min_score", params.min_score.toString());
-  if (params.max_score !== undefined) query.append("max_score", params.max_score.toString());
-  if (params.ordering) query.append("ordering", params.ordering);
-  if (params.starts_with) query.append("starts_with", params.starts_with);
-  if (params.applied_today) query.append("applied_today", "true");
-  if (params.position_id) query.append("position_id", params.position_id.toString());
-  if (params.is_shortlisted !== undefined) query.append("is_shortlisted", params.is_shortlisted.toString());
-
-  const queryString = query.toString();
-  const endpoint = `/applicant-applications/${queryString ? "?" + queryString : ""}`;
-  return apiFetch<PaginatedResponse<Application>>(endpoint, { requiresAuth: true });
-}
-
-export function fetchApplication(applicationId: number, flags: boolean | IncludeFlags = false): Promise<Application> {
-  const options = typeof flags === "boolean" ? { includeHistory: flags } : flags;
-  const query = new URLSearchParams();
-  if (options.includeHistory) query.append("include_history", "true");
-  if (options.includeDeleted) query.append("include_deleted", "true");
-  const queryString = query.toString();
-  const url = `/applicant-applications/${applicationId}/${queryString ? `?${queryString}` : ""}`;
-  return apiFetch<Application>(url, { requiresAuth: true });
-}
-
-export function updateApplication(applicationId: number, data: Partial<Application>): Promise<Application> {
-  return apiFetch<Application>(`/applicant-applications/${applicationId}/`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
+  return apiFetch<PaginatedResponse<Department>>("/departments/", {
     requiresAuth: true,
   });
 }
 
-export function fetchApplicationMetrics(): Promise<ApplicationMetrics> {
-  return apiFetch<ApplicationMetrics>("/applicant-applications/metrics/", { requiresAuth: true });
-}
-
-export async function exportApplicationsCsv(params: FetchApplicationsParams = {}): Promise<void> {
-  const query = new URLSearchParams();
-  if (params.status) query.append("status", params.status);
-  if (params.min_score) query.append("min_score", params.min_score.toString());
-  
-  const queryString = query.toString();
-  const url = `${process.env.NEXT_PUBLIC_API_BASE_URL || "/api"}/applicant-applications/export-csv/${queryString ? "?" + queryString : ""}`;
-  
-  const link = document.createElement("a");
-  link.href = url;
-  link.setAttribute("download", "applications.csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+export function fetchApplications(): Promise<PaginatedResponse<Application>> {
+  return apiFetch<PaginatedResponse<Application>>("/applications/", {
+    requiresAuth: true,
+  });
 }
 
 export function fetchShortlist(): Promise<PaginatedResponse<ShortlistEntry>> {
-  return apiFetch<PaginatedResponse<ShortlistEntry>>("/shortlists/", { requiresAuth: true });
+  return apiFetch<PaginatedResponse<ShortlistEntry>>("/shortlists/", {
+    requiresAuth: true,
+  });
 }
 
 export function triggerShortlist(applicationId: number): Promise<AiEvaluation> {
@@ -157,18 +91,25 @@ export function triggerShortlist(applicationId: number): Promise<AiEvaluation> {
   });
 }
 
-// batchEvaluateApplications removed — backend returns 405.
-// Use startScreening + polling instead.
-
-export function fetchPublicJobPositions(): Promise<PaginatedResponse<JobPosition>> {
-  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions-public/", { requiresAuth: false });
+export function fetchPublicJobPositions(): Promise<
+  PaginatedResponse<JobPosition>
+> {
+  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions/", {
+    requiresAuth: false,
+  });
 }
 
-export function fetchPublicJobPosition(publicId: string | number): Promise<JobPosition> {
-  return apiFetch<JobPosition>(`/recruitment/public/job/${publicId}/`, { requiresAuth: false });
+export function fetchPublicJobPosition(
+  positionId: number,
+): Promise<JobPosition> {
+  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, {
+    requiresAuth: false,
+  });
 }
 
-export function createApplicant(data: CreateApplicant): Promise<ApplicantResponse> {
+export function createApplicant(
+  data: CreateApplicant,
+): Promise<ApplicantResponse> {
   return apiFetch<ApplicantResponse>("/applicants/", {
     method: "POST",
     body: JSON.stringify(data),
@@ -176,276 +117,19 @@ export function createApplicant(data: CreateApplicant): Promise<ApplicantRespons
   });
 }
 
-export function createPublicApplication(publicId: string, data: CreateApplicant): Promise<any> {
-  return apiFetch<any>(`/recruitment/public/apply/${publicId}/`, {
-    method: "POST",
-    body: JSON.stringify(data),
-    requiresAuth: false,
-  });
-}
-
+// Assuming the backend has this endpoint for tracking
 export function trackApplicant(
   trackingCode: string,
   email?: string,
-  flags: boolean | IncludeFlags = false,
-): Promise<any> {
-  const options = typeof flags === "boolean" ? { includeHistory: flags } : flags;
-  const query = new URLSearchParams();
-  if (options.includeHistory) query.append("include_history", "true");
-  if (options.includeDeleted) query.append("include_deleted", "true");
-  const queryString = query.toString();
-  const url = `/applicants/track-status/${queryString ? `?${queryString}` : ""}`;
-  return apiFetch<any>(url, {
-    method: "POST",
-    body: JSON.stringify({
-      tracking_code: trackingCode,
-      email,
-      include_history: !!options.includeHistory,
-      include_deleted: !!options.includeDeleted,
-    }),
-    requiresAuth: false,
-  });
-}
+): Promise<ApplicantTrackingResult> {
+  // Construct query or body. Using POST for security/privacy if email is involved, or GET with query params.
+  // I will try GET with query param for now as it's a "Track" (Read) operation.
+  const params = new URLSearchParams({ tracking_code: trackingCode });
+  if (email) params.append("email", email);
 
-export function fetchUploadMetadata(uploadId: number): Promise<any> {
-  return apiFetch<any>(`/uploads/${uploadId}/`, { requiresAuth: true });
-}
-
-export function toggleShortlist(applicationId: number) {
-  return apiFetch<{ status: string; shortlisted: boolean; application_id: number }>(`/applicant-applications/${applicationId}/toggle-shortlist/`, {
-    method: "POST",
-    requiresAuth: true,
-  });
-}
-
-export function confirmApplication(applicationId: number) {
-  return apiFetch<{ status: string; application_id: number }>(`/applicant-applications/${applicationId}/confirm/`, {
-    method: "POST",
-    requiresAuth: true,
-  });
-}
-
-export function inviteToInterview(applicationId: number) {
-  return apiFetch<any>(`/applicant-applications/${applicationId}/invite_interview/`, {
-    method: "POST",
-    requiresAuth: true,
-  });
-}
-
-export function rejectShortlisted(applicationId: number, reason: string) {
-  return apiFetch<any>(`/applicant-applications/${applicationId}/reject-shortlisted/`, {
-    method: "POST",
-    body: JSON.stringify({ reason }),
-    requiresAuth: true,
-  });
-}
-
-export function removeFromShortlist(applicationId: number) {
-  return apiFetch<any>(`/applicant-applications/${applicationId}/remove-shortlist/`, {
-    method: "POST",
-    requiresAuth: true,
-  });
-}
-
-export function batchInviteToInterview(applicationIds: number[]) {
-  return apiFetch<{ success: boolean; count: number }>("/applicant-applications/batch-invite/", {
-    method: "POST",
-    body: JSON.stringify({ application_ids: applicationIds }),
-    requiresAuth: true,
-  });
-}
-
-export function batchConfirmInterviews(applicationIds: number[]) {
-  return apiFetch<any>("/applicant-applications/batch-confirm/", {
-    method: "POST",
-    body: JSON.stringify({ application_ids: applicationIds }),
-    requiresAuth: true,
-  });
-}
-
-export function hireApplicant(
-  applicationId: number,
-  data: {
-    national_id: string;
-    pension_id?: string;
-    salary: number;
-    monthly_salary?: number;
-    start_date: string;
-    onboarding_data?: {
-      emergency_contact?: string;
-      emergency_phone?: string;
-      address?: string;
-      bank_name?: string;
-      account_number?: string;
-      profile_photo_url?: string;
-      pension_id?: string;
-    };
-  }
-) {
-  return apiFetch<{ status: string; application_id: number; employee_id: number; username: string | null }>(
-    `/applicant-applications/${applicationId}/hire/`,
-    {
-      method: "POST",
-      body: JSON.stringify(data),
-      requiresAuth: true,
-    }
+  // Note: The actual endpoint might differ. Adjust as needed.
+  return apiFetch<ApplicantTrackingResult>(
+    `/applicants/track/?${params.toString()}`,
+    { requiresAuth: false },
   );
-}
-
-export function approveHire(applicationId: number) {
-  return apiFetch<{ status: string; application_id: number; employee_id: number; username: string | null }>(
-    `/applicant-applications/${applicationId}/approve-hire/`,
-    {
-      method: "POST",
-      requiresAuth: true,
-    }
-  );
-}
-
-export function rejectHire(applicationId: number, reason?: string) {
-  return apiFetch<{ status: string; application_id: number }>(
-    `/applicant-applications/${applicationId}/reject-hire/`,
-    {
-      method: "POST",
-      body: JSON.stringify({ reason }),
-      requiresAuth: true,
-    }
-  );
-}
-
-export function fetchEvaluations(): Promise<PaginatedResponse<AiEvaluation>> {
-  return apiFetch<PaginatedResponse<AiEvaluation>>("/recruitment/evaluations/", { requiresAuth: true });
-}
-
-export function createEvaluation(data: Partial<AiEvaluation>): Promise<AiEvaluation> {
-  return apiFetch<AiEvaluation>("/recruitment/evaluations/", {
-    method: "POST",
-    body: JSON.stringify(data),
-    requiresAuth: true,
-  });
-}
-
-export function startScreening(jobPositionId: number, customParams?: any): Promise<{ id: number; status: string }> {
-  return apiFetch<{ id: number; status: string }>(`/recruitment/screening/start/${jobPositionId}/`, {
-    method: "POST",
-    body: customParams ? JSON.stringify({ custom_params: customParams }) : undefined,
-    requiresAuth: true,
-  });
-}
-
-export function getScreeningProgress(jobId: number): Promise<ScreeningProgress> {
-  return apiFetch<ScreeningProgress>(`/recruitment/screening/progress/${jobId}/`, {
-    requiresAuth: true,
-  });
-}
-
-export function getScreeningResults(jobPositionId: number, flags: boolean | IncludeFlags = false): Promise<any> {
-  const options = typeof flags === "boolean" ? { includeHistory: flags } : flags;
-  const query = new URLSearchParams();
-  if (options.includeHistory) query.append("include_history", "true");
-  if (options.includeDeleted) query.append("include_deleted", "true");
-  const queryString = query.toString();
-  const url = `/recruitment/screening/${jobPositionId}/results/${queryString ? `?${queryString}` : ""}`;
-  return apiFetch<any>(url, { requiresAuth: true });
-}
-
-export function softDeleteScreeningResult(resultId: number, reason?: string): Promise<{ id: number; is_deleted: boolean } | void> {
-  return apiFetch<{ id: number; is_deleted: boolean } | void>(`/screening-results/${resultId}/soft-delete/`, {
-    method: "POST",
-    body: reason ? JSON.stringify({ reason }) : undefined,
-    requiresAuth: true,
-  });
-}
-
-export function restoreScreeningResult(resultId: number): Promise<{ id: number; is_deleted: boolean }> {
-  return apiFetch<{ id: number; is_deleted: boolean }>(`/screening-results/${resultId}/restore/`, {
-    method: "POST",
-    requiresAuth: true,
-  });
-}
-
-export function softDeleteScreeningHistory(historyId: number, reason?: string): Promise<{ id: number; is_deleted: boolean }> {
-  return apiFetch<{ id: number; is_deleted: boolean }>(`/screening-history/${historyId}/soft-delete/`, {
-    method: "POST",
-    body: reason ? JSON.stringify({ reason }) : undefined,
-    requiresAuth: true,
-  });
-}
-
-export function restoreScreeningHistory(historyId: number): Promise<{ id: number; is_deleted: boolean }> {
-  return apiFetch<{ id: number; is_deleted: boolean }>(`/screening-history/${historyId}/restore/`, {
-    method: "POST",
-    requiresAuth: true,
-  });
-}
-
-export function getVersionStats(jobPositionId: number): Promise<VersionStats> {
-  return apiFetch<VersionStats>(`/recruitment/screening/version-stats/${jobPositionId}/`, {
-    requiresAuth: true,
-  });
-}
-
-export function reEvaluate(jobPositionId: number, customParams?: any): Promise<any> {
-  return apiFetch<any>(`/recruitment/screening/re-evaluate/${jobPositionId}/`, {
-    method: "POST",
-    body: customParams ? JSON.stringify({ custom_params: customParams }) : undefined,
-    requiresAuth: true,
-  });
-}
-
-export function suggestSkills(
-  description: string,
-  limit: number = 10,
-  position_id?: number,
-  use_cache: boolean = true,
-): Promise<SuggestSkillsResponse> {
-  const body: any = { description, limit };
-  if (position_id !== undefined) body.position_id = position_id;
-  if (use_cache !== undefined) body.use_cache = use_cache;
-
-  return apiFetch<SuggestSkillsResponse>("/job-positions/suggest-skills/", {
-    method: "POST",
-    body: JSON.stringify(body),
-    requiresAuth: true,
-  });
-}
-
-export function getSkillSuggestions(positionId: number): Promise<SuggestSkillsResponse> {
-  return apiFetch<SuggestSkillsResponse>(`/job-positions/${positionId}/skill-suggestions/`, {
-    requiresAuth: true,
-  });
-}
-
-export function retryExtraction(applicationId: number): Promise<any> {
-  return apiFetch<any>(`/applicant-applications/${applicationId}/retry-extraction/`, {
-    method: "POST",
-    requiresAuth: true,
-  });
-}
-
-export function fetchInstructionTemplates(): Promise<PaginatedResponse<RecruiterInstructionTemplate>> {
-  return apiFetch<PaginatedResponse<RecruiterInstructionTemplate>>("/recruiter-instruction-templates/", { requiresAuth: true });
-}
-
-export function createInstructionTemplate(data: Partial<RecruiterInstructionTemplate>): Promise<RecruiterInstructionTemplate> {
-  return apiFetch<RecruiterInstructionTemplate>("/recruiter-instruction-templates/", {
-    method: "POST",
-    body: JSON.stringify(data),
-    requiresAuth: true,
-  });
-}
-
-export function updateInstructionTemplate(id: number, data: Partial<RecruiterInstructionTemplate>): Promise<RecruiterInstructionTemplate> {
-  return apiFetch<RecruiterInstructionTemplate>(`/recruiter-instruction-templates/${id}/`, {
-    method: "PATCH",
-    body: JSON.stringify(data),
-    requiresAuth: true,
-  });
-}
-
-export function deleteInstructionTemplate(id: number): Promise<void> {
-  return apiFetch<void>(`/recruiter-instruction-templates/${id}/`, {
-    method: "DELETE",
-    requiresAuth: true,
-  });
 }

@@ -8,25 +8,35 @@ import { CreateApplicant, ApplicantResponse } from "@/types/recruitment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 
 export default function ApplicationPage() {
   const params = useParams();
   const positionId = Number(params.positionId);
-  
-  const [formData, setFormData] = useState<Omit<CreateApplicant, "position_id">>({
+
+  const [formData, setFormData] = useState<
+    Omit<CreateApplicant, "position_id">
+  >({
     full_name: "",
     email: "",
     phone: "",
-    cv_path: "test/Profile.pdf", // Default as per requirements, or empty. I'll leave empty for user to input or keep it if they want to simulate. 
+    cv_path: "test/Profile.pdf", // Default as per requirements, or empty. I'll leave empty for user to input or keep it if they want to simulate.
     // Wait, prompt says: request payload { ... "cv_path": "test/Profile.pdf" }
     // I'll default it to empty string but maybe use a placeholder?
     // As it is a string field "CV Path", I'll let user type it.
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successData, setSuccessData] = useState<ApplicantResponse | null>(null);
+  const [successData, setSuccessData] = useState<ApplicantResponse | null>(
+    null,
+  );
   const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,8 +51,8 @@ export default function ApplicationPage() {
 
     const payload: CreateApplicant = {
       ...formData,
-      position_id: positionId, // Include positionId if the backend supports it, otherwise it might be ignored or cause error if not expected. 
-      // Given the RESTful nature, usually POST /applicants creates a profile. 
+      position_id: positionId, // Include positionId if the backend supports it, otherwise it might be ignored or cause error if not expected.
+      // Given the RESTful nature, usually POST /applicants creates a profile.
       // But we are applying for a job.
       // I'll send it.
     };
@@ -50,10 +60,12 @@ export default function ApplicationPage() {
     try {
       const response = await createApplicant(payload);
       setSuccessData(response);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Application failed", err);
-      // Try to extract useful error message
-      const msg = err.message || "Something went wrong. Please try again.";
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Something went wrong. Please try again.";
       setError(msg);
     } finally {
       setIsSubmitting(false);
@@ -68,7 +80,9 @@ export default function ApplicationPage() {
             <div className="mx-auto bg-green-100 p-3 rounded-full w-fit mb-4">
               <CheckCircle className="h-10 w-10 text-green-600" />
             </div>
-            <CardTitle className="text-2xl text-green-800">Application Submitted!</CardTitle>
+            <CardTitle className="text-2xl text-green-800">
+              Application Submitted!
+            </CardTitle>
             <CardDescription className="text-green-700">
               Thank you for applying for this position.
             </CardDescription>
@@ -84,11 +98,15 @@ export default function ApplicationPage() {
               </p>
             </div>
             <p className="text-sm text-gray-600">
-              We have sent a confirmation email to <strong>{successData.email}</strong>.
+              We have sent a confirmation email to{" "}
+              <strong>{successData.email}</strong>.
             </p>
             <div className="pt-4">
               <Link href="/jobs">
-                <Button variant="outline" className="border-green-600 text-green-700 hover:bg-green-100">
+                <Button
+                  variant="outline"
+                  className="border-green-600 text-green-700 hover:bg-green-100"
+                >
                   Back to Jobs
                 </Button>
               </Link>
@@ -101,8 +119,8 @@ export default function ApplicationPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <Link 
-        href={`/jobs/${positionId}`} 
+      <Link
+        href={`/jobs/${positionId}`}
         className="inline-flex items-center text-sm text-gray-500 hover:text-blue-600 mb-6 transition-colors"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
@@ -163,7 +181,9 @@ export default function ApplicationPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cv_path">CV / Resume Path (URL or File Path)</Label>
+              <Label htmlFor="cv_path">
+                CV / Resume Path (URL or File Path)
+              </Label>
               <Input
                 id="cv_path"
                 name="cv_path"
