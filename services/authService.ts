@@ -14,15 +14,20 @@ export interface TokenResponse {
 const ROLE_MAP: Record<string, UserRole> = {
   ADMIN: "ADMIN",
   ADMINISTRATOR: "ADMIN",
-  HR_MANAGER: "HR_MANAGER",
-  HRMANAGER: "HR_MANAGER",
-  HR: "HR_MANAGER",
-  STAFF: "HR_MANAGER",
+  HR_CEO: "HR_CEO",
+  CEO: "HR_CEO",
+  HR_STAFF: "HR_STAFF",
+  HRSTAFF: "HR_STAFF",
+  HR_MANAGER: "HR_STAFF",
+  HRMANAGER: "HR_STAFF",
+  HR: "HR_STAFF",
+  STAFF: "HR_STAFF",
+  MANAGER: "HR_STAFF",
   EMPLOYEE: "EMPLOYEE",
   APPLICANT: "APPLICANT",
 };
 
-function mapRoleNameToUserRole(roleName?: string): UserRole {
+export function mapRoleNameToUserRole(roleName?: string): UserRole {
   if (!roleName) return "UNKNOWN";
   const normalised = roleName.trim().replace(/\s|-/g, "_").toUpperCase();
   return ROLE_MAP[normalised] ?? "UNKNOWN";
@@ -79,13 +84,19 @@ export function buildAuthUserFromAccessToken(access: string): AuthUser | null {
     role,
     roleName: roleName?.toString(),
     roleId,
+    profilePictureUrl: payload.profile_photo_url?.toString(),
   };
 }
 
 export async function loginRequest(payload: LoginPayload): Promise<TokenResponse> {
   return apiFetch<TokenResponse>("/auth/token/", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      username: payload.username,
+      email: payload.username,
+      password: payload.password,
+    }),
+    redirectOnUnauthorized: false,
   });
 }
 

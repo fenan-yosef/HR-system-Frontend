@@ -1,5 +1,6 @@
 import type {
   Application,
+  ApplicationMetrics,
   JobPosting,
   JobPosition,
   CreateJobPosition,
@@ -40,6 +41,31 @@ export function createJobPosition(
   });
 }
 
+export function updateJobPosition(positionId: number, data: Partial<JobPosition>): Promise<JobPosition> {
+  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
+export function fetchCustomApplicationFields(positionId: number): Promise<{
+  position_id: number;
+  position_title: string;
+  custom_application_fields: CustomApplicationField[];
+  count: number;
+}> {
+  return apiFetch<any>(`/job-positions/${positionId}/application-fields/`, { requiresAuth: true });
+}
+
+export function updateCustomApplicationFields(positionId: number, data: { custom_application_fields: CustomApplicationField[] }): Promise<any> {
+  return apiFetch<any>(`/job-positions/${positionId}/application-fields/`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
 export function fetchDepartments(): Promise<PaginatedResponse<Department>> {
   return apiFetch<PaginatedResponse<Department>>("/departments/", {
     requiresAuth: true,
@@ -58,8 +84,8 @@ export function fetchShortlist(): Promise<PaginatedResponse<ShortlistEntry>> {
   });
 }
 
-export function triggerShortlist(applicationId: number) {
-  return apiFetch<ShortlistEntry>(`/applications/${applicationId}/shortlist/`, {
+export function triggerShortlist(applicationId: number): Promise<AiEvaluation> {
+  return apiFetch<AiEvaluation>(`/applicant-applications/${applicationId}/shortlist/`, {
     method: "POST",
     requiresAuth: true,
   });
@@ -87,7 +113,7 @@ export function createApplicant(
   return apiFetch<ApplicantResponse>("/applicants/", {
     method: "POST",
     body: JSON.stringify(data),
-    requiresAuth: false, // Ensure public access
+    requiresAuth: false,
   });
 }
 

@@ -1,4 +1,4 @@
-import { ShortlistPlaceholder } from "@/features/recruitment/components/ShortlistPlaceholder";
+import { ShortlistList } from "@/features/recruitment/components/ShortlistList";
 
 export default function ShortlistPage() {
   return (
@@ -11,7 +11,7 @@ export default function ShortlistPage() {
           Focus on top-tier talent and coordinate final decision processes.
         </p>
       </div>
-      <ShortlistPlaceholder />
+      <ShortlistList />
     </section>
   );
 }

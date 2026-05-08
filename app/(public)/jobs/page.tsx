@@ -2,8 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { fetchPublicJobPositions } from "@/services/recruitmentService";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  fetchPublicJobPositions,
+  fetchDepartmentsAll
+} from "@/services/recruitmentService";
 import { JobPosition } from "@/types/recruitment";
+import { Department } from "@/types/department";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -16,8 +21,11 @@ import {
 
 export default function PublicJobsPage() {
   const [jobs, setJobs] = useState<JobPosition[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDept, setSelectedDept] = useState<number | "all">("all");
 
   useEffect(() => {
     fetchPublicJobPositions()
@@ -27,15 +35,43 @@ export default function PublicJobsPage() {
           (job) => job.status === "open",
         );
         setJobs(openJobs);
+        setDepartments(deptRes.results || []);
       })
       .catch((err) => {
-        console.error("Failed to load jobs", err);
+        console.error("Failed to load data", err);
         setError("Unable to load job openings. Please try again later.");
       })
       .finally(() => {
         setLoading(false);
       });
   }, []);
+
+  const getDeptName = (id?: number | null) => {
+    if (!id) return "General";
+    return departments.find(d => d.department_id === id)?.name || "Department";
+  };
+
+  const handleShare = (job: JobPosition) => {
+    const applyPath = getJobApplyPath(job);
+    const url = `${window.location.origin}${applyPath}`;
+    if (navigator.share) {
+      navigator.share({
+        title: `Apply for ${job.title}`,
+        text: `Check out this opening: ${job.title}`,
+        url: url,
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(url);
+      alert("Link copied to clipboard!");
+    }
+  };
+
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesDept = selectedDept === "all" || job.department === selectedDept;
+    return matchesSearch && matchesDept;
+  });
 
   if (loading) {
     return (

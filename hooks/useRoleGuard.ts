@@ -7,6 +7,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { ROLE_ALLOWED_ROUTES, ROLE_DASHBOARD_ROUTE } from "@/constants/permissions";
 import { ROUTES } from "@/constants/routes";
 
+import { isAdmin } from "@/lib/permissions";
+
 interface UseRoleGuardOptions {
   allowedRoles?: UserRole[];
 }
@@ -26,12 +28,7 @@ export function useRoleGuard(options: UseRoleGuardOptions = {}) {
   const isAuthorisedForRoute = useMemo(() => {
     if (!user || !isAuthenticated) return false;
 
-    if (
-      user.role === "ADMIN" ||
-      user.roleName?.toLowerCase() === "admin" ||
-      user.roleId === 1 ||
-      user.id === 1
-    ) {
+    if (isAdmin(user)) {
       return true;
     }
 
@@ -41,12 +38,7 @@ export function useRoleGuard(options: UseRoleGuardOptions = {}) {
 
   const isAuthorisedForRole = useMemo(() => {
     if (!user || !allowedRoles || allowedRoles.length === 0) return true;
-    if (
-      user.role === "ADMIN" ||
-      user.roleName?.toLowerCase() === "admin" ||
-      user.roleId === 1 ||
-      user.id === 1
-    ) {
+    if (isAdmin(user)) {
       return true;
     }
     return allowedRoles.includes(user.role);

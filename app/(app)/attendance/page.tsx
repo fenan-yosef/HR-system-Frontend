@@ -1,8 +1,50 @@
 "use client";
 
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, CheckSquare, LogIn, LogOut } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { clockIn, clockOut, fetchAttendanceLogs, summarizeAttendanceLog } from "@/services/attendanceService";
+import type { AttendanceEntry } from "@/types/attendance";
+
+import { 
+   getDateKey, 
+   getWeekDates, 
+   formatDateLabel, 
+   formatMinutes, 
+   differenceInMinutes 
+} from "@/lib/utils-date";
+
+async function resolveLocationData() {
+   if (typeof navigator === "undefined" || !navigator.geolocation) {
+      return null;
+   }
+
+   return new Promise<{
+      latitude: number;
+      longitude: number;
+      accuracy: number;
+      label: string;
+   } | null>((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+         (position) => {
+            const { latitude, longitude, accuracy } = position.coords;
+            resolve({
+               latitude,
+               longitude,
+               accuracy,
+               label: `${latitude.toFixed(7)}, ${longitude.toFixed(7)}`,
+            });
+         },
+         () => resolve(null),
+         {
+            enableHighAccuracy: true,
+            timeout: 8000,
+            maximumAge: 0,
+         },
+      );
+   });
+}
 
 export default function AttendancePage() {
   return (

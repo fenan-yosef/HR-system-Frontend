@@ -28,7 +28,13 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
       router.replace(ROUTES.DASHBOARD);
     } catch (err) {
       console.error(err);
-      setError("Unable to sign in. Please check your credentials.");
+      if (err instanceof ApiError && err.detail) {
+        setError(err.detail);
+      } else if (err instanceof Error && err.message) {
+        setError(err.message);
+      } else {
+        setError("Unable to sign in. Please check your credentials.");
+      }
     }
   }
 

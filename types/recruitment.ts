@@ -9,20 +9,47 @@ export interface PaginatedResponse<T> {
 
 export type JobStatus = "open" | "closed" | "on_hold" | "cancelled";
 
-export interface JobPosting {
-  job_id: number;
-  title: string;
-  department: string;
-  description: string;
-  requirements: string;
-  status: JobStatus;
-  posted_date: string;
-  created_at: string;
-  updated_at: string;
+export type CustomFieldType =
+  | "short_text"
+  | "long_text"
+  | "number"
+  | "integer"
+  | "boolean"
+  | "select"
+  | "multi_select"
+  | "date"
+  | "file"
+  | "file_list"
+  | "email"
+  | "url"
+  | "phone";
+
+export interface CustomApplicationField {
+  key?: string;
+  label: string;
+  type: CustomFieldType;
+  required: boolean;
+  include_in_ai: boolean;
+  order?: number;
+  options?: string[];
+  min_value?: number;
+  max_length?: number;
+}
+
+export interface CustomFieldResponse {
+  upload_id?: number;
+  reference?: string;
+  file_name?: string;
+  mime_type?: string;
+  size_bytes?: number;
+  file_url?: string;
+  [key: string]: any;
 }
 
 export interface JobPosition {
   position_id: number;
+  public_id: string;
+  application_url?: string; // URL for the public application form
   title: string;
   department: number;
   description: string | null;
@@ -30,7 +57,34 @@ export interface JobPosition {
   posted_date: string;
   closed_date: string | null;
   created_at: string;
+  criteria_version: number;
+  recruiter_instructions?: string;
+  custom_application_fields?: CustomApplicationField[];
+  // Screening fields
+  min_gpa?: number;
+  min_years_experience?: number;
+  required_skills?: string[];
+  required_certificates?: string[];
+  allowed_universities?: string[];
+  shortlist_size?: number;
+  scoring_weights?: {
+    skills: number;
+    experience: number;
+    education: number;
+    certifications: number;
+  };
+  ai_config?: {
+    min_pass_score?: number;
+    skip_ai_on_hard_fail?: boolean;
+    final_score_blend?: {
+      rule: number;
+      ai: number;
+    };
+  };
 }
+
+// Legacy alias used by some services/routes that still call /job-posts/
+export interface JobPosting extends JobPosition {}
 
 export interface CreateJobPosition {
   title: string;
@@ -39,6 +93,27 @@ export interface CreateJobPosition {
   status?: JobStatus;
   posted_date: string;
   closed_date?: string;
+  recruiter_instructions?: string;
+  min_gpa?: number;
+  min_years_experience?: number;
+  required_skills?: string[];
+  required_certificates?: string[];
+  allowed_universities?: string[];
+  shortlist_size?: number;
+  scoring_weights?: {
+    skills: number;
+    experience: number;
+    education: number;
+    certifications: number;
+  };
+  ai_config?: {
+    min_pass_score?: number;
+    skip_ai_on_hard_fail?: boolean;
+    final_score_blend?: {
+      rule: number;
+      ai: number;
+    };
+  };
 }
 
 export interface Department {
@@ -50,7 +125,7 @@ export interface Department {
 }
 
 export interface ApplicationPosition {
-  job_id: number;
+  position_id: number;
   title: string;
   department: string;
   description: string;
@@ -61,17 +136,79 @@ export interface ApplicationPosition {
   updated_at: string;
 }
 
+export interface AiEvaluation {
+  evaluation_id: number;
+  fit_label?: "Strong fit" | "Good fit (gaps)" | "Review manually";
+  skill_score: number;
+  experience_score: number;
+  matching_percentage: number;
+  semantic_score?: number;
+  keyword_ratio?: number;
+  embedding_model_name?: string;
+  matched_keywords?: string[];
+  missing_keywords?: string[];
+  ai_rank: number;
+  notes?: string;
+  evaluated_at: string;
+  // New AI fields
+  summary?: string;
+  skill_gaps?: {
+    matched_skills: string[];
+    missing_skills: string[];
+    gaps: string[];
+  };
+  interview_questions?: string[];
+  cluster_id?: number;
+}
+
 export interface Application {
   application_id: number;
   full_name: string;
   email: string;
   phone: string;
   cv_path: string;
+  cover_letter?: string;
   position: ApplicationPosition;
+  custom_field_values?: Record<string, CustomFieldResponse | any>;
+  applicant?: {
+    applicant_id: number;
+    full_name: string;
+    email: string;
+    phone: string;
+    cv_path: string;
+    submitted_at: string;
+    documents?: Array<{
+      document_id: number;
+      document_type: string;
+      size_bytes?: number;
+      uploaded_at: string;
+      file_path?: string;
+    }>;
+  };
+  // Optional legacy list of certificate file paths
+  certificate_paths?: string[];
+  evaluation?: AiEvaluation;
+  extracted_resume?: {
+    has_json: boolean;
+    raw_llm_response: string;
+    extracted_json: any;
+  };
+  screening_result?: ScreeningResult;
+  screening_history?: ScreeningHistoryEntry[];
   status: string;
+  applicant_note?: string;
+  is_shortlisted?: boolean;
+  rejection_reason?: string;
   submitted_at: string;
   created_at: string;
   updated_at: string;
+}
+
+export interface ApplicationMetrics {
+  total: number;
+  applied_today: number;
+  shortlisted: number;
+  pending: number;
 }
 
 export interface ShortlistEntry {
@@ -91,7 +228,12 @@ export interface CreateApplicant {
   full_name: string;
   email: string;
   phone: string;
-  cv_path: string;
+  upload_id?: number; // Primary CV
+  certificate_upload_ids?: number[];
+  other_upload_ids?: number[];
+  cv_path?: string; // Legacy field
+  cover_letter?: string; // Optional cover letter
+  applicant_note?: string; // HR context only
   position_id?: number;
 }
 
