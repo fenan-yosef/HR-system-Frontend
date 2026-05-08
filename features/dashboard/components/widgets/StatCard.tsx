@@ -51,10 +51,6 @@ interface StatCardProps {
   delay?: number;
 }
 
-export function formatDateLabel(dateKey: string) {
-  const date = new Date(`${dateKey}T12:00:00`);
-  return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
-}
 
 export function StatCard({ title, value, icon, color, delay = 0 }: StatCardProps) {
   const Icon = iconMap[icon] || Zap;

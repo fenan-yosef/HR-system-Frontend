@@ -76,7 +76,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
   }, []);
 
   const todayKey = new Date().toISOString().split('T')[0];
-  
+
   const weeklyData = useMemo(() => {
     const entriesByDate = new Map<string, AttendanceEntry[]>();
     for (const entry of attendanceActivity) {
@@ -155,9 +155,8 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
               <div className="p-3 bg-orange-500/10 rounded-xl">
                 <Clock className="size-6 text-orange-500" />
               </div>
-              <span className={`text-xs font-black uppercase px-2 py-1 rounded-full ${
-                statusIsActive ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
-              }`}>
+              <span className={`text-xs font-black uppercase px-2 py-1 rounded-full ${statusIsActive ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'
+                }`}>
                 {loadingAttendance ? 'Loading...' : attendanceLabel}
               </span>
             </div>
@@ -201,7 +200,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
               { label: "Request Letter", icon: FileText, color: "text-indigo-500" },
               { label: "Update Profile", icon: User, color: "text-emerald-500" },
             ].map((service, i) => (
-              <button 
+              <button
                 key={i}
                 className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/50 hover:bg-white transition-all group"
               >
@@ -234,8 +233,8 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
               </div>
             </div>
             <p className="text-indigo-200 text-xs text-center">
-              {metrics.personal_stats.profile_completion === 100 
-                ? "Perfect! All steps completed." 
+              {metrics.personal_stats.profile_completion === 100
+                ? "Perfect! All steps completed."
                 : "Almost there! Complete your profile to unlock all features."}
             </p>
           </div>
@@ -252,12 +251,12 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
           <h3 className="text-lg font-black">Weekly Attendance Overview</h3>
         </div>
         <div className="h-64">
-           <SimpleBarChart 
-             data={weeklyData.map((d: { label: string; value: number }) => ({ label: d.label, value: Math.round(d.value / 60 * 10) / 10 }))} 
-             color="bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)] group-hover:bg-orange-400"
-             height={240}
-           />
-           <p className="text-[10px] text-center font-bold text-muted-foreground mt-4 uppercase tracking-widest">Hours worked per day</p>
+          <SimpleBarChart
+            data={weeklyData.map((d: { label: string; value: number }) => ({ label: d.label, value: Math.round(d.value / 60 * 10) / 10 }))}
+            color="bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)] group-hover:bg-orange-400"
+            height={240}
+          />
+          <p className="text-[10px] text-center font-bold text-muted-foreground mt-4 uppercase tracking-widest">Hours worked per day</p>
         </div>
       </Card>
     </div>

@@ -167,7 +167,11 @@ export default function AttendancePage() {
    }, [activity, activeMinutes, now, todayKey]);
 
    const recentActivity = useMemo(() => {
-      return [...activity].sort((a, b) => b.checkInAt.localeCompare(a.checkInAt)).slice(0, 6);
+      return [...activity].sort((a, b) => {
+         const dateA = new Date(a.checkInAt).getTime();
+         const dateB = new Date(b.checkInAt).getTime();
+         return dateB - dateA;
+      }).slice(0, 8);
    }, [activity]);
 
    const todayEntry = activity.find((entry) => entry.dateKey === todayKey) ?? null;

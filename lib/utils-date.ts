@@ -4,12 +4,13 @@ export function pad(value: number) {
 }
 
 export function getDateKey(date: Date) {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
 }
 
 export function formatDateLabel(dateKey: string) {
-  const date = new Date(`${dateKey}T00:00:00`);
-  return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 }
 
 export function formatMinutes(totalMinutes: number) {
