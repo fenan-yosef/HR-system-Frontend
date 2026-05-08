@@ -51,7 +51,7 @@ export function summarizeAttendanceLog(log: AttendanceLog, referenceNow = new Da
 }
 
 export async function fetchAttendanceLogPage(): Promise<AttendanceListResponse> {
-  return apiFetch<AttendanceListResponse>(ATTENDANCE_ENDPOINT, {
+  return apiFetch<AttendanceListResponse>(`${ATTENDANCE_ENDPOINT}?page_size=1000`, {
     requiresAuth: true,
   });
 }
