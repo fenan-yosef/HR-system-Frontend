@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, CheckSquare, Clock, LogIn, LogOut, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { createAttendanceLog, fetchAttendanceLogs, summarizeAttendanceLog, updateAttendanceLog } from "@/services/attendanceService";
+import { clockIn, clockOut, fetchAttendanceLogs, summarizeAttendanceLog } from "@/services/attendanceService";
 import type { AttendanceEntry } from "@/types/attendance";
 
 function pad(value: number) {
@@ -44,16 +44,26 @@ function getWeekDates(referenceDate: Date) {
    });
 }
 
-async function resolveLocationLabel() {
+async function resolveLocationData() {
    if (typeof navigator === "undefined" || !navigator.geolocation) {
       return null;
    }
 
-   return new Promise<string | null>((resolve) => {
+   return new Promise<{
+      latitude: number;
+      longitude: number;
+      accuracy: number;
+      label: string;
+   } | null>((resolve) => {
       navigator.geolocation.getCurrentPosition(
          (position) => {
-            const { latitude, longitude } = position.coords;
-            resolve(`${latitude.toFixed(7)}, ${longitude.toFixed(7)}`);
+            const { latitude, longitude, accuracy } = position.coords;
+            resolve({
+               latitude,
+               longitude,
+               accuracy,
+               label: `${latitude.toFixed(7)}, ${longitude.toFixed(7)}`,
+            });
          },
          () => resolve(null),
          {
@@ -111,21 +121,23 @@ export default function AttendancePage() {
    const handleCheckIn = async () => {
       if (loading || actionState || activeEntry) return;
 
-      const checkInTime = new Date();
       setActionState("check-in");
       setError(null);
 
       try {
-         const location = await resolveLocationLabel();
-         await createAttendanceLog({
-            check_in: checkInTime.toISOString(),
-            location,
+         const locationData = await resolveLocationData();
+         await clockIn({
+            check_in: new Date().toISOString(),
+            location: locationData?.label ?? "Unknown",
+            latitude: locationData?.latitude,
+            longitude: locationData?.longitude,
+            accuracy: locationData?.accuracy,
          });
          await refreshAttendance();
          setNow(new Date());
-      } catch (checkInError) {
+      } catch (checkInError: any) {
          console.error("Failed to check in", checkInError);
-         setError("Check-in failed. Please try again.");
+         setError(checkInError?.detail ?? "Check-in failed. Please try again.");
       } finally {
          setActionState(null);
       }
@@ -134,19 +146,22 @@ export default function AttendancePage() {
    const handleCheckOut = async () => {
       if (loading || actionState || !activeEntry) return;
 
-      const checkOutTime = new Date();
       setActionState("check-out");
       setError(null);
 
       try {
-         await updateAttendanceLog(activeEntry.attendanceId, {
-            check_out: checkOutTime.toISOString(),
+         const locationData = await resolveLocationData();
+         await clockOut({
+            check_out: new Date().toISOString(),
+            latitude: locationData?.latitude,
+            longitude: locationData?.longitude,
+            accuracy: locationData?.accuracy,
          });
          await refreshAttendance();
-         setNow(checkOutTime);
-      } catch (checkOutError) {
+         setNow(new Date());
+      } catch (checkOutError: any) {
          console.error("Failed to check out", checkOutError);
-         setError("Check-out failed. Please try again.");
+         setError(checkOutError?.detail ?? "Check-out failed. Please try again.");
       } finally {
          setActionState(null);
       }
@@ -219,9 +234,9 @@ export default function AttendancePage() {
 
          <div className="grid gap-6 md:grid-cols-4">
             <Card className="flex flex-col items-center justify-center border-none p-6 text-center shadow-sm">
+               <span className="text-xs font-bold uppercase text-muted-foreground">Current Session</span>
                <div className="relative mb-4 flex size-32 items-center justify-center rounded-full border-4 border-primary/20">
                   <div className="text-center">
-                     <span className="text-xs font-bold uppercase text-muted-foreground">Current Session</span>
                      <p className="tabular-nums text-3xl font-black text-foreground">{formatMinutes(activeMinutes)}</p>
                      <span className={`text-xs font-bold ${activeEntry ? "text-emerald-500" : "text-muted-foreground"}`}>
                         {activeEntry ? "Active" : "Offline"}

@@ -79,3 +79,19 @@ export function updateAttendanceLog(
     requiresAuth: true,
   });
 }
+
+export function clockIn(data: Partial<AttendanceCreatePayload>): Promise<AttendanceLog> {
+  return apiFetch<AttendanceLog>(`${ATTENDANCE_ENDPOINT}clock-in/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
+export function clockOut(data: Partial<AttendanceUpdatePayload>): Promise<AttendanceLog> {
+  return apiFetch<AttendanceLog>(`${ATTENDANCE_ENDPOINT}clock-out/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
