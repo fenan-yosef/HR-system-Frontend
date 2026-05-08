@@ -25,14 +25,15 @@ export function differenceInMinutes(start: Date, end: Date) {
 
 export function getWeekDates(referenceDate: Date) {
   const current = new Date(referenceDate);
-  const day = current.getDay();
+  const day = current.getUTCDay();
   const diffToMonday = day === 0 ? -6 : 1 - day;
   const monday = new Date(current);
-  monday.setDate(current.getDate() + diffToMonday);
+  monday.setUTCDate(current.getUTCDate() + diffToMonday);
+  monday.setUTCHours(0, 0, 0, 0);
 
   return Array.from({ length: 7 }, (_, index) => {
     const date = new Date(monday);
-    date.setDate(monday.getDate() + index);
+    date.setUTCDate(monday.getUTCDate() + index);
     return date;
   });
 }

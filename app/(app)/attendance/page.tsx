@@ -161,7 +161,7 @@ export default function AttendancePage() {
          return {
             label: date.toLocaleDateString([], { weekday: "short" }),
             totalMinutes,
-            barHeight: Math.min(100, Math.round((totalMinutes / 540) * 100)),
+            barHeight: Math.max(2, Math.min(100, Math.round((totalMinutes / 600) * 100))),
          };
       });
    }, [activity, activeMinutes, now, todayKey]);

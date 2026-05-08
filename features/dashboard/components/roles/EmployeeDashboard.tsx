@@ -88,7 +88,14 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
     return getWeekDates(new Date()).map((date: Date) => {
       const dateKey = getDateKey(date);
       const matchingEntries = entriesByDate.get(dateKey) ?? [];
-      const totalMinutes = matchingEntries.reduce((sum, entry) => sum + entry.totalMinutes, 0);
+      const totalMinutes = matchingEntries.reduce((sum, entry) => {
+        if (entry.status === "active" && dateKey === todayKey) {
+          const activeSessionStart = new Date(entry.checkInAt);
+          const activeMins = Math.max(0, Math.floor((new Date().getTime() - activeSessionStart.getTime()) / 60000));
+          return sum + activeMins;
+        }
+        return sum + entry.totalMinutes;
+      }, 0);
 
       return {
         label: date.toLocaleDateString([], { weekday: "short" }),
