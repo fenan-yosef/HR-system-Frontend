@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useUI } from "@/context/UIContext";
 import { cn } from "@/lib/utils";
 import { ROUTES } from "@/constants/routes";
 import { ROLE_LABELS } from "@/constants/roles";
@@ -24,6 +25,8 @@ import {
   FileText,
   UserCircle,
   Clock,
+  MessageSquareText,
+  ShieldAlert,
 } from "lucide-react";
 import { UserRole } from "@/types/auth";
 import Image from "next/image";
@@ -135,6 +138,12 @@ const NAVIGATION_CONFIG: NavSection[] = [
         roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
       },
       {
+        label: "Complaints",
+        href: ROUTES.HR_COMPLAINTS,
+        icon: MessageSquareText,
+        roles: ["ADMIN", "HR_STAFF"],
+      },
+      {
         label: "ID Cards",
         href: ROUTES.HR_ID_CARDS,
         icon: CreditCard,
@@ -162,6 +171,12 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "My Disciplinary",
         href: ROUTES.MY_DISCIPLINARY,
         icon: ShieldAlert,
+        roles: ["EMPLOYEE"],
+      },
+      {
+        label: "Submit Complaint",
+        href: ROUTES.EMPLOYEE_REQUEST_COMPLAINT,
+        icon: MessageSquareText,
         roles: ["EMPLOYEE"],
       },
       // {
@@ -240,8 +255,13 @@ const NAVIGATION_CONFIG: NavSection[] = [
 ];
 
 export function Sidebar() {
+  const { isSidebarOpen, closeSidebar } = useUI();
   const pathname = usePathname();
   const { user, logout } = useAuth();
+
+  const handleLinkClick = () => {
+    closeSidebar();
+  };
 
   const autoOpenSections = useMemo(() => {
     const nextAutoOpen: Record<string, boolean> = {};
@@ -447,7 +467,7 @@ export function Sidebar() {
                   </p>
                 </div>
                 <ChevronRight className="size-3.5 ml-auto opacity-0 -translate-x-2 group-hover/user:opacity-50 group-hover/user:translate-x-0 transition-all" />
-              </Link>
+              </div>
 
               <div className="px-4 pb-4">
                 <button
