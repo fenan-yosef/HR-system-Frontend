@@ -14,20 +14,70 @@ type JobPosting = {
 };
 
 const JOBS: JobPosting[] = [
-  { id: "J-001", title: "Software Engineer", department: "IT", location: "Addis Ababa", applicants: 42, status: "Open" },
-  { id: "J-002", title: "Marketing Specialist", department: "Marketing", location: "Adama", applicants: 28, status: "Open" },
-  { id: "J-003", title: "Sales Manager", department: "Sales", location: "Addis Ababa", applicants: 15, status: "Closed" },
-  { id: "J-004", title: "HR Coordinator", department: "Human Resources", location: "Adama", applicants: 33, status: "Open" },
-  { id: "J-005", title: "Data Analyst", department: "IT", location: "Addis Ababa", applicants: 19, status: "Open" },
-  { id: "J-006", title: "Customer Support Rep", department: "Customer Service", location: "Adama", applicants: 24, status: "Closed" },
+  {
+    id: "J-001",
+    title: "Software Engineer",
+    department: "IT",
+    location: "Addis Ababa",
+    applicants: 42,
+    status: "Open",
+  },
+  {
+    id: "J-002",
+    title: "Marketing Specialist",
+    department: "Marketing",
+    location: "Adama",
+    applicants: 28,
+    status: "Open",
+  },
+  {
+    id: "J-003",
+    title: "Sales Manager",
+    department: "Sales",
+    location: "Addis Ababa",
+    applicants: 15,
+    status: "Closed",
+  },
+  {
+    id: "J-004",
+    title: "HR Coordinator",
+    department: "Human Resources",
+    location: "Adama",
+    applicants: 33,
+    status: "Open",
+  },
+  {
+    id: "J-005",
+    title: "Data Analyst",
+    department: "IT",
+    location: "Addis Ababa",
+    applicants: 19,
+    status: "Open",
+  },
+  {
+    id: "J-006",
+    title: "Customer Support Rep",
+    department: "Customer Service",
+    location: "Adama",
+    applicants: 24,
+    status: "Closed",
+  },
 ];
 
-const DEPARTMENTS = ["All", "IT", "Marketing", "Sales", "Human Resources", "Customer Service"] as const;
+const DEPARTMENTS = [
+  "All",
+  "IT",
+  "Marketing",
+  "Sales",
+  "Human Resources",
+  "Customer Service",
+] as const;
 const LOCATIONS = ["All", "Addis Ababa", "Adama"] as const;
 const STATUSES = ["All", "Open", "Closed"] as const;
 
 export default function RecruitmentPage() {
-  const [department, setDepartment] = useState<(typeof DEPARTMENTS)[number]>("All");
+  const [department, setDepartment] =
+    useState<(typeof DEPARTMENTS)[number]>("All");
   const [location, setLocation] = useState<(typeof LOCATIONS)[number]>("All");
   const [status, setStatus] = useState<(typeof STATUSES)[number]>("All");
   const [q, setQ] = useState("");
@@ -79,7 +129,9 @@ export default function RecruitmentPage() {
       <div className="flex min-h-screen">
         {/* Sidebar */}
         <aside className="w-64 shrink-0 bg-blue-700 text-white">
-          <div className="px-6 py-5 text-xl font-semibold tracking-tight">HRMS</div>
+          <div className="px-6 py-5 text-xl font-semibold tracking-tight">
+            HRMS
+          </div>
           <nav className="px-3 py-2">
             <SidebarItem label="Dashboard" active={false} />
             <SidebarItem label="Employee List" active={false} />
@@ -95,8 +147,12 @@ export default function RecruitmentPage() {
           {/* Top bar */}
           <header className="flex items-center justify-between border-b bg-white px-6 py-4">
             <div>
-              <h1 className="text-lg font-semibold text-slate-900">Recruitment Management</h1>
-              <p className="text-sm text-slate-500">HR / Recruitment Management</p>
+              <h1 className="text-lg font-semibold text-slate-900">
+                Recruitment Management
+              </h1>
+              <p className="text-sm text-slate-500">
+                HR / Recruitment Management
+              </p>
             </div>
 
             <div className="flex items-center gap-3">
@@ -117,23 +173,25 @@ export default function RecruitmentPage() {
                   <Select
                     label="Department"
                     value={department}
-                    onChange={(v) => setDepartment(v as any)}
-                    options={DEPARTMENTS as unknown as string[]}
+                    onChange={setDepartment}
+                    options={DEPARTMENTS}
                   />
                   <Select
                     label="Status"
                     value={status}
-                    onChange={(v) => setStatus(v as any)}
-                    options={STATUSES as unknown as string[]}
+                    onChange={setStatus}
+                    options={STATUSES}
                   />
                   <Select
                     label="Location"
                     value={location}
-                    onChange={(v) => setLocation(v as any)}
-                    options={LOCATIONS as unknown as string[]}
+                    onChange={setLocation}
+                    options={LOCATIONS}
                   />
                   <div>
-                    <label className="mb-1 block text-xs font-medium text-slate-600">Search</label>
+                    <label className="mb-1 block text-xs font-medium text-slate-600">
+                      Search
+                    </label>
                     <div className="flex items-center gap-2 rounded-lg border px-3 py-2">
                       <input
                         value={q}
@@ -178,9 +236,15 @@ export default function RecruitmentPage() {
                     ) : (
                       rows.map((job) => (
                         <tr key={job.id} className="hover:bg-slate-50">
-                          <td className="px-5 py-4 font-medium text-slate-900">{job.title}</td>
-                          <td className="px-5 py-4 text-slate-700">{job.department}</td>
-                          <td className="px-5 py-4 text-slate-700">{job.applicants} Applicants</td>
+                          <td className="px-5 py-4 font-medium text-slate-900">
+                            {job.title}
+                          </td>
+                          <td className="px-5 py-4 text-slate-700">
+                            {job.department}
+                          </td>
+                          <td className="px-5 py-4 text-slate-700">
+                            {job.applicants} Applicants
+                          </td>
                           <td className="px-5 py-4">
                             <StatusPill status={job.status} />
                           </td>
@@ -218,7 +282,11 @@ export default function RecruitmentPage() {
                   <span className="font-medium text-slate-900">
                     {Math.min(page * pageSize, filtered.length)}
                   </span>{" "}
-                  of <span className="font-medium text-slate-900">{filtered.length}</span> entries
+                  of{" "}
+                  <span className="font-medium text-slate-900">
+                    {filtered.length}
+                  </span>{" "}
+                  entries
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -230,7 +298,11 @@ export default function RecruitmentPage() {
                     Prev
                   </button>
 
-                  <PageButtons page={page} totalPages={totalPages} onPick={setPage} />
+                  <PageButtons
+                    page={page}
+                    totalPages={totalPages}
+                    onPick={setPage}
+                  />
 
                   <button
                     className="rounded-lg border bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-50"
@@ -263,23 +335,25 @@ function SidebarItem({ label, active }: { label: string; active: boolean }) {
   );
 }
 
-function Select({
+function Select<TOption extends string>({
   label,
   value,
   onChange,
   options,
 }: {
   label: string;
-  value: string;
-  onChange: (v: string) => void;
-  options: string[];
+  value: TOption;
+  onChange: (v: TOption) => void;
+  options: readonly TOption[];
 }) {
   return (
     <div>
-      <label className="mb-1 block text-xs font-medium text-slate-600">{label}</label>
+      <label className="mb-1 block text-xs font-medium text-slate-600">
+        {label}
+      </label>
       <select
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value as TOption)}
         className="w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-blue-500"
       >
         {options.map((opt) => (
@@ -298,7 +372,13 @@ function StatusPill({ status }: { status: JobStatus }) {
       ? "bg-emerald-100 text-emerald-700 border-emerald-200"
       : "bg-rose-100 text-rose-700 border-rose-200";
 
-  return <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${cls}`}>{status}</span>;
+  return (
+    <span
+      className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${cls}`}
+    >
+      {status}
+    </span>
+  );
 }
 
 function PageButtons({
@@ -326,7 +406,9 @@ function PageButtons({
           onClick={() => onPick(p)}
           className={[
             "h-9 w-9 rounded-lg border text-sm",
-            p === page ? "bg-blue-600 text-white border-blue-600" : "bg-white text-slate-700 hover:bg-slate-50",
+            p === page
+              ? "bg-blue-600 text-white border-blue-600"
+              : "bg-white text-slate-700 hover:bg-slate-50",
           ].join(" ")}
           type="button"
         >

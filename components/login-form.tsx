@@ -4,22 +4,16 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/constants/routes";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type HTMLMotionProps } from "framer-motion";
 import { AlertCircle, Lock, User } from "lucide-react";
 
-export function LoginForm({
-  className,
-  ...props
-}: React.ComponentProps<"div">) {
+type LoginFormProps = Omit<HTMLMotionProps<"div">, "children">;
+
+export function LoginForm({ className, ...props }: LoginFormProps) {
   const router = useRouter();
   const { login, isLoading } = useAuth();
   const [username, setUsername] = useState("");
@@ -61,12 +55,9 @@ export function LoginForm({
       animate="visible"
       variants={containerVariants}
       className={cn("w-full max-w-sm", className)}
+      {...props}
     >
-      <form
-        className="flex flex-col gap-8"
-        onSubmit={handleSubmit}
-        {...(props as any)}
-      >
+      <form className="flex flex-col gap-8" onSubmit={handleSubmit}>
         <div className="flex flex-col items-center gap-2 text-center">
           <motion.div
             initial={{ scale: 0.5, opacity: 0 }}
@@ -76,13 +67,13 @@ export function LoginForm({
           >
             <Lock className="size-7" />
           </motion.div>
-          <motion.h1 
+          <motion.h1
             variants={itemVariants}
             className="text-3xl font-extrabold tracking-tight"
           >
             Welcome Back
           </motion.h1>
-          <motion.p 
+          <motion.p
             variants={itemVariants}
             className="text-muted-foreground text-sm"
           >
@@ -93,7 +84,10 @@ export function LoginForm({
         <motion.div variants={itemVariants} className="space-y-5">
           <FieldGroup className="gap-5">
             <Field className="space-y-2">
-              <FieldLabel htmlFor="username" className="text-xs uppercase tracking-wider font-semibold opacity-70">
+              <FieldLabel
+                htmlFor="username"
+                className="text-xs uppercase tracking-wider font-semibold opacity-70"
+              >
                 Username
               </FieldLabel>
               <div className="relative group">
@@ -114,7 +108,10 @@ export function LoginForm({
 
             <Field className="space-y-2">
               <div className="flex items-center justify-between">
-                <FieldLabel htmlFor="password" className="text-xs uppercase tracking-wider font-semibold opacity-70">
+                <FieldLabel
+                  htmlFor="password"
+                  className="text-xs uppercase tracking-wider font-semibold opacity-70"
+                >
                   Password
                 </FieldLabel>
                 <a
@@ -153,12 +150,9 @@ export function LoginForm({
               )}
             </AnimatePresence>
 
-            <motion.div
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <Button 
-                type="submit" 
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                type="submit"
                 disabled={isLoading}
                 className="w-full h-11 text-sm font-bold shadow-lg shadow-primary/20"
               >
@@ -166,7 +160,11 @@ export function LoginForm({
                   <div className="flex items-center gap-2">
                     <motion.div
                       animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      transition={{
+                        duration: 1,
+                        repeat: Infinity,
+                        ease: "linear",
+                      }}
                       className="size-4 border-2 border-white/30 border-t-white rounded-full"
                     />
                     Authenticating...
@@ -179,10 +177,7 @@ export function LoginForm({
           </FieldGroup>
         </motion.div>
 
-        <motion.div 
-          variants={itemVariants}
-          className="text-center"
-        >
+        <motion.div variants={itemVariants} className="text-center">
           <p className="text-xs text-muted-foreground">
             Trusted by modern HR teams worldwide.
           </p>

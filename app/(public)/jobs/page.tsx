@@ -5,8 +5,14 @@ import Link from "next/link";
 import { fetchPublicJobPositions } from "@/services/recruitmentService";
 import { JobPosition } from "@/types/recruitment";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "lucide-react"; // Wait, Badge is usually a component, let me check if I have it. I'll use a span if not.
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function PublicJobsPage() {
   const [jobs, setJobs] = useState<JobPosition[]>([]);
@@ -17,7 +23,9 @@ export default function PublicJobsPage() {
     fetchPublicJobPositions()
       .then((response) => {
         // Filter for open jobs only
-        const openJobs = response.results.filter((job) => job.status === "open");
+        const openJobs = response.results.filter(
+          (job) => job.status === "open",
+        );
         setJobs(openJobs);
       })
       .catch((err) => {
@@ -41,7 +49,11 @@ export default function PublicJobsPage() {
     return (
       <div className="text-center py-12 text-red-500">
         <p>{error}</p>
-        <Button onClick={() => window.location.reload()} variant="outline" className="mt-4">
+        <Button
+          onClick={() => window.location.reload()}
+          variant="outline"
+          className="mt-4"
+        >
           Retry
         </Button>
       </div>
@@ -55,7 +67,8 @@ export default function PublicJobsPage() {
           Join Our Team
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Explore exciting opportunities and help us build the future. We are always looking for talented individuals.
+          Explore exciting opportunities and help us build the future. We are
+          always looking for talented individuals.
         </p>
       </div>
 
@@ -68,12 +81,18 @@ export default function PublicJobsPage() {
           </Card>
         ) : (
           jobs.map((job) => (
-            <Card key={job.position_id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={job.position_id}
+              className="hover:shadow-md transition-shadow"
+            >
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-xl text-blue-600">
-                      <Link href={`/jobs/${job.position_id}`} className="hover:underline">
+                      <Link
+                        href={`/jobs/${job.position_id}`}
+                        className="hover:underline"
+                      >
                         {job.title}
                       </Link>
                     </CardTitle>
@@ -92,7 +111,10 @@ export default function PublicJobsPage() {
                 </p>
               </CardContent>
               <CardFooter>
-                <Link href={`/jobs/${job.position_id}`} className="w-full sm:w-auto">
+                <Link
+                  href={`/jobs/${job.position_id}`}
+                  className="w-full sm:w-auto"
+                >
                   <Button>View Details & Apply</Button>
                 </Link>
               </CardFooter>

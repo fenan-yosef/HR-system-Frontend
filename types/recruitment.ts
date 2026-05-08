@@ -105,3 +105,11 @@ export interface ApplicantResponse {
   tracking_code: string;
   tracking_code_sent_at: string;
 }
+
+export interface ApplicantTrackingResult {
+  full_name?: string;
+  status?: string;
+  position?: { title?: string } | string;
+  submitted_at?: string;
+  [key: string]: unknown;
+}

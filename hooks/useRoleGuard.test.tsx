@@ -6,7 +6,7 @@ import { ROUTES } from "@/constants/routes";
 import type { AuthUser } from "@/types/auth";
 
 const mocks = vi.hoisted(() => ({
-  pathname: vi.fn(() => ROUTES.DASHBOARD),
+  pathname: vi.fn((): string => ROUTES.DASHBOARD),
   replace: vi.fn(),
   useAuth: vi.fn(),
 }));
@@ -82,7 +82,9 @@ describe("useRoleGuard", () => {
       isLoading: false,
     });
 
-    const { result } = renderHook(() => useRoleGuard({ allowedRoles: ["ADMIN"] }));
+    const { result } = renderHook(() =>
+      useRoleGuard({ allowedRoles: ["ADMIN"] }),
+    );
 
     await waitFor(() => {
       expect(result.current.canAccess).toBe(true);

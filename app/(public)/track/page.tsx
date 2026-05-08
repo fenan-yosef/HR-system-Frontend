@@ -2,17 +2,24 @@
 
 import { useState } from "react";
 import { trackApplicant } from "@/services/recruitmentService";
+import type { ApplicantTrackingResult } from "@/types/recruitment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Search } from "lucide-react";
 
 export default function TrackApplicationPage() {
   const [trackingCode, setTrackingCode] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any | null>(null);
+  const [result, setResult] = useState<ApplicantTrackingResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,9 +33,11 @@ export default function TrackApplicationPage() {
     try {
       const data = await trackApplicant(trackingCode, email);
       setResult(data);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Tracking failed", err);
-      setError("Could not find an application with that tracking code. Please check and try again.");
+      setError(
+        "Could not find an application with that tracking code. Please check and try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -43,7 +52,8 @@ export default function TrackApplicationPage() {
             Track Your Application
           </CardTitle>
           <CardDescription>
-            Enter your tracking code to see the current status of your application.
+            Enter your tracking code to see the current status of your
+            application.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -92,27 +102,43 @@ export default function TrackApplicationPage() {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm font-medium text-gray-500">Applicant Name</p>
-                <p className="text-lg font-semibold">{result.full_name || "N/A"}</p>
+                <p className="text-sm font-medium text-gray-500">
+                  Applicant Name
+                </p>
+                <p className="text-lg font-semibold">
+                  {result.full_name || "N/A"}
+                </p>
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Current Status</p>
+                <p className="text-sm font-medium text-gray-500">
+                  Current Status
+                </p>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize mt-1">
                   {result.status || "Received"}
                 </span>
               </div>
               {result.position && (
-                 <div className="col-span-2">
+                <div className="col-span-2">
                   <p className="text-sm font-medium text-gray-500">Position</p>
-                  <p>{result.position.title || result.position}</p>
-                 </div>
+                  <p>
+                    {typeof result.position === "string"
+                      ? result.position
+                      : (result.position.title ?? "N/A")}
+                  </p>
+                </div>
               )}
               <div className="col-span-2">
-                 <p className="text-sm font-medium text-gray-500">Submitted On</p>
-                 <p>{result.submitted_at ? new Date(result.submitted_at).toLocaleDateString() : "N/A"}</p>
+                <p className="text-sm font-medium text-gray-500">
+                  Submitted On
+                </p>
+                <p>
+                  {result.submitted_at
+                    ? new Date(result.submitted_at).toLocaleDateString()
+                    : "N/A"}
+                </p>
               </div>
             </div>
-            
+
             {/* Steps Visualizer Placeholder */}
             {/* If we knew the status steps, we could render a progress bar here */}
           </CardContent>

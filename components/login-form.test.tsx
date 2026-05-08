@@ -24,8 +24,10 @@ vi.mock("@/hooks/useAuth", () => ({
 vi.mock("framer-motion", async () => {
   const React = await import("react");
 
-  const createMotionComponent = (Tag: keyof JSX.IntrinsicElements) => {
-    return ({
+  type IntrinsicTag = Extract<keyof React.JSX.IntrinsicElements, string>;
+
+  const createMotionComponent = (Tag: IntrinsicTag) => {
+    const MotionComponent = ({
       children,
       animate: _animate,
       exit: _exit,
@@ -35,14 +37,28 @@ vi.mock("framer-motion", async () => {
       whileHover: _whileHover,
       whileTap: _whileTap,
       ...props
-    }: React.HTMLAttributes<HTMLElement> & Record<string, unknown>) =>
-      React.createElement(Tag, props, children);
+    }: React.HTMLAttributes<HTMLElement> & Record<string, unknown>) => {
+      void _animate;
+      void _exit;
+      void _initial;
+      void _transition;
+      void _variants;
+      void _whileHover;
+      void _whileTap;
+      return React.createElement(Tag, props, children);
+    };
+
+    MotionComponent.displayName = `motion.${String(Tag)}`;
+    return MotionComponent;
   };
 
+  const AnimatePresence = ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  );
+  AnimatePresence.displayName = "AnimatePresence";
+
   return {
-    AnimatePresence: ({ children }: { children: React.ReactNode }) => (
-      <>{children}</>
-    ),
+    AnimatePresence,
     motion: {
       div: createMotionComponent("div"),
       h1: createMotionComponent("h1"),
