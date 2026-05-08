@@ -23,8 +23,8 @@ export function SimpleBarChart({ data, height = 200, color = "bg-primary" }: Bar
             transition={{ duration: 1, delay: i * 0.1 }}
             className={cn("w-full rounded-t-lg transition-all group-hover:brightness-110", color)}
           >
-            <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-zinc-800 text-white text-[10px] py-1 px-2 rounded font-bold whitespace-nowrap z-20">
-              {item.value} units
+            <div className="absolute -top-10 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all bg-zinc-900 text-white text-[10px] py-1.5 px-2.5 rounded-lg font-bold whitespace-nowrap z-30 shadow-xl border border-white/10 pointer-events-none">
+              {item.value}h worked
             </div>
           </motion.div>
           <span className="text-[10px] font-bold text-muted-foreground truncate w-full text-center">
