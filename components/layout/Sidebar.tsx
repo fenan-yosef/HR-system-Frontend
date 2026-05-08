@@ -94,6 +94,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         subItems: [
           { label: "Time Logs", href: ROUTES.ATTENDANCE },
           { label: "Leave Requests", href: ROUTES.LEAVE_REQUESTS },
+          { label: "Leave Approvals", href: ROUTES.LEAVE_APPROVALS },
         ],
       },
       // {

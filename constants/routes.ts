@@ -12,6 +12,7 @@ export const ROUTES = {
   OFFBOARDING: "/offboarding",
   ATTENDANCE: "/attendance",
   LEAVE_REQUESTS: "/leave-requests",
+  LEAVE_APPROVALS: "/leave-approvals",
   PAYROLL: "/payroll",
 
   // Performance & Growth
