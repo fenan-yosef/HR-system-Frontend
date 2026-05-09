@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { CalendarDays, Plus, Clock, CheckCircle2, XCircle, X } from "lucide-react";
+import { Plus, Clock, CheckCircle2, XCircle, X } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { apiFetch } from "@/services/apiClient";
+import { ApiError, apiFetch } from "@/services/apiClient";
 
 type LeaveType = "annual" | "sick" | "maternity" | "emergency" | "unpaid" | "other";
 type LeaveStatus = "Approved" | "Rejected" | "Pending" | "Withdrawn";
@@ -150,11 +150,11 @@ export default function LeaveRequestsPage() {
 
     setSubmitting(true);
     try {
-      const created = await apiFetch<LeaveRequestItem>("leave-requests", {
-        method: "POST",
-        body: JSON.stringify(payload),
-        requiresAuth: true,
-      });
+        const created = await apiFetch<LeaveRequestItem>("leave-requests", {
+          method: "POST",
+          body: JSON.stringify(payload),
+          requiresAuth: true,
+        });
 
       // If API returns the created object, use it; otherwise synthesize a pending entry
       const newEntry: LeaveRequestItem = created && created.id
@@ -173,8 +173,14 @@ export default function LeaveRequestsPage() {
       setRequests((prev) => [newEntry, ...prev]);
       closeModal();
     } catch (err) {
-      console.error(err);
-      setError("Failed to submit leave request.");
+      console.error("Leave request submission failed:", err);
+      const detail =
+        err instanceof ApiError
+          ? err.detail
+          : err instanceof Error
+            ? err.message
+            : null;
+      setError(detail ? `Failed to submit leave request: ${detail}` : "Failed to submit leave request.");
     } finally {
       setSubmitting(false);
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Folder, FileText, Upload, MoreVertical, Search, File, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
+import { Folder, FileText, Upload, MoreVertical, Search, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -32,7 +32,7 @@ export default function DocumentsPage() {
                <span>3.2 GB / 10 GB</span>
             </div>
             <div className="h-2 w-full bg-background rounded-full overflow-hidden">
-               <div className="h-full bg-gradient-to-r from-blue-500 to-purple-500 w-[32%]" />
+               <div className="h-full bg-linear-to-r from-blue-500 to-purple-500 w-[32%]" />
             </div>
          </div>
          <button className="text-xs font-bold text-primary hover:underline">Upgrade Plan</button>

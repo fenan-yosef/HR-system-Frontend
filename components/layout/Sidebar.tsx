@@ -26,6 +26,7 @@ import Image from "next/image";
 interface NavSubItem {
   label: string;
   href: string;
+  roles?: UserRole[];
 }
 
 interface NavItem {
@@ -94,7 +95,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         subItems: [
           { label: "Time Logs", href: ROUTES.ATTENDANCE },
           { label: "Leave Requests", href: ROUTES.LEAVE_REQUESTS },
-          { label: "Leave Approvals", href: ROUTES.LEAVE_APPROVALS },
+          { label: "Leave Approvals", href: ROUTES.LEAVE_APPROVALS, roles: ["ADMIN", "HR_MANAGER", "HR_CEO"] },
         ],
       },
       // {
@@ -269,28 +270,34 @@ export function Sidebar() {
               transition={{ duration: 0.2, ease: "easeInOut" }}
               className="overflow-hidden flex flex-col gap-0.5 pl-9 pr-2"
             >
-              {item.subItems?.map((sub, idx) => (
-                <Link
-                  key={idx}
-                  href={sub.href}
-                  className={cn(
-                    "flex items-center gap-2 rounded-lg py-2 px-3 text-xs transition-colors",
-                    pathname === sub.href
-                      ? "text-primary font-bold"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  <div
+              {item.subItems?.map((sub, idx) => {
+                // Filter subItem by role
+                if (sub.roles && !sub.roles.includes(userRole)) {
+                  return null;
+                }
+                return (
+                  <Link
+                    key={idx}
+                    href={sub.href}
                     className={cn(
-                      "size-1 rounded-full",
+                      "flex items-center gap-2 rounded-lg py-2 px-3 text-xs transition-colors",
                       pathname === sub.href
-                        ? "bg-primary"
-                        : "bg-muted-foreground/30",
+                        ? "text-primary font-bold"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground",
                     )}
-                  />
-                  {sub.label}
-                </Link>
-              ))}
+                  >
+                    <div
+                      className={cn(
+                        "size-1 rounded-full",
+                        pathname === sub.href
+                          ? "bg-primary"
+                          : "bg-muted-foreground/30",
+                      )}
+                    />
+                    {sub.label}
+                  </Link>
+                );
+              })}
             </motion.div>
           )}
         </AnimatePresence>
