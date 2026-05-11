@@ -35,6 +35,7 @@ export const ROUTES = {
   HR_LETTER_REQUESTS: "/hr/letter-requests",
   HR_ID_CARDS: "/hr/id-cards",
   HR_COMPLAINTS: "/hr/complaints",
+  HR_BENEFICIARIES: "/hr/beneficiaries",
 
   // Disciplinary Management
   HR_DISCIPLINARY: "/hr/disciplinary",

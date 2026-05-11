@@ -135,7 +135,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
   const latestEntry = attendanceActivity[0] ?? null;
   const attendanceLabel = activeEntry
     ? "Clocked In"
-    : metrics.personal_stats.attendance;
+    : (metrics?.personal_stats?.attendance ?? "Unknown");
   const statusIsActive = attendanceLabel === "Clocked In";
 
   const handleAttendanceAction = async () => {
@@ -307,7 +307,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
             <div className="flex-1 flex flex-col justify-center items-center py-4">
               <div className="size-24 rounded-full border-4 border-white/20 flex items-center justify-center relative">
                 <span className="text-2xl font-black">
-                  {metrics.personal_stats.profile_completion}%
+                  {metrics?.personal_stats?.profile_completion ?? 0}%
                 </span>
                 <svg className="absolute inset-0 size-full -rotate-90">
                   <circle
@@ -320,7 +320,9 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
                     strokeDasharray="276"
                     strokeDashoffset={
                       276 -
-                      (276 * metrics.personal_stats.profile_completion) / 100
+                      (276 *
+                        (metrics?.personal_stats?.profile_completion ?? 0)) /
+                        100
                     }
                     className="transition-all duration-1000"
                   />
@@ -328,7 +330,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
               </div>
             </div>
             <p className="text-indigo-200 text-xs text-center">
-              {metrics.personal_stats.profile_completion === 100
+              {(metrics?.personal_stats?.profile_completion ?? 0) === 100
                 ? "Perfect! All steps completed."
                 : "Almost there! Complete your profile to unlock all features."}
             </p>

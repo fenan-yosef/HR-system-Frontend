@@ -203,7 +203,17 @@ export async function apiDownload(url: string): Promise<string> {
     headers.set("Authorization", `Bearer ${token}`);
   }
 
-  const response = await fetch(url, { headers });
+  // Resolve relative API paths to full backend URL so downloads work
+  // when callers pass "/api/.." or "/beneficiaries/...".
+  let fetchUrl = url;
+  if (!/^https?:\/\//i.test(url)) {
+    let path = url.replace(/^\/+/, "");
+    if (path.startsWith("api/")) path = path.replace(/^api\//, "");
+    const endpointPath = ensureTrailingSlash(path);
+    fetchUrl = `${API_BASE_URL}${endpointPath}`;
+  }
+
+  const response = await fetch(fetchUrl, { headers });
 
   if (!response.ok) {
     throw new Error(`Download failed with status ${response.status}`);
