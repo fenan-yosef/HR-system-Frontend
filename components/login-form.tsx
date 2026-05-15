@@ -103,6 +103,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
                 <Input
                   id="username"
                   type="text"
+                  autoComplete="username"
                   placeholder="admin"
                   required
                   value={username}
@@ -134,6 +135,7 @@ export function LoginForm({ className, ...props }: LoginFormProps) {
                 <Input
                   id="password"
                   type="password"
+                  autoComplete="current-password"
                   required
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
