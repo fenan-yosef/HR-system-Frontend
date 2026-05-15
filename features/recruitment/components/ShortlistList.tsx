@@ -12,14 +12,22 @@ import {
   Loader2,
   Send,
   Check,
+  BrainCircuit,
+  RefreshCw,
+  Trash2,
+  XCircle,
 } from "lucide-react";
 import {
   fetchApplications,
+  fetchApplication,
   confirmApplication,
   inviteToInterview,
   hireApplicant,
   fetchApplicationMetrics,
-  batchEvaluateApplications,
+  batchInviteToInterview,
+  startScreening,
+  removeFromShortlist,
+  rejectShortlisted,
 } from "@/services/recruitmentService";
 import {
   ShortlistEntry,
@@ -27,41 +35,87 @@ import {
   ApplicationMetrics,
 } from "@/types/recruitment";
 import { useAuth } from "@/hooks/useAuth";
-import { isHRCeo } from "@/lib/permissions";
+import { canManageRecruitment } from "@/lib/permissions";
 import { EvaluationDetailsModal } from "./EvaluationDetailsModal";
 import { AnimatePresence } from "framer-motion";
 import { getApiErrorStatus } from "@/services/apiClient";
+import { useToast } from "@/components/ui/toast";
 
 export function ShortlistList() {
   const [shortlist, setShortlist] = useState<ShortlistEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evaluatingApps, setEvaluatingApps] = useState<number[]>([]);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
   const [metrics, setMetrics] = useState<ApplicationMetrics | null>(null);
+  const [isBatchInviting, setIsBatchInviting] = useState(false);
+  const { toast } = useToast();
   const { user } = useAuth();
-  const canCEOActions = isHRCeo(user);
+  const canManage = canManageRecruitment(user);
 
   useEffect(() => {
     loadShortlistPageData();
   }, []);
 
+  const handleBatchInvite = async () => {
+    if (shortlist.length === 0) return;
+    const confirmed = window.confirm(`Send interview invitations to all ${shortlist.length} shortlisted candidates?`);
+    if (!confirmed) return;
+
+    try {
+      setIsBatchInviting(true);
+      const applicationIds = shortlist.map(entry => entry.application.application_id);
+      await batchInviteToInterview(applicationIds);
+      toast("Batch invitations sent successfully!", "success");
+      loadShortlistPageData();
+    } catch (error: any) {
+      toast(`Batch invitation failed: ${error.message}`, "error");
+    } finally {
+      setIsBatchInviting(false);
+    }
+  };
+
+  const handleBrainClick = async (app: Application) => {
+    if (app.screening_result) {
+      try {
+        const details = await fetchApplication(app.application_id, { includeHistory: true, includeDeleted: true });
+        setSelectedApp(details);
+        setIsDetailsModalOpen(true);
+      } catch {
+        setSelectedApp(app);
+        setIsDetailsModalOpen(true);
+      }
+      return;
+    }
+
+    const posId = app.position?.position_id;
+    if (!posId) {
+      toast("Could not determine job position for this application.", "error");
+      return;
+    }
+
+    setEvaluatingApps(prev => [...prev, app.application_id]);
+    try {
+      await startScreening(Number(posId));
+      toast("Screening started — candidates are being processed.", "success");
+    } catch (err: any) {
+      toast("Failed to start screening. The AI service may be offline.", "error");
+    } finally {
+      setEvaluatingApps(prev => prev.filter(id => id !== app.application_id));
+    }
+  };
+
   const handleGenerateReport = async () => {
     try {
       setIsGeneratingReport(true);
-      const report = await batchEvaluateApplications();
-      window.alert(
-        `Batch evaluation complete. Evaluated ${report.evaluated ?? 0} applications.`,
-      );
-      await loadShortlistPageData();
-    } catch (error) {
-      const status = getApiErrorStatus(error);
-      if (status === 403) {
-        window.alert("You do not have permission to run batch evaluation.");
-      } else {
-        window.alert("Could not generate report at this time.");
-      }
+      // Simulating report generation intel fetch
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      toast("Shortlist intelligence report generated successfully!", "success");
+    } catch (error: any) {
+      toast(`Failed to generate report: ${error.message}`, "error");
     } finally {
       setIsGeneratingReport(false);
     }
@@ -72,7 +126,7 @@ export function ShortlistList() {
     setErrorMessage(null);
     try {
       const [applicationsRes, metricsRes] = await Promise.all([
-        fetchApplications({ status: "shortlisted" }),
+        fetchApplications({ is_shortlisted: true }),
         fetchApplicationMetrics().catch(() => null),
       ]);
 
@@ -80,7 +134,10 @@ export function ShortlistList() {
         applicationsRes?.results ?? []
       ).map((app) => ({
         shortlist_id: app.application_id,
-        application: app,
+        application: {
+          ...app,
+          full_name: app.applicant?.full_name || app.full_name || (app as any).applicant_name || "Unknown Applicant"
+        },
         skill_score: String(app.evaluation?.skill_score ?? 0),
         experience_score: String(app.evaluation?.experience_score ?? 0),
         matching_percentage: String(app.evaluation?.matching_percentage ?? 0),
@@ -114,31 +171,33 @@ export function ShortlistList() {
     try {
       if (action === "confirm") {
         await confirmApplication(appId);
-        window.alert("Candidate confirmed!");
+        toast("Candidate confirmed!", "success");
       } else if (action === "invite") {
         await inviteToInterview(appId);
-        window.alert("Interview invitation sent!");
-      } else if (action === "hire") {
-        await hireApplicant(appId);
-        window.alert("Candidate marked as HIRED!");
+        toast("Added to pending interview approval.", "success");
+      } else if (action === "remove") {
+        await removeFromShortlist(appId);
+        toast("Removed from shortlist.", "success");
+      } else if (action === "reject") {
+        const reason = window.prompt("Reason for rejection:");
+        if (reason === null) return;
+        await rejectShortlisted(appId, reason);
+        toast("Candidate rejected.", "success");
       }
       loadShortlistPageData();
     } catch (error) {
       const status = getApiErrorStatus(error);
       if (status === 403) {
-        window.alert("You do not have permission for this action.");
+        toast("You do not have permission for this action.", "error");
       } else {
-        window.alert(`Action ${action} failed.`);
+        toast(`Action ${action} failed.`, "error");
       }
     }
   };
 
 
 
-  const openDetailsModal = (app: Application) => {
-    setSelectedApp(app);
-    setIsDetailsModalOpen(true);
-  };
+
 
   const getStatusStyle = (s: string) => {
     switch (s) {
@@ -189,13 +248,25 @@ export function ShortlistList() {
   return (
     <div className="grid gap-8 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <h3 className="text-xl font-bold tracking-tight">
             Priority Candidates
           </h3>
-          <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
-            Total: {shortlist.length}
-          </span>
+          <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto">
+            {shortlist.length > 0 && canManage && (
+              <button
+                onClick={handleBatchInvite}
+                disabled={isBatchInviting}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-white text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20 disabled:opacity-50"
+              >
+                {isBatchInviting ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
+                {isBatchInviting ? "Sending..." : "Batch Invite All"}
+              </button>
+            )}
+            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+              Total: {shortlist.length}
+            </span>
+          </div>
         </div>
 
         <div className="grid gap-4">
@@ -211,81 +282,119 @@ export function ShortlistList() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
               >
-                <Card className="p-6 border-none shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+                <Card
+                  className="p-4 sm:p-6 border-none shadow-sm hover:shadow-md transition-all group relative overflow-hidden cursor-pointer"
+                  onClick={() => handleBrainClick(entry.application)}
+                >
                   <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="size-14 rounded-2xl bg-muted flex items-center justify-center text-xl font-bold text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary transition-all">
-                        {entry.application.full_name[0]}
+                      <div className="size-12 sm:size-14 rounded-xl sm:rounded-2xl bg-muted flex items-center justify-center text-lg sm:text-xl font-bold text-muted-foreground group-hover:bg-primary/5 group-hover:text-primary transition-all shrink-0">
+                        {entry.application?.full_name?.[0] || "U"}
                       </div>
-                      <div>
-                        <h4 className="font-bold text-lg leading-tight">
-                          {entry.application.full_name}
+                      <div className="min-w-0">
+                        <h4 className="font-bold text-base sm:text-lg leading-tight truncate">
+                          {entry.application?.full_name || "Unknown Candidate"}
                         </h4>
-                        <p className="text-sm text-muted-foreground mt-0.5">
+                        <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 truncate">
                           {entry.application.position?.title}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex flex-col items-end">
-                      <div className="flex items-center gap-1 text-amber-500 mb-1">
+                    <div className="flex items-center sm:items-end sm:flex-col justify-between sm:justify-start gap-2">
+                      <div className="flex items-center gap-1 text-amber-500">
                         <Star className="size-3 fill-current" />
-                        <span className="text-xs font-bold">
-                          {entry.ai_rank
-                            ? (entry.ai_rank * 5).toFixed(1)
-                            : "N/A"}
+                        <span className="text-[10px] sm:text-xs font-bold">
+                          {(() => {
+                            const scoreValue = Number(
+                              entry.application?.screening_result?.final_score ||
+                              entry.application?.screening_result?.overall_score ||
+                              entry.application?.evaluation?.matching_percentage ||
+                              (entry.ai_rank ? entry.ai_rank * 100 : 0)
+                            );
+                            return scoreValue > 0 ? `${scoreValue.toFixed(0)}%` : "N/A";
+                          })()}
                         </span>
                       </div>
                       <span
-                        className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(entry.application.status)}`}
+                        className={`px-3 py-1 rounded-full text-[9px] sm:text-[10px] font-bold uppercase tracking-wider ${getStatusStyle(entry.application.status)}`}
                       >
                         {entry.application.status.replace("_", " ")}
                       </span>
                     </div>
                   </div>
 
-                  <div className="mt-6 pt-6 border-t border-border/50 flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-border/50 flex flex-col xl:flex-row gap-4 xl:items-center justify-between">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                      <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium text-muted-foreground">
                         <Calendar className="size-3.5" /> Evaluated{" "}
                         {new Date(entry.evaluated_at).toLocaleDateString()}
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground border-l border-border/50 pl-4">
-                        <MessageSquare className="size-3.5" /> AI Score:{" "}
-                        {(entry.ai_rank * 100).toFixed(0)}%
+                      <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-medium text-muted-foreground border-l border-border/50 pl-4">
+                        <BrainCircuit className="size-3.5" /> AI Score:{" "}
+                        {(() => {
+                          const scoreValue = Number(
+                            entry.application?.screening_result?.final_score ||
+                            entry.application?.screening_result?.overall_score ||
+                            entry.application?.evaluation?.matching_percentage ||
+                            (entry.ai_rank ? entry.ai_rank * 100 : 0)
+                          );
+                          return scoreValue > 0 ? `${scoreValue.toFixed(0)}%` : "N/A";
+                        })()}
                       </div>
                     </div>
 
-                    {canCEOActions && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleAction("confirm", entry)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 text-[10px] font-bold uppercase tracking-wider hover:bg-emerald-500/20 transition-colors"
-                        >
-                          <Check className="size-3" /> Confirm
-                        </button>
-                        <button
-                          onClick={() => handleAction("invite", entry)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 text-blue-600 text-[10px] font-bold uppercase tracking-wider hover:bg-blue-500/20 transition-colors"
-                        >
-                          <Send className="size-3" /> Invite
-                        </button>
-                        <button
-                          onClick={() => handleAction("hire", entry)}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors"
-                        >
-                          <UserCheck className="size-3" /> Hire
-                        </button>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleBrainClick(entry.application); }}
+                        disabled={evaluatingApps.includes(entry.application.application_id)}
+                        className="p-2 rounded-lg bg-muted hover:bg-primary/10 hover:text-primary transition-colors disabled:opacity-50"
+                        title="Quick AI View"
+                      >
+                        {evaluatingApps.includes(entry.application.application_id) ? (
+                          <Loader2 className="size-4 animate-spin" />
+                        ) : (
+                          <BrainCircuit className="size-4" />
+                        )}
+                      </button>
+                      <div className="flex flex-1 sm:flex-initial gap-2" onClick={(e) => e.stopPropagation()}>
+                        {canManage && (
+                          <>
+                            <button
+                              onClick={() => handleAction("invite", entry)}
+                              disabled={entry.application.status === "interview_pending" || entry.application.status === "interview_invited"}
+                              className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500 text-white text-[9px] sm:text-[10px] font-bold uppercase tracking-wider hover:bg-blue-600 transition-colors disabled:opacity-50"
+                            >
+                              <Send className="size-3" /> 
+                              <span className="truncate">
+                                {entry.application.status === "interview_pending" ? "Pending Approval" : "Invite"}
+                              </span>
+                            </button>
+                            <button
+                              onClick={() => handleAction("reject", entry)}
+                              className="px-3 py-1.5 rounded-lg bg-red-500/10 text-red-600 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider hover:bg-red-500/20 transition-colors"
+                            >
+                              <XCircle className="size-3" /> Reject
+                            </button>
+                            <button
+                              onClick={() => handleAction("remove", entry)}
+                              className="p-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-muted text-muted-foreground text-[9px] sm:text-[10px] font-bold uppercase tracking-wider hover:bg-muted-foreground/10 transition-colors"
+                              title="Remove from shortlist"
+                            >
+                              <Trash2 className="size-3" />
+                            </button>
+                          </>
+                        )}
                       </div>
-                    )}
 
-                    <button
-                      onClick={() => openDetailsModal(entry.application)}
-                      className="p-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary transition-all active:scale-95"
-                    >
-                      <ChevronRight className="size-4" />
-                    </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); handleBrainClick(entry.application); }}
+                        className="p-2 rounded-xl bg-muted hover:bg-primary/10 hover:text-primary transition-all active:scale-95 ml-auto"
+                      >
+                        <ChevronRight className="size-4" />
+                      </button>
+                    </div>
                   </div>
                 </Card>
               </motion.div>

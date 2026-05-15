@@ -2,33 +2,43 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { fetchPublicJobPositions } from "@/services/recruitmentService";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  fetchPublicJobPositions,
+  fetchDepartmentsAll
+} from "@/services/recruitmentService";
 import { JobPosition } from "@/types/recruitment";
+import { Department } from "@/types/department";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Share2 } from "lucide-react";
-import { getJobApplyPath } from "@/lib/utils";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 export default function PublicJobsPage() {
   const [jobs, setJobs] = useState<JobPosition[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDept, setSelectedDept] = useState<number | "all">("all");
 
   useEffect(() => {
     fetchPublicJobPositions()
       .then((response) => {
-        const results = Array.isArray(response) ? response : response.results;
-        if (!results) {
-          throw new Error("Public jobs response did not include results.");
-        }
         // Filter for open jobs only
-        const openJobs = results.filter((job) =>
-          job.status === "open" || job.status === "opend"
+        const openJobs = response.results.filter(
+          (job) => job.status === "open",
         );
         setJobs(openJobs);
+        setDepartments(deptRes.results || []);
       })
       .catch((err) => {
-        console.error("Failed to load jobs", err);
+        console.error("Failed to load data", err);
         setError("Unable to load job openings. Please try again later.");
       })
       .finally(() => {
@@ -36,13 +46,18 @@ export default function PublicJobsPage() {
       });
   }, []);
 
+  const getDeptName = (id?: number | null) => {
+    if (!id) return "General";
+    return departments.find(d => d.department_id === id)?.name || "Department";
+  };
+
   const handleShare = (job: JobPosition) => {
     const applyPath = getJobApplyPath(job);
     const url = `${window.location.origin}${applyPath}`;
     if (navigator.share) {
       navigator.share({
         title: `Apply for ${job.title}`,
-        text: `Check out this job opening at our company: ${job.title}`,
+        text: `Check out this opening: ${job.title}`,
         url: url,
       }).catch(console.error);
     } else {
@@ -50,6 +65,13 @@ export default function PublicJobsPage() {
       alert("Link copied to clipboard!");
     }
   };
+
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      job.description?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesDept = selectedDept === "all" || job.department === selectedDept;
+    return matchesSearch && matchesDept;
+  });
 
   if (loading) {
     return (
@@ -63,7 +85,11 @@ export default function PublicJobsPage() {
     return (
       <div className="text-center py-12 text-red-500">
         <p>{error}</p>
-        <Button onClick={() => window.location.reload()} variant="outline" className="mt-4">
+        <Button
+          onClick={() => window.location.reload()}
+          variant="outline"
+          className="mt-4"
+        >
           Retry
         </Button>
       </div>
@@ -77,7 +103,8 @@ export default function PublicJobsPage() {
           Join Our Team
         </h1>
         <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-          Explore exciting opportunities and help us build the future. We are always looking for talented individuals.
+          Explore exciting opportunities and help us build the future. We are
+          always looking for talented individuals.
         </p>
       </div>
 
@@ -90,12 +117,18 @@ export default function PublicJobsPage() {
           </Card>
         ) : (
           jobs.map((job) => (
-            <Card key={job.position_id} className="hover:shadow-md transition-shadow">
+            <Card
+              key={job.position_id}
+              className="hover:shadow-md transition-shadow"
+            >
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
                     <CardTitle className="text-xl text-blue-600">
-                      <Link href={`/jobs/${job.position_id}`} className="hover:underline">
+                      <Link
+                        href={`/jobs/${job.position_id}`}
+                        className="hover:underline"
+                      >
                         {job.title}
                       </Link>
                     </CardTitle>
@@ -113,24 +146,13 @@ export default function PublicJobsPage() {
                   {job.description || "No description available."}
                 </p>
               </CardContent>
-              <CardFooter className="flex flex-wrap justify-between gap-3">
-                <div className="flex gap-2 flex-1 sm:flex-initial">
-                  <Link href={`/jobs/${job.position_id}`}>
-                    <Button variant="outline">View Details</Button>
-                  </Link>
-                  <Link href={getJobApplyPath(job)}>
-                    <Button>Apply Now</Button>
-                  </Link>
-                </div>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => handleShare(job)}
-                  className="rounded-xl hover:bg-primary/5 hover:text-primary transition-all"
-                  title="Share job"
+              <CardFooter>
+                <Link
+                  href={`/jobs/${job.position_id}`}
+                  className="w-full sm:w-auto"
                 >
-                  <Share2 className="h-4 w-4" />
-                </Button>
+                  <Button>View Details & Apply</Button>
+                </Link>
               </CardFooter>
             </Card>
           ))

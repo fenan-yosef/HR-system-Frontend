@@ -139,6 +139,12 @@ export function fetchEmployee(employeeId: number): Promise<Employee> {
   });
 }
 
+export function fetchCurrentUserEmployee(): Promise<Employee> {
+  return apiFetch<Employee>(`${EMPLOYEES_ENDPOINT}me/`, {
+    requiresAuth: true,
+  });
+}
+
 
 export function createEmployee(data: CreateEmployee): Promise<Employee> {
   return apiFetch<Employee>(EMPLOYEES_ENDPOINT, {
@@ -175,6 +181,14 @@ export function updateEmployeeStatus(
   return apiFetch<Employee>(`${EMPLOYEES_ENDPOINT}${employeeId}/status/`, {
     method: "PATCH",
     body: JSON.stringify({ is_active: isActive }),
+    requiresAuth: true,
+  });
+}
+
+// Resend credentials
+export function resendCredentials(employeeId: number): Promise<{ detail: string }> {
+  return apiFetch<{ detail: string }>(`${EMPLOYEES_ENDPOINT}${employeeId}/resend-credentials/`, {
+    method: "POST",
     requiresAuth: true,
   });
 }

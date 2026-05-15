@@ -9,16 +9,41 @@ export interface PaginatedResponse<T> {
 
 export type JobStatus = "open" | "closed" | "on_hold" | "cancelled";
 
-export interface JobPosting {
-  job_id: number;
-  title: string;
-  department: string;
-  description: string;
-  requirements: string;
-  status: JobStatus;
-  posted_date: string;
-  created_at: string;
-  updated_at: string;
+export type CustomFieldType =
+  | "short_text"
+  | "long_text"
+  | "number"
+  | "integer"
+  | "boolean"
+  | "select"
+  | "multi_select"
+  | "date"
+  | "file"
+  | "file_list"
+  | "email"
+  | "url"
+  | "phone";
+
+export interface CustomApplicationField {
+  key?: string;
+  label: string;
+  type: CustomFieldType;
+  required: boolean;
+  include_in_ai: boolean;
+  order?: number;
+  options?: string[];
+  min_value?: number;
+  max_length?: number;
+}
+
+export interface CustomFieldResponse {
+  upload_id?: number;
+  reference?: string;
+  file_name?: string;
+  mime_type?: string;
+  size_bytes?: number;
+  file_url?: string;
+  [key: string]: any;
 }
 
 export interface JobPosition {
@@ -32,7 +57,34 @@ export interface JobPosition {
   posted_date: string;
   closed_date: string | null;
   created_at: string;
+  criteria_version: number;
+  recruiter_instructions?: string;
+  custom_application_fields?: CustomApplicationField[];
+  // Screening fields
+  min_gpa?: number;
+  min_years_experience?: number;
+  required_skills?: string[];
+  required_certificates?: string[];
+  allowed_universities?: string[];
+  shortlist_size?: number;
+  scoring_weights?: {
+    skills: number;
+    experience: number;
+    education: number;
+    certifications: number;
+  };
+  ai_config?: {
+    min_pass_score?: number;
+    skip_ai_on_hard_fail?: boolean;
+    final_score_blend?: {
+      rule: number;
+      ai: number;
+    };
+  };
 }
+
+// Legacy alias used by some services/routes that still call /job-posts/
+export interface JobPosting extends JobPosition {}
 
 export interface CreateJobPosition {
   title: string;
@@ -41,6 +93,27 @@ export interface CreateJobPosition {
   status?: JobStatus;
   posted_date: string;
   closed_date?: string;
+  recruiter_instructions?: string;
+  min_gpa?: number;
+  min_years_experience?: number;
+  required_skills?: string[];
+  required_certificates?: string[];
+  allowed_universities?: string[];
+  shortlist_size?: number;
+  scoring_weights?: {
+    skills: number;
+    experience: number;
+    education: number;
+    certifications: number;
+  };
+  ai_config?: {
+    min_pass_score?: number;
+    skip_ai_on_hard_fail?: boolean;
+    final_score_blend?: {
+      rule: number;
+      ai: number;
+    };
+  };
 }
 
 export interface Department {
@@ -96,6 +169,7 @@ export interface Application {
   cv_path: string;
   cover_letter?: string;
   position: ApplicationPosition;
+  custom_field_values?: Record<string, CustomFieldResponse | any>;
   applicant?: {
     applicant_id: number;
     full_name: string;
@@ -103,9 +177,28 @@ export interface Application {
     phone: string;
     cv_path: string;
     submitted_at: string;
+    documents?: Array<{
+      document_id: number;
+      document_type: string;
+      size_bytes?: number;
+      uploaded_at: string;
+      file_path?: string;
+    }>;
   };
+  // Optional legacy list of certificate file paths
+  certificate_paths?: string[];
   evaluation?: AiEvaluation;
+  extracted_resume?: {
+    has_json: boolean;
+    raw_llm_response: string;
+    extracted_json: any;
+  };
+  screening_result?: ScreeningResult;
+  screening_history?: ScreeningHistoryEntry[];
   status: string;
+  applicant_note?: string;
+  is_shortlisted?: boolean;
+  rejection_reason?: string;
   submitted_at: string;
   created_at: string;
   updated_at: string;
@@ -135,8 +228,12 @@ export interface CreateApplicant {
   full_name: string;
   email: string;
   phone: string;
-  cv_path: string;
+  upload_id?: number; // Primary CV
+  certificate_upload_ids?: number[];
+  other_upload_ids?: number[];
+  cv_path?: string; // Legacy field
   cover_letter?: string; // Optional cover letter
+  applicant_note?: string; // HR context only
   position_id?: number;
 }
 
@@ -149,4 +246,12 @@ export interface ApplicantResponse {
   submitted_at: string;
   tracking_code: string;
   tracking_code_sent_at: string;
+}
+
+export interface ApplicantTrackingResult {
+  full_name?: string;
+  status?: string;
+  position?: { title?: string } | string;
+  submitted_at?: string;
+  [key: string]: unknown;
 }

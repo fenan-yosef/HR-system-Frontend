@@ -1,34 +1,37 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Plus, MoreHorizontal, Users, 
-  LayoutGrid, List, Trash2, Edit2, 
-  UserCircle2, Mail, Phone, Briefcase, 
+import {
+  Plus, MoreHorizontal, Users,
+  LayoutGrid, List, Trash2, Edit2,
+  UserCircle2, Mail, Phone, Briefcase,
   Calendar, Hash, Check, X, Loader2,
   Building2, Search, Filter, ShieldCheck,
   UserCheck2,
-  UserCog
+  UserCog, Key
 } from "lucide-react";
+import { getMediaUrl } from "@/services/apiClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { 
-  Dialog, DialogContent, DialogHeader, 
-  DialogTitle, DialogFooter, DialogDescription 
+import {
+  Dialog, DialogContent, DialogHeader,
+  DialogTitle, DialogFooter, DialogDescription
 } from "@/components/ui/dialog";
-import { 
-  Field, FieldLabel, FieldGroup 
+import {
+  Field, FieldLabel, FieldGroup
 } from "@/components/ui/field";
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { 
-  Employee, EmploymentType, EmployeeStatus 
+import {
+  Employee, EmploymentType, EmployeeStatus
 } from "@/types/employee";
 import { Department } from "@/types/department";
-import { 
-  fetchAllEmployees, createEmployee, 
-  updateEmployee, deleteEmployee 
+import {
+  fetchAllEmployees, createEmployee,
+  updateEmployee, deleteEmployee,
+  resendCredentials
 } from "@/services/employeeService";
+import { uploadProfileImage } from "@/services/uploadService";
 import { fetchDepartmentsAll } from "@/services/departmentService";
 import { cn } from "@/lib/utils";
 
@@ -39,13 +42,25 @@ function humanize(value: string) {
   return value.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
 
+function getCompletionTone(completion: number) {
+  if (completion >= 100) return "bg-emerald-500/10 text-emerald-700 border-emerald-500/20";
+  if (completion >= 80) return "bg-amber-500/10 text-amber-700 border-amber-500/20";
+  return "bg-rose-500/10 text-rose-700 border-rose-500/20";
+}
+
+function getMissingFields(employee: Employee) {
+  const fields = employee.onboarding_data?.completion_missing_fields;
+  if (!Array.isArray(fields) || fields.length === 0) return "All tracked fields completed";
+  return `Missing: ${fields.join(", ")}`;
+}
+
 export default function EmployeesPage() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | null>(null);
@@ -97,7 +112,7 @@ export default function EmployeesPage() {
 
   const filteredEmployees = useMemo(() => {
     const q = searchQuery.toLowerCase();
-    return employees.filter(emp => 
+    return employees.filter(emp =>
       emp.first_name.toLowerCase().includes(q) ||
       emp.last_name.toLowerCase().includes(q) ||
       emp.email.toLowerCase().includes(q) ||
@@ -137,6 +152,42 @@ export default function EmployeesPage() {
     setIsModalOpen(true);
   };
 
+  const handleUploadAndSetPhoto = async (emp: Employee) => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async () => {
+      const f = input.files && input.files[0];
+      if (!f) return;
+      try {
+        const res = await uploadProfileImage(f);
+        let url = "";
+        if (res.file_url) url = res.file_url;
+        else if (res.upload_id) url = `${window.location.origin}/api/media/document:${res.upload_id}`;
+        const newOnboarding = { ...(emp.onboarding_data || {}), profile_photo_url: url };
+        const updated = await updateEmployee(emp.employee_id, { onboarding_data: newOnboarding } as any);
+        setEmployees(prev => prev.map(e => e.employee_id === updated.employee_id ? updated : e));
+      } catch (err) {
+        console.error("Failed to upload/set photo", err);
+        alert("Upload failed");
+      }
+    };
+    input.click();
+  };
+
+  const handleRemovePhoto = async (emp: Employee) => {
+    if (!confirm("Remove profile photo?")) return;
+    try {
+      const newOnboarding = { ...(emp.onboarding_data || {}) };
+      delete newOnboarding.profile_photo_url;
+      const updated = await updateEmployee(emp.employee_id, { onboarding_data: newOnboarding } as any);
+      setEmployees(prev => prev.map(e => e.employee_id === updated.employee_id ? updated : e));
+    } catch (err) {
+      console.error("Failed to remove photo", err);
+      alert("Could not remove photo");
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setModalLoading(true);
@@ -166,6 +217,16 @@ export default function EmployeesPage() {
     }
   };
 
+  const handleResendCredentials = async (emp: Employee) => {
+    if (!confirm(`Are you sure you want to resend credentials to ${emp.first_name} ${emp.last_name}? This will generate a new password and email it to ${emp.email}.`)) return;
+    try {
+      await resendCredentials(emp.employee_id);
+      alert("Credentials resent successfully!");
+    } catch (error: any) {
+      alert(error.message || "Failed to resend credentials");
+    }
+  };
+
   const getDeptName = (id?: number | null) => {
     if (!id) return "Unassigned";
     return departments.find(d => d.department_id === id)?.name || "Unknown";
@@ -181,391 +242,74 @@ export default function EmployeesPage() {
     }
   };
 
+  const getCompletionLabel = (completion?: number) => {
+    const value = Math.max(0, Math.min(100, Math.round(completion || 0)));
+    return `${value}%`;
+  };
+
   return (
-    <section className="space-y-8 pb-12">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-card p-8 rounded-3xl border border-border/50 shadow-sm relative overflow-hidden group">
-        <div className="absolute top-0 right-0 size-64 bg-primary/5 rounded-full -mr-32 -mt-32 blur-3xl group-hover:bg-primary/10 transition-colors" />
-        
-        <div className="space-y-2 relative">
-          <div className="flex items-center gap-3">
-            <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-              <Users className="size-5" />
-            </div>
-            <h1 className="text-4xl font-extrabold tracking-tight">
-              Employee Directory
-            </h1>
-          </div>
-          <p className="text-muted-foreground max-w-md">
-            Manage your global workforce, track employment status and departmental assignments.
+    <section className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-extrabold tracking-tight">
+            People Directory
+          </h1>
+          <p className="text-muted-foreground">
+            Manage your organization&apos;s most valuable asset.
           </p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-4 relative">
-          <div className="relative group/search">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-muted-foreground group-focus-within/search:text-primary transition-colors" />
+        <div className="flex items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
               type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search employees..."
-              className="pl-12 h-12 w-full md:w-64 rounded-2xl bg-muted/50 border-none text-sm focus:ring-2 focus:ring-primary/20 transition-all outline-none font-medium"
+              placeholder="Search people..."
+              className="pl-10 h-10 w-64 rounded-xl bg-card border border-border/50 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
-
-          <div className="bg-muted/50 p-1.5 rounded-2xl flex items-center gap-1.5 border border-border/50">
-            <Button
-              variant={viewMode === "grid" ? "default" : "ghost"}
-              size="icon-sm"
-              onClick={() => toggleViewMode("grid")}
-              className={cn("rounded-xl transition-all", viewMode === "grid" && "shadow-sm")}
-            >
-              <LayoutGrid className="size-4" />
-            </Button>
-            <Button
-              variant={viewMode === "table" ? "default" : "ghost"}
-              size="icon-sm"
-              onClick={() => toggleViewMode("table")}
-              className={cn("rounded-xl transition-all", viewMode === "table" && "shadow-sm")}
-            >
-              <List className="size-4" />
-            </Button>
-          </div>
-
-          <Button 
-            onClick={openAddModal}
-            className="h-12 px-8 rounded-2xl font-bold shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all gap-2"
-          >
-            <Plus className="size-5" />
-            Hire Talent
-          </Button>
+          <button className="p-2.5 bg-card border border-border/50 rounded-xl hover:bg-muted transition-colors">
+            <Filter className="size-4 text-muted-foreground" />
+          </button>
         </div>
       </div>
 
-      {loading ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {[...Array(8)].map((_, i) => (
-            <div key={i} className="h-72 rounded-3xl bg-muted/50 animate-pulse" />
-          ))}
-        </div>
-      ) : filteredEmployees.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 bg-card rounded-3xl border border-dashed border-border/50">
-          <div className="size-20 rounded-full bg-muted flex items-center justify-center mb-4">
-            <UserCircle2 className="size-10 text-muted-foreground/30" />
-          </div>
-          <h3 className="text-xl font-bold">No Employees Found</h3>
-          <p className="text-muted-foreground">Try adjusting your filters or start a new search.</p>
-        </div>
-      ) : viewMode === "grid" ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          <AnimatePresence mode="popLayout">
-            {filteredEmployees.map((emp, i) => (
-              <motion.div
-                key={emp.employee_id}
-                layout
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.2, delay: i * 0.05 }}
-              >
-                <Card className="group p-6 border-none shadow-sm hover:shadow-xl transition-all relative overflow-hidden bg-white dark:bg-card">
-                  <div className="absolute top-0 right-0 p-3">
-                    <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-                      <Button 
-                        variant="ghost" 
-                        size="icon-sm" 
-                        onClick={() => openEditModal(emp)}
-                        className="rounded-lg hover:bg-primary/10 hover:text-primary"
-                      >
-                        <Edit2 className="size-3.5" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon-sm" 
-                        onClick={() => handleDelete(emp)}
-                        className="rounded-lg hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
-                  </div>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: i * 0.05 }}
+          >
+            <Card className="p-6 border-none shadow-sm hover:shadow-md transition-all group relative overflow-hidden">
+              <div className="absolute top-2 right-2">
+                <button className="p-1 hover:bg-muted rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                  <MoreHorizontal className="size-4 text-muted-foreground" />
+                </button>
+              </div>
 
-                  <div className="flex flex-col items-center text-center">
-                    <div className="size-24 rounded-[3rem] bg-gradient-to-br from-primary/10 to-primary/5 mb-6 flex items-center justify-center text-primary shadow-sm group-hover:rotate-6 transition-transform duration-500 border-4 border-background relative overflow-hidden">
-                       <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity" />
-                       <span className="text-3xl font-black relative z-10">
-                         {emp.first_name[0]}{emp.last_name[0]}
-                       </span>
-                       <div className={cn(
-                         "absolute bottom-2 right-2 size-4 rounded-full border-2 border-background ring-2 ring-background z-20 shadow-sm",
-                         emp.status === "active" ? "bg-emerald-500" : "bg-muted"
-                       )} />
-                    </div>
-
-                    <h3 className="font-extrabold text-xl mb-1 line-clamp-1 group-hover:text-primary transition-colors">
-                      {emp.first_name} {emp.last_name}
-                    </h3>
-                    <p className="text-xs font-bold text-muted-foreground/60 mb-6 uppercase tracking-wider">
-                       {emp.position || "NO POSITION"}
-                    </p>
-
-                    <div className="w-full space-y-3">
-                       <div className="flex items-center justify-between text-xs p-2.5 rounded-xl bg-muted/30 border border-border/40">
-                         <div className="flex items-center gap-2 text-muted-foreground font-bold">
-                           <Building2 className="size-3.5" />
-                           {getDeptName(emp.department)}
-                         </div>
-                         <div className={cn(
-                           "px-2 py-0.5 rounded-md border text-[10px] font-black uppercase tracking-tighter",
-                           getStatusColor(emp.status)
-                         )}>
-                            {humanize(emp.status)}
-                         </div>
-                       </div>
-
-                       <div className="flex gap-2">
-                         <div className="flex-1 p-2.5 rounded-xl bg-muted/30 border border-border/40 hover:bg-primary/5 hover:border-primary/20 transition-colors group/link">
-                            <Mail className="size-3.5 mx-auto text-muted-foreground group-hover/link:text-primary transition-colors" />
-                         </div>
-                         <div className="flex-1 p-2.5 rounded-xl bg-muted/30 border border-border/40 hover:bg-primary/5 hover:border-primary/20 transition-colors group/link">
-                            <Phone className="size-3.5 mx-auto text-muted-foreground group-hover/link:text-primary transition-colors" />
-                         </div>
-                         <div className="flex-1 p-2.5 rounded-xl bg-primary text-white hover:bg-primary/90 transition-all font-black text-[10px] uppercase flex items-center justify-center">
-                            Profile
-                         </div>
-                       </div>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      ) : (
-        <div className="bg-card rounded-3xl border border-border/50 shadow-sm overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-muted/30 border-b border-border/50">
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Employee</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Department</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Type</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted-foreground">Status</th>
-                <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-muted-foreground text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredEmployees.map((emp) => (
-                <tr key={emp.employee_id} className="group hover:bg-muted/20 border-b border-border/50 last:border-none transition-all">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="size-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-black text-xs border border-primary/5">
-                        {emp.first_name[0]}{emp.last_name[0]}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold group-hover:text-primary transition-colors">
-                          {emp.first_name} {emp.last_name}
-                        </span>
-                        <span className="text-[10px] font-bold text-muted-foreground/60 uppercase tracking-tighter">
-                          {emp.position}
-                        </span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="font-bold text-sm text-muted-foreground">{getDeptName(emp.department)}</span>
-                  </td>
-                  <td className="px-6 py-4 text-xs font-bold uppercase tracking-tight text-muted-foreground">
-                    {humanize(emp.employment_type)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={cn(
-                      "px-2.5 py-1 rounded-lg border text-[10px] font-black uppercase transition-colors tracking-tighter",
-                      getStatusColor(emp.status)
-                    )}>
-                      {humanize(emp.status)}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Button 
-                        variant="ghost" 
-                        size="icon-sm" 
-                        onClick={() => openEditModal(emp)}
-                        className="rounded-lg hover:bg-primary/10 hover:text-primary"
-                      >
-                        <Edit2 className="size-3.5" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon-sm" 
-                        onClick={() => handleDelete(emp)}
-                        className="rounded-lg hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Unified Hire/Edit Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[700px] border-none shadow-2xl rounded-[2.5rem] p-0 overflow-hidden">
-          <form onSubmit={handleSave}>
-            <div className="p-10 space-y-8 bg-card max-h-[85vh] overflow-y-auto custom-scrollbar">
-              <DialogHeader>
-                <div className="flex items-center gap-3 mb-2">
-                   <div className="size-10 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
-                     <UserCog className="size-5" />
-                   </div>
-                   <DialogTitle className="text-3xl font-black tracking-tight">
-                     {editingEmployee ? "Refine Associate" : "Hire Associate"}
-                   </DialogTitle>
+              <div className="flex flex-col items-center text-center">
+                <div className="size-20 rounded-full bg-linear-to-br from-primary/20 to-primary/5 mb-4 flex items-center justify-center text-2xl font-bold text-primary border-4 border-background shadow-sm">
+                  JD
                 </div>
-                <DialogDescription className="font-medium opacity-70">
-                  {editingEmployee 
-                    ? `Fine-tuning the profile details for ${editingEmployee.first_name}.` 
-                    : "Add a new talented professional to your organization's roster."}
-                </DialogDescription>
-              </DialogHeader>
+                <h3 className="font-bold text-lg">John Doe</h3>
+                <p className="text-xs font-medium text-primary bg-primary/5 px-2 py-1 rounded-md mt-1 mb-4">
+                  Senior Designer
+                </p>
 
-              <FieldGroup className="gap-8">
-                <div className="grid grid-cols-2 gap-6">
-                  <Field>
-                    <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">First Name</FieldLabel>
-                    <Input 
-                      value={formData.first_name}
-                      onChange={e => setFormData(p => ({ ...p, first_name: e.target.value }))}
-                      required
-                      className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-primary/20 font-bold"
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Last Name</FieldLabel>
-                    <Input 
-                      value={formData.last_name}
-                      onChange={e => setFormData(p => ({ ...p, last_name: e.target.value }))}
-                      required
-                      className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-primary/20 font-bold"
-                    />
-                  </Field>
+                <div className="flex items-center justify-center gap-3 w-full">
+                  <button className="flex-1 py-2 rounded-lg bg-muted/50 hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-center gap-2 text-xs font-bold text-muted-foreground">
+                    <Mail className="size-3.5" /> Email
+                  </button>
+                  <button className="flex-1 py-2 rounded-lg bg-muted/50 hover:bg-primary/10 hover:text-primary transition-colors flex items-center justify-center gap-2 text-xs font-bold text-muted-foreground">
+                    <Phone className="size-3.5" /> Call
+                  </button>
                 </div>
-
-                <div className="grid grid-cols-2 gap-6">
-                  <Field>
-                    <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Corporate Email</FieldLabel>
-                    <Input 
-                      type="email"
-                      value={formData.email}
-                      onChange={e => setFormData(p => ({ ...p, email: e.target.value }))}
-                      required
-                      className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-primary/20 font-bold"
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Mobile Number</FieldLabel>
-                    <Input 
-                      value={formData.phone}
-                      onChange={e => setFormData(p => ({ ...p, phone: e.target.value }))}
-                      className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-primary/20 font-bold"
-                    />
-                  </Field>
-                </div>
-
-                <div className="grid grid-cols-3 gap-6">
-                  <Field className="col-span-2">
-                    <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Role / Position</FieldLabel>
-                    <Input 
-                      value={formData.position}
-                      onChange={e => setFormData(p => ({ ...p, position: e.target.value }))}
-                      placeholder="e.g. Senior Backend Engineer"
-                      className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-primary/20 font-bold"
-                    />
-                  </Field>
-                  <Field>
-                    <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Dept Assignment</FieldLabel>
-                    <select
-                      value={formData.department || ""}
-                      onChange={e => setFormData(p => ({ ...p, department: e.target.value ? Number(e.target.value) : null }))}
-                      className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-2 focus-visible:ring-primary/20 font-bold px-4 appearance-none outline-none"
-                    >
-                      <option value="">Unassigned</option>
-                      {departments.map(d => (
-                         <option key={d.department_id} value={d.department_id}>{d.name}</option>
-                      ))}
-                    </select>
-                  </Field>
-                </div>
-
-                <div className="grid grid-cols-3 gap-6">
-                  <Field>
-                    <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Contract Status</FieldLabel>
-                    <select
-                      value={formData.employment_type}
-                      onChange={e => setFormData(p => ({ ...p, employment_type: e.target.value as EmploymentType }))}
-                      className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-2 focus-visible:ring-primary/20 font-bold px-4 appearance-none outline-none uppercase text-xs tracking-tighter"
-                    >
-                      {EMPLOYMENT_TYPES.map(type => (
-                         <option key={type} value={type}>{humanize(type)}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field>
-                    <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Lifecycle Status</FieldLabel>
-                    <select
-                      value={formData.status}
-                      onChange={e => setFormData(p => ({ ...p, status: e.target.value as EmployeeStatus }))}
-                      className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-2 focus-visible:ring-primary/20 font-bold px-4 appearance-none outline-none uppercase text-xs tracking-tighter"
-                    >
-                      {STATUS_OPTIONS.map(opt => (
-                         <option key={opt} value={opt}>{humanize(opt)}</option>
-                      ))}
-                    </select>
-                  </Field>
-                  <Field>
-                    <FieldLabel className="text-[10px] uppercase font-black tracking-widest opacity-60">Official Start Date</FieldLabel>
-                    <Input 
-                      type="date"
-                      value={formData.hire_date}
-                      onChange={e => setFormData(p => ({ ...p, hire_date: e.target.value }))}
-                      required
-                      className="h-12 rounded-2xl bg-muted/50 border-none transition-all focus-visible:ring-primary/20 font-bold"
-                    />
-                  </Field>
-                </div>
-              </FieldGroup>
-            </div>
-
-            <DialogFooter className="p-10 pt-0 bg-card">
-              <Button 
-                type="button" 
-                variant="ghost" 
-                onClick={() => setIsModalOpen(false)}
-                className="rounded-2xl font-bold h-14 px-8"
-              >
-                Recall
-              </Button>
-              <Button 
-                type="submit" 
-                disabled={modalLoading}
-                className="rounded-2xl font-black h-14 px-12 shadow-xl shadow-primary/20"
-              >
-                {modalLoading ? (
-                  <Loader2 className="size-5 animate-spin" />
-                ) : editingEmployee ? (
-                  "Finalize Adjustments"
-                ) : (
-                  "Initiate Onboarding"
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+              </div>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
     </section>
   );
 }

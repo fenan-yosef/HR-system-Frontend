@@ -34,6 +34,7 @@ const REFRESH_TOKEN_KEY = "hrms_refresh_token";
 
 export interface ApiRequestOptions extends RequestInit {
   requiresAuth?: boolean;
+  redirectOnUnauthorized?: boolean;
 }
 
 export class ApiError extends Error {
@@ -81,9 +82,16 @@ export async function apiFetch<TResponse>(
 
   if (options.requiresAuth) {
     const token = await getStoredAccessToken();
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+    if (!token) {
+      if (options.redirectOnUnauthorized !== false && typeof window !== "undefined") {
+        try {
+          clearTokens();
+        } catch {}
+        window.location.assign("/login");
+      }
+      throw new ApiError(401, "Missing access token");
     }
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   const response = await fetch(url, {
@@ -92,10 +100,24 @@ export async function apiFetch<TResponse>(
     headers,
   });
 
-  // If unauthorized and this request required auth, attempt a single refresh-then-retry flow.
-  if (response.status === 401 && options.requiresAuth) {
+  // If we get a 401, check whether it's due to an expired/invalid access token.
+  if (response.status === 401) {
+    let respJson: any = null;
+    try {
+      respJson = await response.clone().json().catch(() => null);
+    } catch {
+      respJson = null;
+    }
+
+    const isTokenNotValid =
+      respJson?.code === "token_not_valid" ||
+      (typeof respJson?.detail === "string" && respJson.detail.toLowerCase().includes("given token not valid")) ||
+      (Array.isArray(respJson?.messages) && respJson.messages.some((m: any) => m?.token_class === "AccessToken" && /expire|expired/i.test(m?.message)));
+
     const refresh = getStoredRefreshToken();
-    if (refresh) {
+
+    // Attempt refresh if the backend indicates the access token is invalid/expired and we have a refresh token.
+    if (isTokenNotValid && refresh) {
       try {
         const tokenRes = await fetch(`${API_BASE_URL}auth/token/refresh/`, {
           method: "POST",
@@ -110,6 +132,7 @@ export async function apiFetch<TResponse>(
             if (typeof window !== "undefined") {
               window.localStorage.setItem(ACCESS_TOKEN_KEY, newAccess);
             }
+
             // retry original request with new access token
             const retryHeaders = new Headers(options.headers);
             if (!isFormData(options.body)) retryHeaders.set("Content-Type", "application/json");
@@ -128,9 +151,25 @@ export async function apiFetch<TResponse>(
           }
         }
       } catch (e) {
-        // fall through to original error handling below
         console.warn("Token refresh failed", e);
       }
+    }
+
+    // If refresh was not possible or failed, only redirect when the caller
+    // has not explicitly opted out. Login requests need to surface the error
+    // in-place instead of bouncing back to the page.
+    if (options.redirectOnUnauthorized !== false && typeof window !== "undefined") {
+      // Avoid infinite redirect loops if we're already on the login page.
+      if (window.location.pathname === "/login") {
+        throw new ApiError(401, "Unauthorized on login page");
+      }
+
+      try {
+        clearTokens();
+      } catch {}
+      // Force a full-page navigation to ensure any app state is reset.
+      window.location.assign("/login");
+      throw new ApiError(401, "Redirecting to login");
     }
   }
 

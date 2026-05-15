@@ -1,34 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { Bell, Search, HelpCircle, Menu } from "lucide-react";
+import { Bell, Search, HelpCircle, Menu, X } from "lucide-react";
 import { motion } from "framer-motion";
-import {
-  AppNotification,
-  loadNotifications,
-  markAllNotificationsAsRead,
-  markNotificationAsRead,
-  saveNotifications,
-} from "@/lib/notifications";
+import useNotifications from "@/hooks/useNotifications";
+import { useUI } from "@/context/UIContext";
 
 export function Header() {
   const { user } = useAuth();
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const { isSidebarOpen, toggleSidebar } = useUI();
+  const { notifications, unreadCount, markAllAsRead, markSingleAsRead, clearAll } = useNotifications();
   const notificationsRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    setNotifications(loadNotifications());
-  }, []);
-
-  useEffect(() => {
-    if (!isNotificationsOpen) return;
-
-    const updated = markAllNotificationsAsRead(loadNotifications());
-    setNotifications(updated);
-    saveNotifications(updated);
-  }, [isNotificationsOpen]);
 
   useEffect(() => {
     if (!isNotificationsOpen) return;
@@ -55,30 +39,30 @@ export function Header() {
     };
   }, [isNotificationsOpen]);
 
-  const unreadCount = useMemo(
-    () => notifications.filter((notification) => !notification.read).length,
-    [notifications],
-  );
+  // unreadCount provided by hook
 
-  const markAllAsRead = () => {
-    const updated = markAllNotificationsAsRead(notifications);
-    setNotifications(updated);
-    saveNotifications(updated);
+  const markAllAsReadHandler = async () => {
+    await markAllAsRead();
     setIsNotificationsOpen(false);
   };
 
-  const markSingleAsRead = (id: number) => {
-    const updated = markNotificationAsRead(notifications, id);
-    setNotifications(updated);
-    saveNotifications(updated);
+  const clearAllHandler = async () => {
+    await clearAll();
     setIsNotificationsOpen(false);
   };
 
+  const markSingleAsReadHandler = async (id: number) => {
+    await markSingleAsRead(id);
+    setIsNotificationsOpen(false);
+  };
   return (
-    <header className="sticky text-black top-0 z-10 flex h-20 items-center justify-between border-b border-border/50 bg-background/80 px-8 backdrop-blur-xl">
-      <div className="flex items-center gap-4">
-        <button className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors">
-          <Menu className="size-5" />
+    <header className="sticky text-black top-0 z-10 flex h-16 lg:h-20 items-center justify-between border-b border-border/50 bg-background/80 px-4 sm:px-6 lg:px-8 backdrop-blur-xl">
+      <div className="flex items-center gap-2 sm:gap-4">
+        <button 
+          onClick={toggleSidebar}
+          className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
+        >
+          {isSidebarOpen ? <X className="size-5" /> : <Menu className="size-5" />}
         </button>
         <div className="flex flex-col">
           <motion.h2
@@ -134,46 +118,54 @@ export function Header() {
                       {unreadCount} unread updates
                     </p>
                   </div>
+                  <div className="flex items-center gap-3">
                   <button
-                    onClick={markAllAsRead}
+                    onClick={clearAllHandler}
+                    className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:underline"
+                  >
+                    Clear
+                  </button>
+                  <button
+                    onClick={markAllAsReadHandler}
                     className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
                   >
                     Mark all read
                   </button>
+                  </div>
                 </div>
 
                 <div className="max-h-96 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <p className="px-4 py-6 text-sm text-muted-foreground">
-                      No notifications available.
-                    </p>
-                  ) : (
-                    notifications.map((notification) => (
-                      <button
-                        key={notification.id}
-                        onClick={() => markSingleAsRead(notification.id)}
-                        className={`block w-full border-b border-border/40 px-4 py-3 text-left transition-colors hover:bg-muted/40 ${notification.read ? "bg-background" : "bg-primary/5"}`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-sm font-semibold text-foreground">
-                              {notification.title}
-                            </p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                              {notification.description}
-                            </p>
+                    {notifications.length === 0 ? (
+                      <p className="px-4 py-6 text-sm text-muted-foreground">
+                        No notifications available.
+                      </p>
+                    ) : (
+                      notifications.map((notification) => (
+                        <button
+                          key={notification.id}
+                          onClick={() => markSingleAsReadHandler(notification.id)}
+                          className={`block w-full border-b border-border/40 px-4 py-3 text-left transition-colors hover:bg-muted/40 ${notification.read ? "bg-background" : "bg-primary/5"}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-semibold text-foreground">
+                                {notification.title}
+                              </p>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                {notification.description}
+                              </p>
+                            </div>
+                            {!notification.read && (
+                              <span className="mt-1 size-2 rounded-full bg-primary" />
+                            )}
                           </div>
-                          {!notification.read && (
-                            <span className="mt-1 size-2 rounded-full bg-primary" />
-                          )}
-                        </div>
-                        <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                          {new Date(notification.createdAt).toLocaleString()}
-                        </p>
-                      </button>
-                    ))
-                  )}
-                </div>
+                          <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                            {new Date(notification.createdAt).toLocaleString()}
+                          </p>
+                        </button>
+                      ))
+                    )}
+                  </div>
               </div>
             )}
           </div>

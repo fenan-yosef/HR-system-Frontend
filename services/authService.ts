@@ -16,17 +16,19 @@ const ROLE_MAP: Record<string, UserRole> = {
   ADMINISTRATOR: "ADMIN",
   HR_CEO: "HR_CEO",
   CEO: "HR_CEO",
-  HR_MANAGER: "HR_MANAGER",
-  HR_STAFF: "HR_MANAGER",
-  HUMAN_RESOURCES: "HR_MANAGER",
-  HRMANAGER: "HR_MANAGER",
-  HR: "HR_MANAGER",
-  STAFF: "HR_MANAGER",
+  HR_STAFF: "HR_STAFF",
+  HRSTAFF: "HR_STAFF",
+  HR_MANAGER: "HR_STAFF",
+  HRMANAGER: "HR_STAFF",
+  HUMAN_RESOURCES: "HR_STAFF",
+  HR: "HR_STAFF",
+  STAFF: "HR_STAFF",
+  MANAGER: "HR_STAFF",
   EMPLOYEE: "EMPLOYEE",
   APPLICANT: "APPLICANT",
 };
 
-function mapRoleNameToUserRole(roleName?: string): UserRole {
+export function mapRoleNameToUserRole(roleName?: string): UserRole {
   if (!roleName) return "UNKNOWN";
   const normalised = roleName.trim().replace(/\s|-/g, "_").toUpperCase();
   return ROLE_MAP[normalised] ?? "UNKNOWN";
@@ -67,29 +69,36 @@ export function buildAuthUserFromAccessToken(access: string): AuthUser | null {
 
   let roleName = (payload.role_name ?? payload.role)?.toString();
   let role = mapRoleNameToUserRole(roleName);
+      profilePictureUrl: payload.profile_photo_url?.toString(),
 
   // Fallbacks: treat role_id=1 or user_id=1 as admin when role is not embedded.
   if (!roleName && (roleId === 1 || userId === 1)) {
     roleName = "Admin";
     role = "ADMIN";
   }
-
-  return {
-    id: userId,
-    username: (payload.username ?? payload.email ?? "user").toString(),
-    email: payload.email?.toString(),
+      body: JSON.stringify({
+        username: payload.username,
+        email: payload.username,
+        password: payload.password,
+      }),
     firstName: payload.first_name?.toString(),
     lastName: payload.last_name?.toString(),
     role,
     roleName: roleName?.toString(),
     roleId,
+    profilePictureUrl: payload.profile_photo_url?.toString(),
   };
 }
 
 export async function loginRequest(payload: LoginPayload): Promise<TokenResponse> {
   return apiFetch<TokenResponse>("/auth/token/", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      username: payload.username,
+      email: payload.username,
+      password: payload.password,
+    }),
+    redirectOnUnauthorized: false,
   });
 }
 

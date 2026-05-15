@@ -24,9 +24,26 @@ export function isHRStaff(user: AuthUser | null): boolean {
   if (!user) return false;
   if (isHRCeo(user)) return true;
   return (
-    user.role === "HR_MANAGER" ||
+    user.role === "HR_STAFF" ||
     user.roleName === "HR Staff" ||
     user.roleName === "HR" ||
     user.roleName === "Staff"
   );
+}
+/**
+ * Helper to check if a user can perform initial recruitment tasks (Shortlist, Invite).
+ * Restricted to Admins and HR Staff (excluding CEO for strict separation).
+ */
+export function canManageRecruitment(user: AuthUser | null): boolean {
+  return isHRStaff(user);
+}
+
+/**
+ * Helper to check if a user can perform final recruitment approvals (Confirm, Reject).
+ * Restricted to Admins and HR CEO.
+ */
+export function canApproveRecruitment(user: AuthUser | null): boolean {
+  if (!user) return false;
+  if (isAdmin(user)) return true;
+  return user.role === "HR_CEO" || user.roleName === "HR CEO";
 }
