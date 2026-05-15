@@ -20,7 +20,6 @@ const ROLE_MAP: Record<string, UserRole> = {
   HRSTAFF: "HR_STAFF",
   HR_MANAGER: "HR_STAFF",
   HRMANAGER: "HR_STAFF",
-  HUMAN_RESOURCES: "HR_STAFF",
   HR: "HR_STAFF",
   STAFF: "HR_STAFF",
   MANAGER: "HR_STAFF",
@@ -69,18 +68,17 @@ export function buildAuthUserFromAccessToken(access: string): AuthUser | null {
 
   let roleName = (payload.role_name ?? payload.role)?.toString();
   let role = mapRoleNameToUserRole(roleName);
-      profilePictureUrl: payload.profile_photo_url?.toString(),
 
   // Fallbacks: treat role_id=1 or user_id=1 as admin when role is not embedded.
   if (!roleName && (roleId === 1 || userId === 1)) {
     roleName = "Admin";
     role = "ADMIN";
   }
-      body: JSON.stringify({
-        username: payload.username,
-        email: payload.username,
-        password: payload.password,
-      }),
+
+  return {
+    id: userId,
+    username: (payload.username ?? payload.email ?? "user").toString(),
+    email: payload.email?.toString(),
     firstName: payload.first_name?.toString(),
     lastName: payload.last_name?.toString(),
     role,

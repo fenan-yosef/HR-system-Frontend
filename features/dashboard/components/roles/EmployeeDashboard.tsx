@@ -42,6 +42,13 @@ interface EmployeeDashboardProps {
   metrics?: EmployeeDashboardMetrics;
 }
 
+interface ServiceItem {
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  href?: string;
+}
+
 async function resolveLocationLabel() {
   if (typeof navigator === "undefined" || !navigator.geolocation) {
     return null;
@@ -226,12 +233,14 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
             <h3 className="text-lg font-bold">Quick Services</h3>
           </div>
           <div className="space-y-3">
-            {[
-              { label: "Request Leave", icon: Calendar, color: "text-blue-500" },
-              { label: "Request Letter", icon: FileText, color: "text-indigo-500", href: ROUTES.EMPLOYEE_REQUEST_LETTER },
-              { label: "Submit Complaint", icon: MessageSquareText, color: "text-rose-500", href: ROUTES.EMPLOYEE_REQUEST_COMPLAINT },
-              { label: "Update Profile", icon: User, color: "text-emerald-500", href: ROUTES.MY_PROFILE },
-            ].map((service, i) =>
+            {(
+              [
+                { label: "Request Leave", icon: Calendar, color: "text-blue-500", href: ROUTES.LEAVE_REQUESTS },
+                { label: "Request Letter", icon: FileText, color: "text-indigo-500", href: ROUTES.EMPLOYEE_REQUEST_LETTER },
+                { label: "Submit Complaint", icon: MessageSquareText, color: "text-rose-500", href: ROUTES.EMPLOYEE_REQUEST_COMPLAINT },
+                { label: "Update Profile", icon: User, color: "text-emerald-500", href: ROUTES.MY_PROFILE },
+              ] as ServiceItem[]
+            ).map((service, i) =>
               service.href ? (
                 <Link
                   href={service.href}
