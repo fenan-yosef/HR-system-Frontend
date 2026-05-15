@@ -6,9 +6,15 @@ export interface ProfileData {
   last_name: string;
   email: string;
   phone?: string;
+  position?: string;
+  department_name?: string;
+  role_name?: string;
+  national_id?: string;
+  pension_id?: string;
+  profile_photo_url?: string | null;
   onboarding_data?: {
     profile_photo_url?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -17,8 +23,8 @@ export interface PasswordChangeData {
   new_password: string;
 }
 
-const PROFILE_ENDPOINT = "/accounts/profile/me/";
-const PASSWORD_ENDPOINT = "/accounts/profile/change-password/";
+const PROFILE_ENDPOINT = "/auth/profile/me/";
+const PASSWORD_ENDPOINT = "/auth/profile/change-password/";
 
 export function fetchProfile(): Promise<ProfileData> {
   return apiFetch<ProfileData>(PROFILE_ENDPOINT, {

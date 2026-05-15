@@ -82,9 +82,16 @@ export async function apiFetch<TResponse>(
 
   if (options.requiresAuth) {
     const token = await getStoredAccessToken();
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+    if (!token) {
+      if (options.redirectOnUnauthorized !== false && typeof window !== "undefined") {
+        try {
+          clearTokens();
+        } catch {}
+        window.location.assign("/login");
+      }
+      throw new ApiError(401, "Missing access token");
     }
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   const response = await fetch(url, {
@@ -152,6 +159,11 @@ export async function apiFetch<TResponse>(
     // has not explicitly opted out. Login requests need to surface the error
     // in-place instead of bouncing back to the page.
     if (options.redirectOnUnauthorized !== false && typeof window !== "undefined") {
+      // Avoid infinite redirect loops if we're already on the login page.
+      if (window.location.pathname === "/login") {
+        throw new ApiError(401, "Unauthorized on login page");
+      }
+
       try {
         clearTokens();
       } catch {}

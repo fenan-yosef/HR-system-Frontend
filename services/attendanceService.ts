@@ -66,7 +66,7 @@ export function summarizeAttendanceLog(log: AttendanceLog, referenceNow = new Da
 }
 
 export async function fetchAttendanceLogPage(): Promise<AttendanceListResponse> {
-  return apiFetch<AttendanceListResponse>(ATTENDANCE_ENDPOINT, {
+  return apiFetch<AttendanceListResponse>(`${ATTENDANCE_ENDPOINT}?page_size=1000`, {
     requiresAuth: true,
   });
 }
@@ -95,6 +95,22 @@ export function updateAttendanceLog(
 ): Promise<AttendanceLog> {
   return apiFetch<AttendanceLog>(`${ATTENDANCE_ENDPOINT}${attendanceId}/`, {
     method: "PATCH",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
+export function clockIn(data: Partial<AttendanceCreatePayload>): Promise<AttendanceLog> {
+  return apiFetch<AttendanceLog>(`${ATTENDANCE_ENDPOINT}clock-in/`, {
+    method: "POST",
+    body: JSON.stringify(data),
+    requiresAuth: true,
+  });
+}
+
+export function clockOut(data: Partial<AttendanceUpdatePayload>): Promise<AttendanceLog> {
+  return apiFetch<AttendanceLog>(`${ATTENDANCE_ENDPOINT}clock-out/`, {
+    method: "POST",
     body: JSON.stringify(data),
     requiresAuth: true,
   });

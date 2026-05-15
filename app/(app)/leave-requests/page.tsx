@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { CalendarDays, Plus, Clock, CheckCircle2, XCircle, X } from "lucide-react";
+import { CalendarDays, Plus, Clock, CheckCircle2, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 
 type LeaveType = "Annual Leave" | "Sick Leave" | "Unpaid Leave";
@@ -171,7 +171,9 @@ export default function LeaveRequestsPage() {
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div className="space-y-2">
           <h1 className="text-4xl font-extrabold tracking-tight">Time Off</h1>
-          <p className="text-muted-foreground">Manage your leave requests and check your balances.</p>
+          <p className="text-muted-foreground">
+            Manage your leave requests and check your balances.
+          </p>
         </div>
         <button
           onClick={openModal}
@@ -189,22 +191,37 @@ export default function LeaveRequestsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
           >
-            <Card className="group relative overflow-hidden border-none p-6 shadow-sm">
-              <div className="absolute right-0 top-0 p-3 opacity-10 transition-opacity group-hover:opacity-20">
-                <CalendarDays className={`size-24 ${item.color.replace("bg-", "text-")}`} />
+            <Card className="p-6 border-none shadow-sm relative overflow-hidden group">
+              <div
+                className={`absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity`}
+              >
+                <CalendarDays
+                  className={`size-24 ${item.color.replace("bg-", "text-")}`}
+                />
               </div>
 
               <div className="relative z-10">
-                <span className="text-xs font-bold uppercase text-muted-foreground">{item.label}</span>
+                <span className="text-xs font-bold text-muted-foreground uppercase">
+                  {item.label}
+                </span>
                 <div className="mt-2 flex items-baseline gap-1">
-                  <span className="text-4xl font-black text-foreground">{item.remaining}</span>
-                  <span className="text-sm font-medium text-muted-foreground">/ {item.total} days available</span>
+                  <span className="text-4xl font-black text-foreground">
+                    {item.total - item.used}
+                  </span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    / {item.total} days available
+                  </span>
                 </div>
 
-                <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div className={`h-full ${item.color}`} style={{ width: `${(item.used / item.total) * 100}%` }} />
+                <div className="w-full h-2 bg-muted rounded-full mt-4 overflow-hidden">
+                  <div
+                    className={`h-full ${item.color}`}
+                    style={{ width: `${(item.used / item.total) * 100}%` }}
+                  />
                 </div>
-                <p className="mt-2 text-xs font-medium text-muted-foreground">{item.used} days used</p>
+                <p className="text-xs font-medium text-muted-foreground mt-2">
+                  {item.used} days used
+                </p>
               </div>
             </Card>
           </motion.div>
@@ -212,63 +229,78 @@ export default function LeaveRequestsPage() {
       </div>
 
       <div>
-        <h3 className="mb-4 text-xl font-bold tracking-tight">Recent Requests</h3>
+        <h3 className="text-xl font-bold mb-4 tracking-tight">
+          Recent Requests
+        </h3>
         <div className="grid gap-4">
-          {recentRequests.map((request, index) => {
-            const StatusIcon = getStatusIcon(request.status);
-
-            return (
-              <motion.div
-                key={request.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-              >
-                <Card className="border-l-4 border-l-primary/0 p-4 transition-all hover:border-l-primary hover:shadow-md">
-                  <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="flex size-12 items-center justify-center rounded-full bg-muted">
-                        <CalendarDays className="size-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-foreground">{request.type}</h4>
-                        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <span>{formatDisplayDate(request.startDate)} - {formatDisplayDate(request.endDate)}</span>
-                          <span className="size-1 rounded-full bg-muted-foreground/30" />
-                          <span>{request.days} days</span>
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">Reason: {request.reason}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                      <div className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider ${getStatusStyles(request.status)}`}>
-                        <StatusIcon className="size-3.5" /> {request.status}
-                      </div>
-
-                      {request.status === "Pending" && (
-                        <button
-                          onClick={() => handleWithdraw(request.id)}
-                          className="rounded-lg border border-border px-3 py-2 text-xs font-bold uppercase tracking-wider hover:bg-muted"
-                        >
-                          Withdraw
-                        </button>
-                      )}
-
-                      {request.status === "Rejected" && (
-                        <button
-                          onClick={() => handleResubmit(request)}
-                          className="rounded-lg bg-primary px-3 py-2 text-xs font-bold uppercase tracking-wider text-primary-foreground"
-                        >
-                          Resubmit
-                        </button>
-                      )}
-                    </div>
+          {[
+            {
+              type: "Annual Leave",
+              from: "Feb 12",
+              to: "Feb 15",
+              days: 3,
+              status: "Approved",
+              statusColor: "text-emerald-500 bg-emerald-500/10",
+              icon: CheckCircle2,
+            },
+            {
+              type: "Sick Leave",
+              from: "Jan 10",
+              to: "Jan 10",
+              days: 1,
+              status: "Approved",
+              statusColor: "text-emerald-500 bg-emerald-500/10",
+              icon: CheckCircle2,
+            },
+            {
+              type: "Unpaid Leave",
+              from: "Dec 24",
+              to: "Dec 26",
+              days: 2,
+              status: "Rejected",
+              statusColor: "text-red-500 bg-red-500/10",
+              icon: XCircle,
+            },
+            {
+              type: "Annual Leave",
+              from: "Mar 01",
+              to: "Mar 05",
+              days: 5,
+              status: "Pending",
+              statusColor: "text-amber-500 bg-amber-500/10",
+              icon: Clock,
+            },
+          ].map((req, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+            >
+              <Card className="p-4 flex items-center justify-between border-l-4 border-l-primary/0 hover:border-l-primary transition-all hover:shadow-md">
+                <div className="flex items-center gap-4">
+                  <div className="size-12 rounded-full bg-muted flex items-center justify-center">
+                    <CalendarDays className="size-5 text-muted-foreground" />
                   </div>
-                </Card>
-              </motion.div>
-            );
-          })}
+                  <div>
+                    <h4 className="font-bold text-foreground">{req.type}</h4>
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <span>
+                        {req.from} - {req.to}
+                      </span>
+                      <span className="size-1 rounded-full bg-muted-foreground/30" />
+                      <span>{req.days} days</span>
+                    </p>
+                  </div>
+                </div>
+                <div
+                  className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 ${req.statusColor}`}
+                >
+                  <req.icon className="size-3.5" /> {req.status}
+                </div>
+              </Card>
+            </motion.div>
+          ))}
         </div>
       </div>
 

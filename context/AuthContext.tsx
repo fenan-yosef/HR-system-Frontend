@@ -1,9 +1,10 @@
 "use client";
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import type { AuthContextState, AuthUser } from "@/types/auth";
 import { buildAuthUserFromAccessToken, loginRequest, mapRoleNameToUserRole } from "@/services/authService";
-import { clearTokens, persistTokens } from "@/services/apiClient";
+import { clearTokens, persistTokens, getApiErrorStatus } from "@/services/apiClient";
+import { fetchProfile } from "@/services/profileService";
 
 const AuthContext = createContext<AuthContextState | undefined>(undefined);
 
@@ -21,6 +22,7 @@ function persistUser(user: AuthUser | null) {
 export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const hydratedUserIdRef = useRef<number | null>(null);
 
   // On first load, hydrate authentication state from localStorage.
   useEffect(() => {
@@ -35,33 +37,72 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
         setIsLoading(false);
         return;
       }
+
+      // Access token exists but cannot be decoded (corrupted/old format).
+      // Clear stale auth state to avoid authenticated UI with unauthorized API calls.
+      clearTokens();
+      persistUser(null);
+      setUser(null);
+      setIsLoading(false);
+      return;
     }
 
-    const rawUser = window.localStorage.getItem(USER_STORAGE_KEY);
-    if (rawUser) {
-      try {
-        const parsedUser = JSON.parse(rawUser) as AuthUser;
-        parsedUser.role = mapRoleNameToUserRole(parsedUser.roleName ?? parsedUser.role);
-        if (!parsedUser.roleName) {
-          parsedUser.roleName = parsedUser.role === "HR_STAFF"
-            ? "HR Staff"
-            : parsedUser.role === "HR_CEO"
-              ? "HR CEO"
-              : parsedUser.role === "ADMIN"
-                ? "Admin"
-                : parsedUser.role === "EMPLOYEE"
-                  ? "Employee"
-                  : parsedUser.role === "APPLICANT"
-                    ? "Applicant"
-                    : "Unknown";
-        }
-        setUser(parsedUser);
-      } catch (error) {
-        console.error("Failed to parse stored user", error);
-      }
-    }
+    // Do not restore user from localStorage without a valid access token.
+    // This prevents stale sessions from triggering repeated 401 profile requests.
+    persistUser(null);
+    setUser(null);
     setIsLoading(false);
   }, []);
+
+  const updateUser = useCallback((updates: Partial<AuthUser>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updated = { ...prev, ...updates };
+      persistUser(updated);
+      return updated;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!user?.id) {
+      hydratedUserIdRef.current = null;
+      return;
+    }
+
+    if (hydratedUserIdRef.current === user.id) {
+      return;
+    }
+
+    const safeUser = user as AuthUser;
+    let cancelled = false;
+
+    async function hydrateProfile() {
+      try {
+        const profile = await fetchProfile();
+        if (cancelled) return;
+
+        updateUser({
+          firstName: profile.first_name || safeUser.firstName,
+          lastName: profile.last_name || safeUser.lastName,
+          email: profile.email || safeUser.email,
+          profilePictureUrl: profile.profile_photo_url || profile.onboarding_data?.profile_photo_url || safeUser.profilePictureUrl || null,
+        });
+        hydratedUserIdRef.current = safeUser.id;
+      } catch (error) {
+        console.warn("Failed to hydrate profile data", error);
+        // If profile fetch fails with 401, it means our session is likely invalid.
+        if (getApiErrorStatus(error) === 401) {
+          logout();
+        }
+      }
+    }
+
+    void hydrateProfile();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [updateUser, user]);
 
   const login = useCallback(async (username: string, password: string) => {
     setIsLoading(true);
@@ -87,14 +128,6 @@ export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) =>
     setUser(null);
   }, []);
 
-  const updateUser = useCallback((updates: Partial<AuthUser>) => {
-    setUser((prev) => {
-      if (!prev) return null;
-      const updated = { ...prev, ...updates };
-      persistUser(updated);
-      return updated;
-    });
-  }, []);
 
   const value: AuthContextState = {
     user,

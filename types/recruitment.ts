@@ -248,98 +248,10 @@ export interface ApplicantResponse {
   tracking_code_sent_at: string;
 }
 
-export interface ScreeningHistoryEntry {
-  id: number;
-  source_result_id: number;
-  evaluation_version: number;
-  final_score: number | string;
-  status: "passed" | "failed";
-  archive_reason: string;
-  screened_at: string;
-  archived_at: string;
-  is_deleted?: boolean;
-  deleted_at?: string | null;
+export interface ApplicantTrackingResult {
+  full_name?: string;
+  status?: string;
+  position?: { title?: string } | string;
+  submitted_at?: string;
+  [key: string]: unknown;
 }
-
-export interface ScreeningResult {
-  id?: number;
-  application_id: number;
-  applicant_name: string;
-  rule_score: number | string;
-  ai_score: number | string;
-  final_score: number | string;
-  evaluation_version: number;
-  status: "passed" | "failed";
-  hard_criteria_met: boolean;
-  explanation: string;
-  key_strengths: string[];
-  key_weaknesses: string[];
-  scoring_breakdown: {
-    ai?: Record<string, any>;
-    rule?: Record<string, any>;
-    blend?: {
-      rule?: number;
-      ai?: number;
-    };
-    recommendation?: string;
-    interview_questions?: string[];
-    [key: string]: any;
-  };
-  raw_llm_response: string;
-  // Metadata & History
-  include_history?: boolean;
-  history?: ScreeningHistoryEntry[];
-  screening_model?: string;
-  screened_at?: string;
-  is_deleted?: boolean;
-  deleted_at?: string | null;
-  // Legacy fields
-  overall_score?: number;
-}
-
-export interface ScreeningProgress {
-  job_id: number;
-  status: "pending" | "running" | "completed" | "failed" | "error";
-  progress_percent: number;
-  current: number;
-  total: number;
-  current_applicant?: string;
-  mode: "full" | "stale_only";
-  error?: string;
-  fail_count?: number;
-  error_message?: string;
-}
-
-export interface VersionStats {
-  position_id: number;
-  position_title: string;
-  criteria_version: number;
-  stats: {
-    position_id: number;
-    criteria_version: number;
-    total_applications: number;
-    up_to_date_count: number;
-    stale_count: number;
-    missing_result_count: number;
-    rescreen_required_count: number;
-    is_fully_up_to_date: boolean;
-    stale_application_ids: number[];
-    missing_result_application_ids: number[];
-  };
-}
-
-export interface SuggestSkillsResponse {
-  skills: string[];
-  count: number;
-  source?: string;
-  position_id?: number;
-}
-
-export interface RecruiterInstructionTemplate {
-  id: number;
-  name: string;
-  content: string;
-  created_at: string;
-  updated_at: string;
-}
-

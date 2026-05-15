@@ -32,12 +32,18 @@ export interface AttendanceCreatePayload {
   check_in: string;
   check_out?: string | null;
   location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  accuracy?: number | null;
 }
 
 export interface AttendanceUpdatePayload {
   check_in?: string;
   check_out?: string | null;
   location?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  accuracy?: number | null;
 }
 
 export interface AttendanceEntry {

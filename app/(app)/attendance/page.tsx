@@ -2,58 +2,39 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, CheckSquare, Clock, LogIn, LogOut, XCircle } from "lucide-react";
+import { Calendar, CheckSquare, LogIn, LogOut } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { createAttendanceLog, fetchAttendanceLogs, summarizeAttendanceLog, updateAttendanceLog } from "@/services/attendanceService";
+import { clockIn, clockOut, fetchAttendanceLogs, summarizeAttendanceLog } from "@/services/attendanceService";
 import type { AttendanceEntry } from "@/types/attendance";
 
-function pad(value: number) {
-   return String(value).padStart(2, "0");
-}
+import { 
+   getDateKey, 
+   getWeekDates, 
+   formatDateLabel, 
+   formatMinutes, 
+   differenceInMinutes 
+} from "@/lib/utils-date";
 
-function getDateKey(date: Date) {
-   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-}
-
-function formatDateLabel(dateKey: string) {
-   const date = new Date(`${dateKey}T00:00:00`);
-   return date.toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
-}
-
-function formatMinutes(totalMinutes: number) {
-   const hours = Math.floor(totalMinutes / 60);
-   const minutes = totalMinutes % 60;
-   return `${pad(hours)}h ${pad(minutes)}m`;
-}
-
-function differenceInMinutes(start: Date, end: Date) {
-   return Math.max(0, Math.floor((end.getTime() - start.getTime()) / 60000));
-}
-
-function getWeekDates(referenceDate: Date) {
-   const current = new Date(referenceDate);
-   const day = current.getDay();
-   const diffToMonday = day === 0 ? -6 : 1 - day;
-   const monday = new Date(current);
-   monday.setDate(current.getDate() + diffToMonday);
-
-   return Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(monday);
-      date.setDate(monday.getDate() + index);
-      return date;
-   });
-}
-
-async function resolveLocationLabel() {
+async function resolveLocationData() {
    if (typeof navigator === "undefined" || !navigator.geolocation) {
       return null;
    }
 
-   return new Promise<string | null>((resolve) => {
+   return new Promise<{
+      latitude: number;
+      longitude: number;
+      accuracy: number;
+      label: string;
+   } | null>((resolve) => {
       navigator.geolocation.getCurrentPosition(
          (position) => {
-            const { latitude, longitude } = position.coords;
-            resolve(`${latitude.toFixed(7)}, ${longitude.toFixed(7)}`);
+            const { latitude, longitude, accuracy } = position.coords;
+            resolve({
+               latitude,
+               longitude,
+               accuracy,
+               label: `${latitude.toFixed(7)}, ${longitude.toFixed(7)}`,
+            });
          },
          () => resolve(null),
          {
@@ -66,255 +47,114 @@ async function resolveLocationLabel() {
 }
 
 export default function AttendancePage() {
-   const [now, setNow] = useState(new Date());
-   const [activity, setActivity] = useState<AttendanceEntry[]>([]);
-   const [loading, setLoading] = useState(true);
-   const [error, setError] = useState<string | null>(null);
-   const [actionState, setActionState] = useState<"check-in" | "check-out" | null>(null);
+  return (
+    <section className="space-y-8">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="space-y-2">
+          <h1 className="text-4xl font-extrabold tracking-tight">Time Logs</h1>
+          <p className="text-muted-foreground">
+            Track attendance, shifts, and working hours.
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button className="flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all">
+            <LogIn className="size-4" /> Check In
+          </button>
+          <button className="flex items-center gap-2 px-5 py-2.5 bg-red-500 text-white rounded-xl font-bold shadow-lg shadow-red-500/20 hover:scale-105 active:scale-95 transition-all opacity-50 cursor-not-allowed">
+            <LogOut className="size-4" /> Check Out
+          </button>
+        </div>
+      </div>
 
-   useEffect(() => {
-      const timer = window.setInterval(() => {
-         setNow(new Date());
-      }, 1000);
-
-      return () => window.clearInterval(timer);
-   }, []);
-
-   useEffect(() => {
-      async function loadAttendance() {
-         try {
-            setLoading(true);
-            setError(null);
-            const logs = await fetchAttendanceLogs();
-            setActivity(logs.map((log) => summarizeAttendanceLog(log, new Date())));
-         } catch (loadError) {
-            console.error("Failed to load attendance logs", loadError);
-            setError("Unable to load attendance logs. Please try again.");
-         } finally {
-            setLoading(false);
-         }
-      }
-
-      void loadAttendance();
-   }, []);
-
-   const todayKey = getDateKey(now);
-   const activeEntry = activity.find((entry) => entry.status === "active") ?? null;
-   const activeSessionStart = activeEntry ? new Date(activeEntry.checkInAt) : null;
-   const activeMinutes = activeSessionStart ? differenceInMinutes(activeSessionStart, now) : 0;
-
-   const refreshAttendance = async () => {
-      const logs = await fetchAttendanceLogs();
-      setActivity(logs.map((log) => summarizeAttendanceLog(log, new Date())));
-   };
-
-   const handleCheckIn = async () => {
-      if (loading || actionState || activeEntry) return;
-
-      const checkInTime = new Date();
-      setActionState("check-in");
-      setError(null);
-
-      try {
-         const location = await resolveLocationLabel();
-         await createAttendanceLog({
-            check_in: checkInTime.toISOString(),
-            location,
-         });
-         await refreshAttendance();
-         setNow(new Date());
-      } catch (checkInError) {
-         console.error("Failed to check in", checkInError);
-         setError("Check-in failed. Please try again.");
-      } finally {
-         setActionState(null);
-      }
-   };
-
-   const handleCheckOut = async () => {
-      if (loading || actionState || !activeEntry) return;
-
-      const checkOutTime = new Date();
-      setActionState("check-out");
-      setError(null);
-
-      try {
-         await updateAttendanceLog(activeEntry.attendanceId, {
-            check_out: checkOutTime.toISOString(),
-         });
-         await refreshAttendance();
-         setNow(checkOutTime);
-      } catch (checkOutError) {
-         console.error("Failed to check out", checkOutError);
-         setError("Check-out failed. Please try again.");
-      } finally {
-         setActionState(null);
-      }
-   };
-
-   const weeklyData = useMemo(() => {
-      const entriesByDate = new Map<string, AttendanceEntry[]>();
-
-      for (const entry of activity) {
-         const bucket = entriesByDate.get(entry.dateKey) ?? [];
-         bucket.push(entry);
-         entriesByDate.set(entry.dateKey, bucket);
-      }
-
-      return getWeekDates(now).map((date) => {
-         const dateKey = getDateKey(date);
-         const matchingEntries = entriesByDate.get(dateKey) ?? [];
-         const totalMinutes = matchingEntries.reduce((sum, entry) => {
-            if (entry.status === "active" && dateKey === todayKey) {
-               return sum + activeMinutes;
-            }
-
-            return sum + entry.totalMinutes;
-         }, 0);
-
-         return {
-            label: date.toLocaleDateString([], { weekday: "short" }),
-            totalMinutes,
-            barHeight: Math.min(100, Math.round((totalMinutes / 540) * 100)),
-         };
-      });
-   }, [activity, activeMinutes, now, todayKey]);
-
-   const recentActivity = useMemo(() => {
-      return [...activity].sort((a, b) => b.checkInAt.localeCompare(a.checkInAt)).slice(0, 6);
-   }, [activity]);
-
-   const todayEntry = activity.find((entry) => entry.dateKey === todayKey) ?? null;
-
-   return (
-      <section className="space-y-8">
-         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-            <div className="space-y-2">
-               <h1 className="text-4xl font-extrabold tracking-tight">Time Logs</h1>
-               <p className="text-muted-foreground">Track attendance, shifts, and working hours.</p>
+      <div className="grid gap-6 md:grid-cols-4">
+        <Card className="p-6 border-none shadow-sm flex flex-col items-center justify-center text-center">
+          <div className="size-32 rounded-full border-4 border-primary/20 flex items-center justify-center relative mb-4">
+            <div className="text-center">
+              <span className="text-xs font-bold text-muted-foreground uppercase">
+                Current Session
+              </span>
+              <p className="text-3xl font-black text-foreground tabular-nums">
+                04:21
+              </p>
+              <span className="text-xs text-emerald-500 font-bold">Active</span>
             </div>
-            <div className="flex gap-2">
-               <button
-                  onClick={handleCheckIn}
-                  disabled={Boolean(activeEntry) || loading || Boolean(actionState)}
-                  className="flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-               >
-                  <LogIn className="size-4" /> {actionState === "check-in" ? "Checking In..." : "Check In"}
-               </button>
-               <button
-                  onClick={handleCheckOut}
-                  disabled={!activeEntry || loading || Boolean(actionState)}
-                  className="flex items-center gap-2 rounded-xl bg-red-500 px-5 py-2.5 font-bold text-white shadow-lg shadow-red-500/20 transition-all hover:scale-105 active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-               >
-                  <LogOut className="size-4" /> {actionState === "check-out" ? "Checking Out..." : "Check Out"}
-               </button>
-            </div>
-         </div>
+            <div className="absolute top-0 right-0 size-4 bg-emerald-500 rounded-full animate-pulse border-2 border-background" />
+          </div>
+          <p className="text-sm font-medium text-muted-foreground">
+            Checked in at 09:00 AM
+          </p>
+        </Card>
 
-         {error && (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
-               {error}
-            </div>
-         )}
-
-         <div className="grid gap-6 md:grid-cols-4">
-            <Card className="flex flex-col items-center justify-center border-none p-6 text-center shadow-sm">
-               <div className="relative mb-4 flex size-32 items-center justify-center rounded-full border-4 border-primary/20">
-                  <div className="text-center">
-                     <span className="text-xs font-bold uppercase text-muted-foreground">Current Session</span>
-                     <p className="tabular-nums text-3xl font-black text-foreground">{formatMinutes(activeMinutes)}</p>
-                     <span className={`text-xs font-bold ${activeEntry ? "text-emerald-500" : "text-muted-foreground"}`}>
-                        {activeEntry ? "Active" : "Offline"}
-                     </span>
-                  </div>
-                  {activeEntry && (
-                     <div className="absolute right-0 top-0 size-4 rounded-full border-2 border-background bg-emerald-500 animate-pulse" />
-                  )}
-               </div>
-               <p className="text-sm font-medium text-muted-foreground">
-                  {todayEntry?.checkIn ? `Checked in at ${todayEntry.checkIn}` : "No check-in recorded for today"}
-               </p>
-               {todayEntry?.location && (
-                  <p className="mt-2 text-xs font-medium text-muted-foreground">Location: {todayEntry.location}</p>
-               )}
-            </Card>
-
-            <Card className="border-none p-6 shadow-sm md:col-span-3">
-               <h3 className="mb-6 text-lg font-bold">Weekly Overview</h3>
-               <div className="flex h-48 items-end justify-between gap-2">
-                  {weeklyData.map((day, index) => (
-                     <div key={day.label} className="group flex flex-1 flex-col items-center gap-2">
-                        <div className="flex h-full w-full items-end overflow-hidden rounded-t-lg bg-muted">
-                           <motion.div
-                              initial={{ height: 0 }}
-                              animate={{ height: `${day.barHeight}%` }}
-                              transition={{ duration: 0.8, delay: index * 0.08 }}
-                              className="relative w-full rounded-t-lg bg-primary/20 transition-colors group-hover:bg-primary/40"
-                           >
-                              {day.totalMinutes > 0 && (
-                                 <div className="absolute -top-8 left-1/2 -translate-x-1/2 rounded bg-foreground px-2 py-1 text-[10px] font-bold text-background opacity-0 transition-opacity group-hover:opacity-100">
-                                    {formatMinutes(day.totalMinutes)}
-                                 </div>
-                              )}
-                           </motion.div>
+        <Card className="md:col-span-3 p-6 border-none shadow-sm">
+          <h3 className="text-lg font-bold mb-6">Weekly Overview</h3>
+          <div className="h-48 flex items-end justify-between gap-2">
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day, i) => {
+              const height = [60, 85, 45, 90, 80, 0, 0][i];
+              return (
+                <div
+                  key={i}
+                  className="flex-1 flex flex-col items-center gap-2 group"
+                >
+                  <div className="w-full bg-muted rounded-t-lg relative overflow-hidden h-full flex items-end">
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: `${height}%` }}
+                      transition={{ duration: 1, delay: i * 0.1 }}
+                      className="w-full bg-primary/20 group-hover:bg-primary/40 transition-colors rounded-t-lg relative"
+                    >
+                      {height > 0 && (
+                        <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-foreground text-background text-[10px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                          8h 30m
                         </div>
-                        <span className="text-xs font-bold uppercase text-muted-foreground">{day.label}</span>
-                     </div>
-                  ))}
-               </div>
-            </Card>
-         </div>
+                      )}
+                    </motion.div>
+                  </div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    {day}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      </div>
 
-         <div>
-            <h3 className="mb-4 text-xl font-bold tracking-tight">Recent Activity</h3>
-            <div className="overflow-hidden rounded-xl border border-border/50 bg-card">
-               <table className="w-full text-left text-sm">
-                  <thead className="bg-muted/50 text-xs font-bold uppercase text-muted-foreground">
-                     <tr>
-                        <th className="px-6 py-4">Date</th>
-                        <th className="px-6 py-4">Check In</th>
-                        <th className="px-6 py-4">Check Out</th>
-                        <th className="px-6 py-4">Total Hours</th>
-                        <th className="px-6 py-4">Status</th>
-                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border/50">
-                     {recentActivity.map((entry) => (
-                        <tr key={entry.attendanceId} className="transition-colors hover:bg-muted/30">
-                           <td className="flex items-center gap-2 px-6 py-4 font-medium">
-                              <Calendar className="size-4 text-muted-foreground" /> {formatDateLabel(entry.dateKey)}
-                           </td>
-                           <td className="px-6 py-4">{entry.checkIn}</td>
-                           <td className="px-6 py-4">{entry.checkOut ?? "Still active"}</td>
-                           <td className="px-6 py-4 font-bold tabular-nums">
-                              {entry.status === "active" && entry.dateKey === todayKey ? formatMinutes(activeMinutes) : formatMinutes(entry.totalMinutes)}
-                           </td>
-                           <td className="px-6 py-4">
-                              {entry.status === "active" ? (
-                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-600">
-                                    <Clock className="size-3" /> Active
-                                 </span>
-                              ) : (
-                                 <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
-                                    <CheckSquare className="size-3" /> Present
-                                 </span>
-                              )}
-                           </td>
-                        </tr>
-                     ))}
-                     {!loading && recentActivity.length === 0 && (
-                        <tr>
-                           <td colSpan={5} className="px-6 py-8 text-center text-sm text-muted-foreground">
-                              <span className="inline-flex items-center gap-2">
-                                 <XCircle className="size-4" /> No attendance activity recorded yet.
-                              </span>
-                           </td>
-                        </tr>
-                     )}
-                  </tbody>
-               </table>
-            </div>
-         </div>
-      </section>
-   );
+      <div>
+        <h3 className="text-xl font-bold mb-4 tracking-tight">
+          Recent Activity
+        </h3>
+        <div className="rounded-xl border border-border/50 overflow-hidden bg-card">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-muted/50 text-xs font-bold uppercase text-muted-foreground">
+              <tr>
+                <th className="px-6 py-4">Date</th>
+                <th className="px-6 py-4">Check In</th>
+                <th className="px-6 py-4">Check Out</th>
+                <th className="px-6 py-4">Total Hours</th>
+                <th className="px-6 py-4">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border/50">
+              {[1, 2, 3].map((_, i) => (
+                <tr key={i} className="hover:bg-muted/30 transition-colors">
+                  <td className="px-6 py-4 font-medium flex items-center gap-2">
+                    <Calendar className="size-4 text-muted-foreground" /> Jan 2
+                    {4 - i}, 2026
+                  </td>
+                  <td className="px-6 py-4">09:00 AM</td>
+                  <td className="px-6 py-4">05:30 PM</td>
+                  <td className="px-6 py-4 font-bold tabular-nums">08h 30m</td>
+                  <td className="px-6 py-4">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold uppercase tracking-wider">
+                      <CheckSquare className="size-3" /> Present
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  );
 }
