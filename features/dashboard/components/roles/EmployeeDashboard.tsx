@@ -1,29 +1,25 @@
 "use client";
+"use client";
 
 import Link from "next/link";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  Clock,
   Calendar,
-  FileText,
-  User,
   ChevronRight,
-  Zap,
-  TrendingUp,
+  Clock,
+  FileText,
   MessageSquareText,
+  TrendingUp,
+  User,
+  Zap,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
-import { StatCard } from "../widgets/StatCard";
-import {
-  clockIn,
-  clockOut,
-  fetchAttendanceLogs,
-  summarizeAttendanceLog,
-} from "@/services/attendanceService";
-import { SimpleBarChart } from "../widgets/AnalyticsWidgets";
-import { getDateKey, getWeekDates } from "@/lib/utils-date";
-import type { AttendanceEntry } from "@/types/attendance";
 import { ROUTES } from "@/constants/routes";
+import { getDateKey, getWeekDates } from "@/lib/utils-date";
+import { clockIn, clockOut, fetchAttendanceLogs, summarizeAttendanceLog } from "@/services/attendanceService";
+import type { AttendanceEntry } from "@/types/attendance";
+import { SimpleBarChart } from "../widgets/AnalyticsWidgets";
+import { StatCard } from "../widgets/StatCard";
 
 interface DashboardStat {
   title: string;
@@ -33,17 +29,17 @@ interface DashboardStat {
 }
 
 interface EmployeeDashboardMetrics {
-  stats: DashboardStat[];
-  personal_stats: {
-    attendance: string;
-    profile_completion: number;
-    weekly_hours: number;
-    total_days: number;
+  stats?: DashboardStat[];
+  personal_stats?: {
+    attendance?: string;
+    profile_completion?: number;
+    weekly_hours?: number;
+    total_days?: number;
   };
 }
 
 interface EmployeeDashboardProps {
-  metrics: EmployeeDashboardMetrics;
+  metrics?: EmployeeDashboardMetrics;
 }
 
 async function resolveLocationLabel() {
@@ -68,14 +64,18 @@ async function resolveLocationLabel() {
 }
 
 export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
-  const [attendanceActivity, setAttendanceActivity] = useState<
-    AttendanceEntry[]
-  >([]);
+  const [attendanceActivity, setAttendanceActivity] = useState<AttendanceEntry[]>([]);
   const [loadingAttendance, setLoadingAttendance] = useState(true);
-  const [actionState, setActionState] = useState<
-    "check-in" | "check-out" | null
-  >(null);
+  const [actionState, setActionState] = useState<"check-in" | "check-out" | null>(null);
   const [attendanceError, setAttendanceError] = useState<string | null>(null);
+
+  const stats = metrics?.stats ?? [];
+  const personal = {
+    attendance: metrics?.personal_stats?.attendance ?? "Unknown",
+    profile_completion: metrics?.personal_stats?.profile_completion ?? 0,
+    weekly_hours: metrics?.personal_stats?.weekly_hours ?? 0,
+    total_days: metrics?.personal_stats?.total_days ?? 0,
+  };
 
   useEffect(() => {
     async function loadAttendance() {
@@ -114,12 +114,11 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
           const activeSessionStart = new Date(entry.checkInAt);
           const activeMins = Math.max(
             0,
-            Math.floor(
-              (new Date().getTime() - activeSessionStart.getTime()) / 60000,
-            ),
+            Math.floor((new Date().getTime() - activeSessionStart.getTime()) / 60000),
           );
           return sum + activeMins;
         }
+
         return sum + entry.totalMinutes;
       }, 0);
 
@@ -130,12 +129,9 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
     });
   }, [attendanceActivity, todayKey]);
 
-  const activeEntry =
-    attendanceActivity.find((entry) => entry.status === "active") ?? null;
+  const activeEntry = attendanceActivity.find((entry) => entry.status === "active") ?? null;
   const latestEntry = attendanceActivity[0] ?? null;
-  const attendanceLabel = activeEntry
-    ? "Clocked In"
-    : metrics.personal_stats.attendance;
+  const attendanceLabel = activeEntry ? "Clocked In" : personal.attendance;
   const statusIsActive = attendanceLabel === "Clocked In";
 
   const handleAttendanceAction = async () => {
@@ -146,9 +142,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
     try {
       if (activeEntry) {
         setActionState("check-out");
-        await clockOut({
-          check_out: new Date().toISOString(),
-        });
+        await clockOut({ check_out: new Date().toISOString() });
       } else {
         setActionState("check-in");
         const location = await resolveLocationLabel();
@@ -162,9 +156,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
       setAttendanceActivity(logs.map((log) => summarizeAttendanceLog(log)));
     } catch (error) {
       console.error("Failed to update attendance from dashboard", error);
-      setAttendanceError(
-        activeEntry ? "Clock-out failed." : "Clock-in failed.",
-      );
+      setAttendanceError(activeEntry ? "Clock-out failed." : "Clock-in failed.");
     } finally {
       setActionState(null);
     }
@@ -174,23 +166,18 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-orange-600">
-            Welcome Back!
-          </h2>
-          <p className="text-muted-foreground">
-            Here is an overview of your work status.
-          </p>
+          <h2 className="text-3xl font-bold tracking-tight text-orange-600">Welcome Back!</h2>
+          <p className="text-muted-foreground">Here is an overview of your work status.</p>
         </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {metrics.stats.map((stat, i) => (
+        {stats.map((stat, i) => (
           <StatCard key={i} {...stat} delay={i * 0.1} />
         ))}
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {/* Attendance Widget */}
         <Card className="p-6 border-none bg-white shadow-xl flex flex-col justify-between group overflow-hidden relative">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-8">
@@ -199,9 +186,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
               </div>
               <span
                 className={`text-xs font-black uppercase px-2 py-1 rounded-full ${
-                  statusIsActive
-                    ? "bg-green-100 text-green-600"
-                    : "bg-orange-100 text-orange-600"
+                  statusIsActive ? "bg-green-100 text-green-600" : "bg-orange-100 text-orange-600"
                 }`}
               >
                 {loadingAttendance ? "Loading..." : attendanceLabel}
@@ -215,11 +200,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
                   ? `Last attendance at ${latestEntry.checkIn}`
                   : "Remember to clock out when you finish."}
             </p>
-            {attendanceError && (
-              <p className="text-xs font-medium text-rose-600">
-                {attendanceError}
-              </p>
-            )}
+            {attendanceError && <p className="text-xs font-medium text-rose-600">{attendanceError}</p>}
           </div>
           <button
             onClick={handleAttendanceAction}
@@ -237,7 +218,6 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
           <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-orange-500/10 transition-colors" />
         </Card>
 
-        {/* Self Service */}
         <Card className="p-6 border-none bg-card/50 backdrop-blur-sm shadow-xl lg:col-span-1">
           <div className="flex items-center gap-4 mb-8">
             <div className="p-3 bg-blue-500/10 rounded-xl">
@@ -247,29 +227,10 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
           </div>
           <div className="space-y-3">
             {[
-              {
-                label: "Request Leave",
-                icon: Calendar,
-                color: "text-blue-500",
-              },
-              {
-                label: "Request Letter",
-                icon: FileText,
-                color: "text-indigo-500",
-                href: ROUTES.EMPLOYEE_REQUEST_LETTER,
-              },
-              {
-                label: "Submit Complaint",
-                icon: MessageSquareText,
-                color: "text-rose-500",
-                href: ROUTES.EMPLOYEE_REQUEST_COMPLAINT,
-              },
-              {
-                label: "Update Profile",
-                icon: User,
-                color: "text-emerald-500",
-                href: ROUTES.MY_PROFILE,
-              },
+              { label: "Request Leave", icon: Calendar, color: "text-blue-500" },
+              { label: "Request Letter", icon: FileText, color: "text-indigo-500", href: ROUTES.EMPLOYEE_REQUEST_LETTER },
+              { label: "Submit Complaint", icon: MessageSquareText, color: "text-rose-500", href: ROUTES.EMPLOYEE_REQUEST_COMPLAINT },
+              { label: "Update Profile", icon: User, color: "text-emerald-500", href: ROUTES.MY_PROFILE },
             ].map((service, i) =>
               service.href ? (
                 <Link
@@ -300,15 +261,12 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
           </div>
         </Card>
 
-        {/* Profile Completion */}
         <Card className="p-6 border-none bg-indigo-900 text-white shadow-xl relative overflow-hidden">
           <div className="relative z-10 flex flex-col h-full">
             <h3 className="text-lg font-bold mb-4">Onboarding Progress</h3>
             <div className="flex-1 flex flex-col justify-center items-center py-4">
               <div className="size-24 rounded-full border-4 border-white/20 flex items-center justify-center relative">
-                <span className="text-2xl font-black">
-                  {metrics.personal_stats.profile_completion}%
-                </span>
+                <span className="text-2xl font-black">{personal.profile_completion}%</span>
                 <svg className="absolute inset-0 size-full -rotate-90">
                   <circle
                     cx="48"
@@ -318,17 +276,14 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
                     stroke="white"
                     strokeWidth="4"
                     strokeDasharray="276"
-                    strokeDashoffset={
-                      276 -
-                      (276 * metrics.personal_stats.profile_completion) / 100
-                    }
+                    strokeDashoffset={276 - (276 * personal.profile_completion) / 100}
                     className="transition-all duration-1000"
                   />
                 </svg>
               </div>
             </div>
             <p className="text-indigo-200 text-xs text-center">
-              {metrics.personal_stats.profile_completion === 100
+              {personal.profile_completion === 100
                 ? "Perfect! All steps completed."
                 : "Almost there! Complete your profile to unlock all features."}
             </p>
@@ -337,7 +292,6 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
         </Card>
       </div>
 
-      {/* Weekly Attendance Chart */}
       <Card className="p-6 border-none bg-card/50 backdrop-blur-sm shadow-xl">
         <div className="flex items-center gap-4 mb-8">
           <div className="p-3 bg-primary/10 rounded-xl">
