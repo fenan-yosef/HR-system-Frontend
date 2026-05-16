@@ -5,7 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { fetchApplications, fetchJobPosition } from "@/services/recruitmentService";
+import {
+  fetchApplications,
+  fetchJobPosition,
+} from "@/services/recruitmentService";
 import type { Application, JobPosition } from "@/types/recruitment";
 import {
   ArrowLeft,
@@ -14,7 +17,6 @@ import {
   Calendar,
   Clock3,
   Mail,
-  Users,
 } from "lucide-react";
 
 type CandidateRecord = Application & {
@@ -53,13 +55,15 @@ export default function PositionAnalyticsPage() {
   useEffect(() => {
     if (!Number.isFinite(positionId) || positionId <= 0) return;
 
-    setLoading(true);
+    // Defer setLoading to avoid synchronous state update inside effect
+    Promise.resolve().then(() => setLoading(true));
     Promise.all([
       fetchJobPosition(positionId).catch((error) => {
         console.error("Failed to load position", error);
         return null;
       }),
-      fetchApplications().catch((error) => {
+      // Request only applications for this position to reduce payload
+      fetchApplications({ position: positionId }).catch((error) => {
         console.error("Failed to load applications", error);
         return { results: [] } as { results: Application[] };
       }),
@@ -67,17 +71,19 @@ export default function PositionAnalyticsPage() {
       .then(([jobData, appsData]) => {
         setJob(jobData);
 
-        const rawResults = Array.isArray(appsData)
-          ? appsData
-          : (appsData?.results ?? []);
+        const rawResults = (
+          Array.isArray(appsData) ? appsData : (appsData?.results ?? [])
+        ) as Application[];
 
-        const flattened = rawResults.map((item: any) => {
+        const flattened = rawResults.map((item: Application) => {
           const applicant = item.applicant ?? {};
           const position = item.position ?? {};
           const apiPositionId =
             (typeof position === "object"
-              ? position.position_id ?? position.job_id
-              : position) ?? item.position_id ?? item.job_id;
+              ? (position.position_id ?? position.job_id)
+              : position) ??
+            item.position_id ??
+            item.job_id;
 
           return {
             ...item,
@@ -103,20 +109,26 @@ export default function PositionAnalyticsPage() {
 
   const analytics = useMemo(() => {
     const total = candidates.length;
-    const statusCounts = candidates.reduce<Record<string, number>>((acc, candidate) => {
-      const key = normaliseStatus(candidate.status);
-      acc[key] = (acc[key] ?? 0) + 1;
-      return acc;
-    }, {});
+    const statusCounts = candidates.reduce<Record<string, number>>(
+      (acc, candidate) => {
+        const key = normaliseStatus(candidate.status);
+        acc[key] = (acc[key] ?? 0) + 1;
+        return acc;
+      },
+      {},
+    );
 
-    const shortlist = (statusCounts.shortlisted ?? 0) + (statusCounts.confirmed ?? 0);
+    const shortlist =
+      (statusCounts.shortlisted ?? 0) + (statusCounts.confirmed ?? 0);
     const interview = statusCounts.interview ?? 0;
     const hired = statusCounts.hired ?? 0;
     const rejected = statusCounts.rejected ?? 0;
     const pending = statusCounts.pending ?? 0;
 
-    const conversionRate = total > 0 ? ((hired / total) * 100).toFixed(1) : "0.0";
-    const shortlistRate = total > 0 ? ((shortlist / total) * 100).toFixed(1) : "0.0";
+    const conversionRate =
+      total > 0 ? ((hired / total) * 100).toFixed(1) : "0.0";
+    const shortlistRate =
+      total > 0 ? ((shortlist / total) * 100).toFixed(1) : "0.0";
 
     const topStatuses = Object.entries(statusCounts)
       .sort((a, b) => b[1] - a[1])
@@ -125,7 +137,8 @@ export default function PositionAnalyticsPage() {
     const recentCandidates = [...candidates]
       .sort(
         (a, b) =>
-          new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime(),
+          new Date(b.submitted_at).getTime() -
+          new Date(a.submitted_at).getTime(),
       )
       .slice(0, 6);
 
@@ -203,7 +216,9 @@ export default function PositionAnalyticsPage() {
             Shortlist Rate
           </p>
           <p className="mt-3 text-3xl font-black">{analytics.shortlistRate}%</p>
-          <p className="mt-1 text-xs text-muted-foreground">{analytics.shortlist} candidates</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {analytics.shortlist} candidates
+          </p>
         </Card>
 
         <Card className="rounded-2xl border-none p-5 shadow-sm">
@@ -211,7 +226,9 @@ export default function PositionAnalyticsPage() {
             Hires
           </p>
           <p className="mt-3 text-3xl font-black">{analytics.hired}</p>
-          <p className="mt-1 text-xs text-muted-foreground">Conversion {analytics.conversionRate}%</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Conversion {analytics.conversionRate}%
+          </p>
         </Card>
 
         <Card className="rounded-2xl border-none p-5 shadow-sm">
@@ -224,15 +241,22 @@ export default function PositionAnalyticsPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card className="rounded-2xl border-none p-6 shadow-sm">
-          <h2 className="text-lg font-black tracking-tight">Pipeline Breakdown</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Status distribution for this role.</p>
+          <h2 className="text-lg font-black tracking-tight">
+            Pipeline Breakdown
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Status distribution for this role.
+          </p>
 
           <div className="mt-6 space-y-4">
             {analytics.topStatuses.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No applications available yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No applications available yet.
+              </p>
             ) : (
               analytics.topStatuses.map(([status, count]) => {
-                const percent = analytics.total > 0 ? (count / analytics.total) * 100 : 0;
+                const percent =
+                  analytics.total > 0 ? (count / analytics.total) * 100 : 0;
                 return (
                   <div key={status} className="space-y-2">
                     <div className="flex items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -255,23 +279,33 @@ export default function PositionAnalyticsPage() {
 
           <div className="mt-6 grid grid-cols-2 gap-3 text-xs">
             <div className="rounded-xl bg-muted/40 p-3">
-              <p className="font-black uppercase tracking-widest text-muted-foreground">Interview</p>
+              <p className="font-black uppercase tracking-widest text-muted-foreground">
+                Interview
+              </p>
               <p className="mt-2 text-lg font-black">{analytics.interview}</p>
             </div>
             <div className="rounded-xl bg-muted/40 p-3">
-              <p className="font-black uppercase tracking-widest text-muted-foreground">Rejected</p>
+              <p className="font-black uppercase tracking-widest text-muted-foreground">
+                Rejected
+              </p>
               <p className="mt-2 text-lg font-black">{analytics.rejected}</p>
             </div>
           </div>
         </Card>
 
         <Card className="rounded-2xl border-none p-6 shadow-sm">
-          <h2 className="text-lg font-black tracking-tight">Recent Applicants</h2>
-          <p className="mt-1 text-sm text-muted-foreground">Most recent submissions for this position.</p>
+          <h2 className="text-lg font-black tracking-tight">
+            Recent Applicants
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Most recent submissions for this position.
+          </p>
 
           <div className="mt-5 space-y-3">
             {analytics.recentCandidates.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No applicants yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No applicants yet.
+              </p>
             ) : (
               analytics.recentCandidates.map((candidate) => (
                 <div
@@ -280,7 +314,9 @@ export default function PositionAnalyticsPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <p className="font-bold leading-none">{candidate.full_name}</p>
+                      <p className="font-bold leading-none">
+                        {candidate.full_name}
+                      </p>
                       <p className="mt-2 flex items-center gap-1 text-xs text-muted-foreground">
                         <Mail className="size-3.5" />
                         {candidate.email || "No email"}
@@ -308,20 +344,7 @@ export default function PositionAnalyticsPage() {
         </Card>
       </div>
 
-      <Card className="rounded-2xl border-none p-6 shadow-sm">
-        <h2 className="flex items-center gap-2 text-lg font-black tracking-tight">
-          <Users className="size-5 text-primary" />
-          Insights
-        </h2>
-        <div className="mt-4 grid gap-3 text-sm text-muted-foreground sm:grid-cols-2">
-          <p>
-            Time to fill improves when shortlisted candidates are above 30% of total applications.
-          </p>
-          <p>
-            This role currently has {analytics.total} applications with {analytics.hired} final hires.
-          </p>
-        </div>
-      </Card>
+      {/* Insights card removed */}
     </div>
   );
 }
