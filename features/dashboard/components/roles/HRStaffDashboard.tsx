@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   ListTodo,
   Calendar,
@@ -9,9 +10,9 @@ import {
   ClipboardCheck,
   Users,
   ChevronRight,
-  UserPlus,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { ROUTES } from "@/constants/routes";
 import { StatCard } from "../widgets/StatCard";
 import { ActionButton } from "../widgets/AnalyticsWidgets";
 import { cn } from "@/lib/utils";
@@ -21,6 +22,8 @@ interface HRStaffDashboardProps {
 }
 
 export function HRStaffDashboard({ metrics }: HRStaffDashboardProps) {
+  const router = useRouter();
+
   return (
     <div className="space-y-8 pb-10">
       <div className="flex items-center justify-between">
@@ -42,21 +45,23 @@ export function HRStaffDashboard({ metrics }: HRStaffDashboardProps) {
 
       <div className="grid gap-6 md:grid-cols-3">
         <div className="md:col-span-1 grid gap-4">
-          <ActionButton label="New Job Post" icon={Briefcase} variant="black" />
+          <ActionButton
+            label="New Job Post"
+            icon={Briefcase}
+            variant="black"
+            onClick={() => router.push(ROUTES.RECRUITMENT_JOB_POSTINGS)}
+          />
           <ActionButton
             label="Shortlist Talent"
             icon={Users}
             variant="outline"
+            onClick={() => router.push(ROUTES.RECRUITMENT_SHORTLIST)}
           />
           <ActionButton
             label="Approve Leaves"
             icon={Calendar}
             variant="outline"
-          />
-          <ActionButton
-            label="Verify Profile"
-            icon={UserPlus}
-            variant="outline"
+            onClick={() => router.push(ROUTES.LEAVE_APPROVALS)}
           />
         </div>
 
