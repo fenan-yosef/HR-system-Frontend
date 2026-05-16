@@ -1,16 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import {
   JobPosition,
   CreateJobPosition,
   Department,
   type JobStatus,
+  CustomApplicationField, 
+  CustomFieldType, 
+  RecruiterInstructionTemplate
 } from "@/types/recruitment";
 import {
   fetchJobPositions,
   createJobPosition,
   fetchDepartments,
+  suggestSkills,
+  fetchInstructionTemplates,
+  createInstructionTemplate,
+  deleteInstructionTemplate,
+  updateJobPosition,
+  updateCustomApplicationFields
 } from "@/services/recruitmentService";
 import { Card } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,10 +32,20 @@ import {
   Building2,
   MoreVertical,
   Activity,
+  Wand2,
+  ChevronDown,
+  Trash2,
+  Save,
+  Loader2,
+  Layers,
+  Settings2,
+  BrainCircuit,
+  Share2,
+  Check,
+  Copy
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CustomApplicationField, CustomFieldType, RecruiterInstructionTemplate } from "@/types/recruitment";
 
 const FIELD_TYPES: { label: string; value: CustomFieldType }[] = [
   { label: "Short Text", value: "short_text" },
@@ -49,6 +69,27 @@ export function JobPositionManager() {
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<number | "all">("all");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  // States for skill suggestions
+  const [suggestingSkills, setSuggestingSkills] = useState(false);
+  const [liveSuggestions, setLiveSuggestions] = useState<string[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const suggestionTimerRef = useRef<number | null>(null);
+
+  // States for instruction templates
+  const [templates, setTemplates] = useState<RecruiterInstructionTemplate[]>([]);
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+
+  // States for submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  // States for sharing
+  const [selectedJob, setSelectedJob] = useState<JobPosition | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const getToday = () => new Date().toISOString().split("T")[0];
 
@@ -134,7 +175,7 @@ export function JobPositionManager() {
 
     // Clear previous timer
     if (suggestionTimerRef.current) {
-      window.clearTimeout(suggestionTimerRef.current as number);
+      window.clearTimeout(suggestionTimerRef.current);
     }
 
     suggestionTimerRef.current = window.setTimeout(async () => {
@@ -148,11 +189,11 @@ export function JobPositionManager() {
       } finally {
         setSuggestionsLoading(false);
       }
-    }, 500);
+    }, 500) as unknown as number;
 
     return () => {
       if (suggestionTimerRef.current) {
-        window.clearTimeout(suggestionTimerRef.current as number);
+        window.clearTimeout(suggestionTimerRef.current);
       }
     };
   }, [formData.description]);
@@ -167,9 +208,11 @@ export function JobPositionManager() {
       const [posResponse, deptResponse, templateResponse] = await Promise.all([
         fetchJobPositions(),
         fetchDepartments(),
+        fetchInstructionTemplates().catch(() => ({ results: [] }))
       ]);
       setPositions(posResponse.results);
       setDepartments(deptResponse.results);
+      setTemplates(templateResponse.results || []);
 
       // Set default department if none selected
       if (deptResponse.results.length > 0) {
@@ -471,7 +514,7 @@ export function JobPositionManager() {
               >
                 <Card className="group relative overflow-hidden flex items-center justify-between p-6 border-none shadow-sm hover:shadow-xl transition-all hover:-translate-y-1">
                   <div className="flex items-center gap-6">
-                    <div className="bg-linear-to-br from-primary/10 to-primary/5 p-4 rounded-2xl group-hover:from-primary group-hover:to-primary/80 group-hover:text-white transition-all duration-300">
+                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-4 rounded-2xl group-hover:from-primary group-hover:to-primary/80 group-hover:text-white transition-all duration-300">
                       <Briefcase className="size-6" />
                     </div>
                     <div>
@@ -517,8 +560,11 @@ export function JobPositionManager() {
                   </div>
 
                   <div className="flex items-center gap-5">
-                    <button className="hidden md:flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:underline">
-                      View details <MoreVertical className="size-3" />
+                    <button 
+                      onClick={() => handleShare(pos)}
+                      className="hidden md:flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:underline"
+                    >
+                      Share <Share2 className="size-3" />
                     </button>
                     <Link
                       href={`/hr/recruitment/job-postings/${pos.position_id}`}
@@ -568,7 +614,13 @@ export function JobPositionManager() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+                {createError && (
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-bold flex items-center gap-2">
+                    <X className="size-4" /> {createError}
+                  </div>
+                )}
+                
                 <div className="grid gap-6">
                   <div className="space-y-2">
                     <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
@@ -643,7 +695,7 @@ export function JobPositionManager() {
                     </Label>
                     <textarea
                       placeholder="Describe the role responsibilities..."
-                      className="w-full rounded-xl border border-border/50 p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-30 text-base font-medium transition-all"
+                      className="w-full rounded-xl border border-border/50 p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[120px] text-base font-medium transition-all"
                       value={formData.description}
                       onChange={(e) =>
                         setFormData({
@@ -973,9 +1025,11 @@ export function JobPositionManager() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-2 rounded-xl bg-primary px-4 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-98 transition-all"
+                    disabled={isSubmitting}
+                    className="flex-2 rounded-xl bg-primary px-4 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center gap-2"
                   >
-                    Confirm & Publish
+                    {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
+                    {isSubmitting ? "Publishing..." : "Confirm & Publish"}
                   </button>
                 </div>
               </form>

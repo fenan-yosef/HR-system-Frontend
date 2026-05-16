@@ -325,10 +325,15 @@ export function getSkillSuggestions(positionId: number): Promise<{ skills: strin
   });
 }
 
-export function suggestSkills(description: string): Promise<{ skills: string[] }> {
+export function suggestSkills(
+  description: string,
+  limit = 12,
+  context?: any,
+  useCache = true
+): Promise<{ skills: string[] }> {
   return apiFetch<{ skills: string[] }>("/job-positions/suggest-skills/", {
     method: "POST",
-    body: JSON.stringify({ description }),
+    body: JSON.stringify({ description, limit, context, use_cache: useCache }),
     requiresAuth: true,
   });
 }
