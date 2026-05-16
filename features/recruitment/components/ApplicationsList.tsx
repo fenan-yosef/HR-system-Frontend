@@ -445,7 +445,7 @@ export function ApplicationsList({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[400px_minmax(0,1fr)] gap-8">
         {/* Sidebar Column */}
         <aside
           className={`space-y-8 ${showFilters ? "block" : "hidden lg:block"}`}

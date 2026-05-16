@@ -205,7 +205,7 @@ export default function ScreeningPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[420px_minmax(0,1fr)] gap-8 items-start">
                 {/* Configuration Sidebar */}
                 <div className="space-y-6 lg:sticky lg:top-24">
                     <ScreeningSettings

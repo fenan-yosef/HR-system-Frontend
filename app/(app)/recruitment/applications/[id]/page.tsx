@@ -324,7 +324,7 @@ export default function ApplicationDetailPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20 animate-in fade-in duration-700">
+    <div className="w-full space-y-8 pb-20 animate-in fade-in duration-700">
       {/* Navigation Header */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-4">
@@ -401,9 +401,9 @@ export default function ApplicationDetailPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-[400px_minmax(0,1fr)] gap-10">
         {/* Left Sidebar: Contact & Quick Info */}
-        <aside className="lg:col-span-4 space-y-8">
+        <aside className="space-y-8">
           <Card className="p-8 rounded-[2.5rem] border-none bg-muted/20 shadow-none space-y-8">
             <div className="space-y-6">
               <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
@@ -571,7 +571,7 @@ export default function ApplicationDetailPage() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="lg:col-span-8 space-y-8">
+        <main className="space-y-8">
           {/* Tabs */}
           <div className="flex items-center p-1.5 bg-muted/30 rounded-2xl w-fit">
             {(["overview", "resume", "ai"] as const).map((tab) => (

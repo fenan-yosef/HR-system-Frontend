@@ -154,7 +154,7 @@ export default function ExtractionWorkspacePage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8 pb-12">
+    <div className="w-full space-y-8 pb-12">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div className="space-y-2">
           <Link href={`/recruitment/job-postings/${positionId}`} className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground">
@@ -185,7 +185,7 @@ export default function ExtractionWorkspacePage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[400px_minmax(0,1fr)]">
         <Card className="rounded-[2rem] border-none p-4 shadow-xl">
           <div className="mb-4 flex items-center justify-between px-2 pt-2">
             <div>
