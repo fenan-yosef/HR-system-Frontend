@@ -26,7 +26,10 @@ export default function IdCardsTable() {
         setLoading(true);
         const [emps, depts] = await Promise.all([fetchAllEmployees(), fetchDepartmentsAll()]);
         if (!mounted) return;
-        setEmployees(Array.isArray(emps) ? emps : (emps.results || emps.data || []));
+        
+        // emps is Employee[] from fetchAllEmployees
+        setEmployees(emps);
+        // depts is PaginatedResponse<Department> from fetchDepartmentsAll
         setDepartments(depts.results || []);
       } catch (err) {
         console.error("Failed to load employees or departments", err);
@@ -121,17 +124,25 @@ export default function IdCardsTable() {
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           <label className="text-sm">Department</label>
-          <select value={filterDept} onChange={e => setFilterDept(e.target.value)} className="input">
+          <select 
+            value={filterDept} 
+            onChange={e => setFilterDept(e.target.value)} 
+            className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+          >
             <option value="">All</option>
             {departments.map(d => (
-              <option key={d.id} value={d.id}>{d.name}</option>
+              <option key={d.department_id || d.id} value={d.department_id || d.id}>{d.name}</option>
             ))}
           </select>
         </div>
 
         <div className="flex items-center gap-2">
           <label className="text-sm">Position</label>
-          <select value={filterPosition} onChange={e => setFilterPosition(e.target.value)} className="input">
+          <select 
+            value={filterPosition} 
+            onChange={e => setFilterPosition(e.target.value)} 
+            className="h-10 px-3 rounded-md border border-input bg-background text-sm"
+          >
             <option value="">All</option>
             {positions.map(p => (
               <option key={p} value={p}>{p}</option>
@@ -141,7 +152,8 @@ export default function IdCardsTable() {
 
         <div className="ml-auto flex items-center gap-2">
           <Button onClick={handleDownloadBulk} disabled={bulkGenerating} variant="default">
-            {bulkGenerating ? <Loader2 className="animate-spin" /> : "Generate Bulk IDs"}
+            {bulkGenerating ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
+            Generate Bulk IDs
           </Button>
         </div>
       </div>
@@ -174,8 +186,9 @@ export default function IdCardsTable() {
                     <td className="p-2">{emp.department_name || emp.department || "-"}</td>
                     <td className="p-2">{emp.position || "-"}</td>
                     <td className="p-2">
-                      <Button onClick={() => handleDownloadSingle(emp)} disabled={generatingIds === empId}>
-                        {generatingIds === empId ? <Loader2 className="animate-spin" /> : "Generate ID"}
+                      <Button onClick={() => handleDownloadSingle(emp)} disabled={generatingIds === empId} size="sm">
+                        {generatingIds === empId ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
+                        Generate ID
                       </Button>
                     </td>
                   </tr>

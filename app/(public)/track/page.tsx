@@ -5,9 +5,6 @@ import { trackApplicant } from "@/services/recruitmentService";
 import type { ApplicantTrackingResult } from "@/types/recruitment";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/ui/toast";
-import { apiFetch, getMediaUrl } from "@/services/apiClient";
-import { formatScore } from "@/lib/utils";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -16,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Search } from "lucide-react";
+import { Search, Clock, AlertCircle } from "lucide-react";
 
 export default function TrackApplicationPage() {
   const [trackingCode, setTrackingCode] = useState("");
@@ -34,7 +31,7 @@ export default function TrackApplicationPage() {
     setResult(null);
 
     try {
-      const data = await trackApplicant(trackingCode, email, true);
+      const data = await trackApplicant(trackingCode, email);
       setResult(data);
     } catch (err: unknown) {
       console.error("Tracking failed", err);
@@ -58,14 +55,6 @@ export default function TrackApplicationPage() {
       case "rejected": return "bg-red-100 text-red-700 border-red-200";
       default: return "bg-gray-100 text-gray-700 border-gray-200";
     }
-  };
-
-  const getFitLabelColor = (label: string) => {
-    const l = label?.toLowerCase() || "";
-    if (l.includes("strong")) return "bg-emerald-500 text-white";
-    if (l.includes("good")) return "bg-emerald-400 text-white";
-    if (l.includes("review")) return "bg-amber-500 text-white";
-    return "bg-slate-500 text-white";
   };
 
   return (
@@ -162,14 +151,14 @@ export default function TrackApplicationPage() {
                 <p className="text-sm font-medium text-gray-500">
                   Current Status
                 </p>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize mt-1">
-                  {result.status || "Received"}
+                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border capitalize mt-1 ${getStatusColor(result.status || "")}`}>
+                  {(result.status || "Received").replace("_", " ")}
                 </span>
               </div>
               {result.position && (
                 <div className="col-span-2">
                   <p className="text-sm font-medium text-gray-500">Position</p>
-                  <p>
+                  <p className="font-bold text-slate-800">
                     {typeof result.position === "string"
                       ? result.position
                       : (result.position.title ?? "N/A")}
@@ -187,9 +176,6 @@ export default function TrackApplicationPage() {
                 </p>
               </div>
             </div>
-
-            {/* Steps Visualizer Placeholder */}
-            {/* If we knew the status steps, we could render a progress bar here */}
           </CardContent>
         </Card>
       )}

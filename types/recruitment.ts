@@ -161,6 +161,54 @@ export interface AiEvaluation {
   cluster_id?: number;
 }
 
+export interface ScreeningResult {
+  id: number;
+  application: number | Application;
+  hard_criteria_met: boolean;
+  overall_score: number | string;
+  rule_score: number | string;
+  ai_score: number | string;
+  final_score: number | string;
+  evaluation_version: number;
+  scoring_breakdown: any;
+  explanation: string;
+  key_strengths: string[];
+  key_weaknesses: string[];
+  status: string;
+  screening_model: string;
+  raw_llm_response?: string;
+  screened_at: string;
+  is_deleted: boolean;
+  deleted_at?: string | null;
+  applicant_name?: string;
+  applicant_email?: string;
+  position_title?: string;
+  history?: ScreeningHistoryEntry[];
+}
+
+export interface ScreeningHistoryEntry {
+  id: number;
+  source_result: number;
+  hard_criteria_met: boolean;
+  overall_score: number | string;
+  rule_score: number | string;
+  ai_score: number | string;
+  final_score: number | string;
+  evaluation_version: number;
+  scoring_breakdown: any;
+  explanation: string;
+  key_strengths: string[];
+  key_weaknesses: string[];
+  status: string;
+  screening_model: string;
+  raw_llm_response?: string;
+  screened_at: string;
+  archive_reason?: string;
+  archived_at: string;
+  is_deleted: boolean;
+  deleted_at?: string | null;
+}
+
 export interface Application {
   application_id: number;
   full_name: string;
@@ -209,6 +257,38 @@ export interface ApplicationMetrics {
   applied_today: number;
   shortlisted: number;
   pending: number;
+}
+
+export interface ScreeningProgress {
+  job_id: number;
+  status: "pending" | "running" | "completed" | "failed" | "error";
+  progress_percent: number;
+  current: number;
+  total: number;
+  current_applicant?: string | null;
+  mode?: string;
+  error?: string;
+  error_message?: string;
+  fail_count?: number;
+}
+
+export interface VersionStats {
+  position_id: number;
+  position_title: string;
+  criteria_version: number;
+  stats: {
+    total_count: number;
+    rescreen_required_count: number;
+    up_to_date_count: number;
+    version_distribution: Record<string, number>;
+  };
+}
+
+export interface RecruiterInstructionTemplate {
+  id: number;
+  name: string;
+  content: string;
+  created_at: string;
 }
 
 export interface ShortlistEntry {

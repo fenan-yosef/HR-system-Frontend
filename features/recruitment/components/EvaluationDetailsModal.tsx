@@ -70,7 +70,7 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
     // Determine which snapshot to display
     const currentSnapshot = selectedSnapshotId === (screening?.id)
          ? screening
-         : history.find(h => h.id === selectedSnapshotId) || screening;
+         : history.find((h: ScreeningHistoryEntry) => h.id === selectedSnapshotId) || screening;
 
     // Type guard for snapshots that include full screening details
     const isFullSnapshot = (s: ScreeningResult | ScreeningHistoryEntry | undefined): s is ScreeningResult =>
@@ -293,7 +293,7 @@ export function EvaluationDetailsModal({ application, onClose }: EvaluationDetai
 
                            <div className="h-px bg-border/20 my-2" />
 
-                           {history.map((entry, idx) => (
+                           {history.map((entry: ScreeningHistoryEntry, idx: number) => (
                               <button 
                                  key={entry.id ?? idx} 
                                  onClick={() => setSelectedSnapshotId(entry.id ?? null)}

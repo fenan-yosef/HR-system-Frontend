@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   fetchPublicJobPositions,
-  fetchDepartmentsAll
+  fetchDepartments
 } from "@/services/recruitmentService";
 import { JobPosition } from "@/types/recruitment";
 import { Department } from "@/types/department";
@@ -28,10 +28,13 @@ export default function PublicJobsPage() {
   const [selectedDept, setSelectedDept] = useState<number | "all">("all");
 
   useEffect(() => {
-    fetchPublicJobPositions()
-      .then((response) => {
+    Promise.all([
+      fetchPublicJobPositions(),
+      fetchDepartments()
+    ])
+      .then(([jobsRes, deptRes]) => {
         // Filter for open jobs only
-        const openJobs = response.results.filter(
+        const openJobs = jobsRes.results.filter(
           (job) => job.status === "open",
         );
         setJobs(openJobs);
@@ -49,21 +52,6 @@ export default function PublicJobsPage() {
   const getDeptName = (id?: number | null) => {
     if (!id) return "General";
     return departments.find(d => d.department_id === id)?.name || "Department";
-  };
-
-  const handleShare = (job: JobPosition) => {
-    const applyPath = getJobApplyPath(job);
-    const url = `${window.location.origin}${applyPath}`;
-    if (navigator.share) {
-      navigator.share({
-        title: `Apply for ${job.title}`,
-        text: `Check out this opening: ${job.title}`,
-        url: url,
-      }).catch(console.error);
-    } else {
-      navigator.clipboard.writeText(url);
-      alert("Link copied to clipboard!");
-    }
   };
 
   const filteredJobs = jobs.filter(job => {
@@ -109,14 +97,14 @@ export default function PublicJobsPage() {
       </div>
 
       <div className="grid gap-6">
-        {jobs.length === 0 ? (
+        {filteredJobs.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-gray-500">
-              No open positions at the moment. Please check back later.
+              No open positions at the moment matching your criteria.
             </CardContent>
           </Card>
         ) : (
-          jobs.map((job) => (
+          filteredJobs.map((job) => (
             <Card
               key={job.position_id}
               className="hover:shadow-md transition-shadow"
@@ -133,7 +121,7 @@ export default function PublicJobsPage() {
                       </Link>
                     </CardTitle>
                     <CardDescription className="mt-1">
-                      Posted on {new Date(job.posted_date).toLocaleDateString()}
+                      Posted on {new Date(job.posted_date).toLocaleDateString()} • {getDeptName(job.department)}
                     </CardDescription>
                   </div>
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 capitalize">

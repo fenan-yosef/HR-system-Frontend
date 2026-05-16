@@ -107,10 +107,8 @@ export default function ProfilePage() {
       if (!file || !profile) return;
       
       try {
-        const formData = new FormData();
-        formData.append("file", file);
-        const response = await uploadProfileImage(formData);
-        setProfile({ ...profile, profile_photo_url: response.url });
+        const response = await uploadProfileImage(file);
+        setProfile({ ...profile, profile_photo_url: response.file_url });
         setMessage({ type: "success", text: "Profile photo updated!" });
         setTimeout(() => setMessage(null), 3000);
       } catch (err) {
