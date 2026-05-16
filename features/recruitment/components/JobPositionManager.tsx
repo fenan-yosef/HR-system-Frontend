@@ -567,7 +567,7 @@ export function JobPositionManager() {
                       Share <Share2 className="size-3" />
                     </button>
                     <Link
-                      href={`/hr/recruitment/job-postings/${pos.position_id}`}
+                      href={`/recruitment/job-postings/${pos.position_id}`}
                       className="flex-1 xl:flex-initial flex items-center justify-center gap-2 text-[10px] sm:text-xs font-black text-primary uppercase tracking-widest hover:underline px-4"
                     >
                       View details <MoreVertical className="size-3" />

@@ -33,7 +33,14 @@ export function useRoleGuard(options: UseRoleGuardOptions = {}) {
     }
 
     const allowedRoutes = ROLE_ALLOWED_ROUTES[user.role];
-    return allowedRoutes.includes(normalizedPathname);
+    
+    // Check for exact match or prefix match (to support dynamic routes)
+    return allowedRoutes.some(route => {
+      if (normalizedPathname === route) return true;
+      // Allow sub-routes (e.g., /recruitment/job-postings/1 matches /recruitment/job-postings)
+      if (normalizedPathname.startsWith(route + "/")) return true;
+      return false;
+    });
   }, [isAuthenticated, normalizedPathname, user]);
 
   const isAuthorisedForRole = useMemo(() => {
