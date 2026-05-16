@@ -378,10 +378,10 @@ export function Sidebar() {
         </motion.div>
         <div className="flex flex-col">
           <span className="text-xl font-black tracking-tight leading-none">
-            HR<span className="text-primary italic">Flow</span>
+            HR<span className="text-primary italic">System</span>
           </span>
           <span className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-black mt-1">
-            Intelligence
+            AI integrated
           </span>
         </div>
       </div>
