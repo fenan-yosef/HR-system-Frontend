@@ -17,16 +17,12 @@ export const ROUTES = {
   ATTENDANCE: "/attendance",
   LEAVE_REQUESTS: "/leave-requests",
   LEAVE_APPROVALS: "/leave-approvals",
-  PAYROLL: "/payroll",
 
   // Employee Letters
   EMPLOYEE_REQUEST_LETTER: "/employee/request-letter",
   EMPLOYEE_MY_LETTERS: "/employee/my-letters",
   EMPLOYEE_REQUEST_TRANSFER: "/employee/request-transfer",
 
-  // Performance & Growth
-  PERFORMANCE: "/performance",
-  LEARNING: "/learning",
   
   // Self Service
   MY_PROFILE: "/profile",

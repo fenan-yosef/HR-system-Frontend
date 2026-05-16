@@ -58,7 +58,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "Dashboard",
         href: ROUTES.DASHBOARD,
         icon: LayoutDashboard,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
+        roles: ["ADMIN", "HR_CEO", "EMPLOYEE", "APPLICANT"],
       },
     ],
   },
@@ -79,7 +79,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "Onboarding",
         href: ROUTES.ONBOARDING,
         icon: UserCheck,
-        roles: ["ADMIN", "HR_MANAGER"],
+        roles: ["ADMIN", "HR_CEO"],
       },
     ],
   },
@@ -105,32 +105,17 @@ const NAVIGATION_CONFIG: NavSection[] = [
           { label: "Leave Requests", href: ROUTES.LEAVE_REQUESTS },
         ],
       },
-      {
-        label: "Finance",
-        icon: CreditCard,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
-        subItems: [
-          { label: "Payroll", href: ROUTES.PAYROLL },
-          { label: "Tax Info", href: "#" },
-        ],
-      },
     ],
   },
   {
     section: "Growth",
     items: [
-      {
-        label: "Performance",
-        href: ROUTES.PERFORMANCE,
-        icon: Target,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE"],
-      },
-      {
-        label: "Academy",
-        href: ROUTES.LEARNING,
-        icon: GraduationCap,
-        roles: ["EMPLOYEE", "ADMIN", "HR_MANAGER"],
-      },
+      // {
+      //   label: "Academy",
+      //   href: ROUTES.LEARNING,
+      //   icon: GraduationCap,
+      //   roles: ["EMPLOYEE", "ADMIN", "HR_CEO"],
+      // },
       {
         label: "Letter Requests",
         href: ROUTES.HR_LETTER_REQUESTS,
@@ -185,34 +170,9 @@ const NAVIGATION_CONFIG: NavSection[] = [
         icon: MessageSquareText,
         roles: ["EMPLOYEE"],
       },
-      // {
-      //   label: "Finance",
-      //   icon: CreditCard,
-      //   roles: ["ADMIN", "HR_STAFF", "EMPLOYEE"],
-      //   subItems: [
-      //     { label: "Payroll", href: ROUTES.PAYROLL },
-      //     { label: "Tax Info", href: "#" },
-      //   ],
-      // },
     ],
   },
-  // {
-  //   section: "Growth",
-  //   items: [
-  //     {
-  //       label: "Performance",
-  //       href: ROUTES.PERFORMANCE,
-  //       icon: Target,
-  //       roles: ["ADMIN", "HR_STAFF", "EMPLOYEE"],
-  //     },
-  //     {
-  //       label: "Academy",
-  //       href: ROUTES.LEARNING,
-  //       icon: GraduationCap,
-  //       roles: ["EMPLOYEE", "ADMIN", "HR_STAFF"],
-  //     },
-  //   ],
-  // },
+
   {
     section: "Personal",
     items: [
@@ -220,13 +180,13 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "My Profile",
         href: ROUTES.MY_PROFILE,
         icon: UserCircle,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
+        roles: ["ADMIN", "HR_CEO", "EMPLOYEE", "APPLICANT"],
       },
       {
         label: "Documents",
         href: ROUTES.MY_DOCUMENTS,
         icon: FileText,
-        roles: ["ADMIN", "HR_MANAGER", "EMPLOYEE", "APPLICANT"],
+        roles: ["ADMIN", "HR_CEO", "EMPLOYEE", "APPLICANT"],
       },
     ],
   },
