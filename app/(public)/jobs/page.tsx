@@ -38,7 +38,7 @@ export default function PublicJobsPage() {
         const jobList = Array.isArray(jobsRes) ? jobsRes : (jobsRes.results || []);
         const openJobs = jobList.filter((job) => job.status === "open");
         setJobs(openJobs);
-        
+
         const deptList = Array.isArray(deptsRes) ? deptsRes : (deptsRes.results || []);
         setDepartments(deptList);
       })
@@ -91,10 +91,10 @@ export default function PublicJobsPage() {
     <div className="max-w-5xl mx-auto space-y-12 px-4 py-8">
       <div className="text-center space-y-4">
         <h1 className="text-5xl font-extrabold tracking-tight text-gray-900 sm:text-6xl">
-          Join Our Mission
+          Guest Home PLC
         </h1>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          We're building the future of HR. Find your place in our growing team and help us make an impact.
+          Open Jobs, Find you perfect match and apply please.
         </p>
       </div>
 
@@ -108,10 +108,10 @@ export default function PublicJobsPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
-        
+
         <div className="flex items-center gap-3 w-full md:w-auto">
           <span className="text-sm font-medium text-gray-500 whitespace-nowrap">Filter by:</span>
-          <select 
+          <select
             className="w-full md:w-64 px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all bg-white"
             value={selectedDept}
             onChange={(e) => setSelectedDept(e.target.value === "all" ? "all" : Number(e.target.value))}

@@ -227,15 +227,16 @@ export function JobPositionManager() {
         fetchDepartments(),
         fetchInstructionTemplates().catch(() => ({ results: [] }))
       ]);
-      setPositions(posResponse.results);
-      setDepartments(deptResponse.results);
+      const deptList = Array.isArray(deptResponse) ? deptResponse : (deptResponse?.results || []);
+      setPositions(posResponse.results || []);
+      setDepartments(deptList);
       setTemplates(templateResponse.results || []);
 
       // Set default department if none selected
-      if (deptResponse.results.length > 0) {
+      if (deptList.length > 0) {
         setFormData((prev) => ({
           ...prev,
-          department: deptResponse.results[0].department_id,
+          department: deptList[0].department_id,
         }));
       }
     } catch (error) {
@@ -258,7 +259,7 @@ export function JobPositionManager() {
   async function reloadDepartments() {
     try {
       const response = await fetchDepartments();
-      const list = response.results || [];
+      const list = Array.isArray(response) ? response : (response?.results || []);
       setDepartments(list);
 
       if (list.length > 0 && (!formData.department || formData.department <= 0)) {

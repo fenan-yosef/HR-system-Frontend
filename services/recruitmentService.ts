@@ -72,8 +72,8 @@ export function updateCustomApplicationFields(positionId: number, data: { custom
   });
 }
 
-export function fetchDepartments(): Promise<PaginatedResponse<Department>> {
-  return apiFetch<PaginatedResponse<Department>>("/departments/dropdown/", {
+export function fetchDepartments(): Promise<PaginatedResponse<Department> | Department[]> {
+  return apiFetch<any>("/departments/dropdown/", {
     requiresAuth: false,
   });
 }

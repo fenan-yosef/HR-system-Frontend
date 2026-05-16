@@ -67,7 +67,7 @@ export default function PublicApplyPage() {
                     } catch (e) {
                         try {
                             data = await apiFetch(`job-positions/?public_id=${publicId}`, { requiresAuth: false });
-                        } catch (e2) {}
+                        } catch (e2) { }
                     }
                 } else {
                     data = await apiFetch(`job-positions/${publicId}/share/`, { requiresAuth: false });
@@ -209,7 +209,7 @@ export default function PublicApplyPage() {
 
         try {
             setUploadProgress(10);
-            
+
             // 1. Upload CV
             const cvId = await uploadSingleFile(cvFile);
             setUploadProgress(40);
@@ -248,7 +248,7 @@ export default function PublicApplyPage() {
             } catch (err: any) {
                 // Handle specific API errors
                 let detail = err.message || "";
-                
+
                 // apiFetch throws with "API request failed with status 400 - { ... }"
                 if (detail.includes("status 400")) {
                     try {
@@ -265,8 +265,8 @@ export default function PublicApplyPage() {
                         setErrorMsg('Validation failed. Please check your inputs.');
                     }
                 } else if (detail.includes("status 200")) {
-                   // Some legacy endpoints might return 200 for "already updated"
-                   setExistingDataMsg('Your application has been updated/already exists.');
+                    // Some legacy endpoints might return 200 for "already updated"
+                    setExistingDataMsg('Your application has been updated/already exists.');
                 } else {
                     setErrorMsg(detail || 'An unexpected error occurred. Please try again.');
                 }
@@ -332,7 +332,7 @@ export default function PublicApplyPage() {
                             </p>
                         )}
                         <div className="pt-6">
-                            <Button variant="outline" className="border-green-600 text-green-700 hover:bg-green-100 w-full sm:w-auto" onClick={() => window.location.href = '/'}>
+                            <Button variant="outline" className="border-green-600 text-green-700 hover:bg-green-100 w-full sm:w-auto" onClick={() => window.location.href = '/jobs'}>
                                 Return to Home
                             </Button>
                         </div>
@@ -363,9 +363,9 @@ export default function PublicApplyPage() {
                                 {jobPostedDate && (
                                     <span className="text-sm text-gray-500">Posted {new Date(jobPostedDate).toLocaleDateString()}</span>
                                 )}
-                                {applicationUrl && (
+                                {/* {applicationUrl && (
                                     <a href={applicationUrl} target="_blank" rel="noreferrer" className="text-sm text-primary underline">Open application (backend)</a>
-                                )}
+                                )} */}
                             </div>
                         </div>
                     )}
@@ -460,7 +460,7 @@ export default function PublicApplyPage() {
                                                 onChange={(e) => handleFileChange(e, 'cv')}
                                                 disabled={isSubmitting}
                                             />
-                                            
+
                                             <div className="flex flex-col items-center text-center">
                                                 <div className={`mb-4 p-3 rounded-2xl transition-all duration-300 ${cvFile ? 'bg-primary/10 text-primary' : 'bg-gray-100 text-gray-400 group-hover:bg-primary/10 group-hover:text-primary'}`}>
                                                     <UploadCloud className="h-10 w-10" />
@@ -519,7 +519,7 @@ export default function PublicApplyPage() {
                                                         </Label>
 
                                                         {field.type === "short_text" && (
-                                                            <Input 
+                                                            <Input
                                                                 value={customFieldValues[field.key] || ""}
                                                                 onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
                                                                 placeholder={field.label}
@@ -540,7 +540,7 @@ export default function PublicApplyPage() {
                                                         )}
 
                                                         {field.type === "number" || field.type === "integer" ? (
-                                                            <Input 
+                                                            <Input
                                                                 type="number"
                                                                 value={customFieldValues[field.key] || ""}
                                                                 onChange={(e) => handleCustomFieldChange(field.key, field.type === "integer" ? parseInt(e.target.value) : parseFloat(e.target.value))}
@@ -551,7 +551,7 @@ export default function PublicApplyPage() {
                                                         ) : null}
 
                                                         {field.type === "email" && (
-                                                            <Input 
+                                                            <Input
                                                                 type="email"
                                                                 value={customFieldValues[field.key] || ""}
                                                                 onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
@@ -562,7 +562,7 @@ export default function PublicApplyPage() {
                                                         )}
 
                                                         {field.type === "url" && (
-                                                            <Input 
+                                                            <Input
                                                                 type="url"
                                                                 value={customFieldValues[field.key] || ""}
                                                                 onChange={(e) => handleCustomFieldChange(field.key, e.target.value)}
@@ -574,7 +574,7 @@ export default function PublicApplyPage() {
 
                                                         {(field.type === "file" || field.type === "file_list") && (
                                                             <div className="space-y-2">
-                                                                <Input 
+                                                                <Input
                                                                     type="file"
                                                                     multiple={field.type === "file_list"}
                                                                     onChange={(e) => handleCustomFileChange(e, field)}
@@ -583,8 +583,8 @@ export default function PublicApplyPage() {
                                                                 />
                                                                 {customFiles[field.key] && (
                                                                     <p className="text-xs text-primary font-bold">
-                                                                        {Array.isArray(customFiles[field.key]) 
-                                                                            ? `${(customFiles[field.key] as File[]).length} files selected` 
+                                                                        {Array.isArray(customFiles[field.key])
+                                                                            ? `${(customFiles[field.key] as File[]).length} files selected`
                                                                             : (customFiles[field.key] as File).name}
                                                                     </p>
                                                                 )}
@@ -593,7 +593,7 @@ export default function PublicApplyPage() {
 
                                                         {field.type === "boolean" && (
                                                             <div className="flex items-center gap-2">
-                                                                <input 
+                                                                <input
                                                                     type="checkbox"
                                                                     checked={!!customFieldValues[field.key]}
                                                                     onChange={(e) => handleCustomFieldChange(field.key, e.target.checked)}
@@ -604,25 +604,25 @@ export default function PublicApplyPage() {
                                                         )}
 
                                                         {(field.type === "select" || field.type === "multi_select") && (
-                                                                <select 
-                                                                    multiple={field.type === "multi_select"}
-                                                                    value={customFieldValues[field.key] || (field.type === "multi_select" ? [] : "")}
-                                                                    onChange={(e) => {
-                                                                        if (field.type === "multi_select") {
-                                                                            const vals = Array.from(e.target.selectedOptions).map(o => o.value);
-                                                                            handleCustomFieldChange(field.key, vals);
-                                                                        } else {
-                                                                            handleCustomFieldChange(field.key, e.target.value);
-                                                                        }
-                                                                    }}
-                                                                    className="flex w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-primary outline-none transition-all"
-                                                                    required={field.required}
-                                                                >
-                                                                    {field.type !== "multi_select" && <option value="">Select an option</option>}
-                                                                    {field.options?.map((opt: string) => (
-                                                                        <option key={opt} value={opt}>{opt}</option>
-                                                                    ))}
-                                                                </select>
+                                                            <select
+                                                                multiple={field.type === "multi_select"}
+                                                                value={customFieldValues[field.key] || (field.type === "multi_select" ? [] : "")}
+                                                                onChange={(e) => {
+                                                                    if (field.type === "multi_select") {
+                                                                        const vals = Array.from(e.target.selectedOptions).map(o => o.value);
+                                                                        handleCustomFieldChange(field.key, vals);
+                                                                    } else {
+                                                                        handleCustomFieldChange(field.key, e.target.value);
+                                                                    }
+                                                                }}
+                                                                className="flex w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm focus:border-primary outline-none transition-all"
+                                                                required={field.required}
+                                                            >
+                                                                {field.type !== "multi_select" && <option value="">Select an option</option>}
+                                                                {field.options?.map((opt: string) => (
+                                                                    <option key={opt} value={opt}>{opt}</option>
+                                                                ))}
+                                                            </select>
                                                         )}
                                                     </div>
                                                 ))}
