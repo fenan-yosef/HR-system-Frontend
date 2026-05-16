@@ -341,8 +341,19 @@ export function ApplicationsBoard() {
   }, [jobStateMap, startPolling]);
 
   const loadJobPositions = useCallback(async () => {
-    const response = await fetchJobPositions();
-    setJobPositions(response.results);
+    try {
+      const collected: JobPosition[] = [];
+      let page = 1;
+      while (true) {
+        const response = await fetchJobPositions({ page, page_size: 100 });
+        collected.push(...response.results);
+        if (!response.next) break;
+        page += 1;
+      }
+      setJobPositions(collected);
+    } catch (err) {
+      console.error("Failed to load job positions", err);
+    }
   }, []);
 
   const loadAllApplications = useCallback(async () => {
@@ -492,6 +503,16 @@ export function ApplicationsBoard() {
 
     return Object.values(groups).sort((left, right) => left.title.localeCompare(right.title));
   }, [applications]);
+
+  const activeScreenings = useMemo(() => {
+    return Object.entries(jobStateMap)
+      .filter(([_, state]) => state.progress && ["running", "pending"].includes(state.progress.status))
+      .map(([jobKey, state]) => ({
+        jobKey,
+        jobTitle: groupedJobs.find((g) => g.key === jobKey)?.title || "Unknown Job",
+        progress: state.progress!,
+      }));
+  }, [jobStateMap, groupedJobs]);
 
   const visibleJobs = useMemo(() => {
     if (!selectedJobId) return groupedJobs;
@@ -706,6 +727,32 @@ export function ApplicationsBoard() {
 
   return (
     <div className="space-y-6 pb-20">
+      {activeScreenings.length > 0 && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-sm">
+          <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-primary">
+            <Loader2 className="size-4 animate-spin" />
+            Active Screening
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {activeScreenings.map(({ jobKey, jobTitle, progress }) => (
+              <div key={jobKey} className="space-y-2 rounded-xl bg-background p-3 shadow-sm border border-border/50">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="truncate text-sm font-bold">{jobTitle}</span>
+                  <span className="text-xs font-black text-primary">{progress.progress_percent}%</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${progress.progress_percent}%` }} />
+                </div>
+                <div className="flex justify-between text-[10px] text-muted-foreground truncate gap-2">
+                  <span className="truncate">{progress.current_applicant ? `Now: ${progress.current_applicant}` : "Waiting"}</span>
+                  <span className="shrink-0">{progress.current}/{progress.total}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="border-border/50 bg-background p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3">
