@@ -17,6 +17,7 @@ import {
 } from "@/services/recruitmentService";
 import type { Application } from "@/types/recruitment";
 import { getMediaUrl } from "@/services/apiClient";
+import { getExtractionRawText, parseExtractedResume } from "@/lib/recruitment/extraction";
 import { formatScore } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -280,21 +281,9 @@ export default function ApplicationDetailPage() {
   const visibleHistory = historyEntries.filter((entry) => !entry.is_deleted);
   const archivedHistory = historyEntries.filter((entry) => !!entry.is_deleted);
 
-  const parsedExtractedResume = (() => {
-    if (!app?.extracted_resume) return null;
-    try {
-      if (typeof app.extracted_resume === 'string') {
-        return JSON.parse(app.extracted_resume);
-      }
-      if ((app.extracted_resume as any).extracted_json) return (app.extracted_resume as any).extracted_json;
-      if ((app.extracted_resume as any).raw_llm_response) return JSON.parse((app.extracted_resume as any).raw_llm_response);
-    } catch (e) {
-      return null;
-    }
-    return null;
-  })();
+  const parsedExtractedResume = parseExtractedResume(app?.extracted_resume ?? null);
 
-  const rawExtractedText = typeof app?.extracted_resume === 'string' ? app.extracted_resume : app?.extracted_resume?.raw_llm_response || '';
+  const rawExtractedText = getExtractionRawText(app?.extracted_resume ?? null);
 
   const interviewQuestions = Array.from(new Set([
     ...(app.evaluation?.interview_questions || []),
