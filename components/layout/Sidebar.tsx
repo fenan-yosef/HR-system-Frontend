@@ -445,17 +445,6 @@ export function Sidebar() {
                   <ChevronRight className="size-3 opacity-50 group-hover/logout:translate-x-0.5 transition-transform" />
                 </button>
               </div>
-
-              <button
-                onClick={logout}
-                className="flex w-full items-center justify-between gap-2 rounded-xl bg-background px-3 py-2.5 text-xs font-semibold text-muted-foreground transition-all hover:bg-destructive/5 hover:text-destructive border border-border group"
-              >
-                <div className="flex items-center gap-2">
-                  <LogOut className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
-                  Sign Out
-                </div>
-                <ChevronRight className="size-3 opacity-50 group-hover:translate-x-0.5 transition-transform" />
-              </button>
             </div>
           ) : (
             <p className="text-center text-xs text-muted-foreground">
