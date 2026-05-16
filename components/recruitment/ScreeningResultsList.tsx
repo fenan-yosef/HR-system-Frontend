@@ -74,9 +74,10 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                 {sortedResults.map((result, idx) => {
                     const scoreColor = getScoreColor(Number(result.final_score) || 0);
 
+                    const appId = typeof result.application === 'number' ? result.application : result.application.application_id;
                     return (
                     <Card
-                        key={result.application_id || idx}
+                        key={appId}
                         className="p-6 border-none shadow-sm hover:shadow-xl transition-all duration-300 rounded-[2rem] group cursor-pointer overflow-hidden relative border border-border/20"
                         onClick={() => setSelectedResult(result)}
                     >
@@ -258,7 +259,7 @@ export function ScreeningResultsList({ results }: ScreeningResultsListProps) {
                                             <Sparkles className="size-4" /> AI-Suggested Interview Questions
                                         </div>
                                         <ul className="space-y-3">
-                                            {selectedResult.scoring_breakdown.interview_questions.map((q, i) => (
+                                            {selectedResult.scoring_breakdown.interview_questions.map((q: string, i: number) => (
                                                 <li 
                                                     key={i} 
                                                     onClick={() => copyToClipboard(q)}

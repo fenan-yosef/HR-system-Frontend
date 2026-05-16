@@ -17,6 +17,7 @@ import {
 } from "@/services/recruitmentService";
 import type { Application } from "@/types/recruitment";
 import { getMediaUrl } from "@/services/apiClient";
+import { getExtractionRawText, parseExtractedResume } from "@/lib/recruitment/extraction";
 import { formatScore } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -280,21 +281,9 @@ export default function ApplicationDetailPage() {
   const visibleHistory = historyEntries.filter((entry) => !entry.is_deleted);
   const archivedHistory = historyEntries.filter((entry) => !!entry.is_deleted);
 
-  const parsedExtractedResume = (() => {
-    if (!app?.extracted_resume) return null;
-    try {
-      if (typeof app.extracted_resume === 'string') {
-        return JSON.parse(app.extracted_resume);
-      }
-      if ((app.extracted_resume as any).extracted_json) return (app.extracted_resume as any).extracted_json;
-      if ((app.extracted_resume as any).raw_llm_response) return JSON.parse((app.extracted_resume as any).raw_llm_response);
-    } catch (e) {
-      return null;
-    }
-    return null;
-  })();
+  const parsedExtractedResume = parseExtractedResume(app?.extracted_resume ?? null);
 
-  const rawExtractedText = typeof app?.extracted_resume === 'string' ? app.extracted_resume : app?.extracted_resume?.raw_llm_response || '';
+  const rawExtractedText = getExtractionRawText(app?.extracted_resume ?? null);
 
   const interviewQuestions = Array.from(new Set([
     ...(app.evaluation?.interview_questions || []),
@@ -335,7 +324,7 @@ export default function ApplicationDetailPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-20 animate-in fade-in duration-700">
+    <div className="w-full space-y-8 pb-20 animate-in fade-in duration-700">
       {/* Navigation Header */}
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="space-y-4">
@@ -412,9 +401,9 @@ export default function ApplicationDetailPage() {
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      <div className="grid grid-cols-1 lg:grid-cols-[400px_minmax(0,1fr)] gap-10">
         {/* Left Sidebar: Contact & Quick Info */}
-        <aside className="lg:col-span-4 space-y-8">
+        <aside className="space-y-8">
           <Card className="p-8 rounded-[2.5rem] border-none bg-muted/20 shadow-none space-y-8">
             <div className="space-y-6">
               <h3 className="text-xs font-black uppercase tracking-widest text-primary flex items-center gap-2">
@@ -582,7 +571,7 @@ export default function ApplicationDetailPage() {
         </aside>
 
         {/* Main Content Area */}
-        <main className="lg:col-span-8 space-y-8">
+        <main className="space-y-8">
           {/* Tabs */}
           <div className="flex items-center p-1.5 bg-muted/30 rounded-2xl w-fit">
             {(["overview", "resume", "ai"] as const).map((tab) => (

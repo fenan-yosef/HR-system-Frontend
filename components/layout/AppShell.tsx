@@ -36,10 +36,10 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
         <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
           <Header />
           <main className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-muted/30">
-            <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">
-            <div key={pathname} className="min-h-full">
-              {children}
-            </div>
+            <div className="mx-auto w-full max-w-[1600px] px-3 py-4 sm:px-5 sm:py-6 lg:px-4 lg:py-8">
+              <div key={pathname} className="min-h-full">
+                {children}
+              </div>
             </div>
           </main>
         </div>

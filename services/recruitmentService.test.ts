@@ -29,7 +29,7 @@ describe("recruitmentService", () => {
 
       const result = await recruitmentService.fetchJobPostings();
 
-      expect(mockApiFetch).toHaveBeenCalledWith("/job-posts/", {
+      expect(mockApiFetch).toHaveBeenCalledWith("/job-positions/", {
         requiresAuth: true,
       });
       expect(result.count).toBe(mockJobPostings.count);
@@ -81,7 +81,7 @@ describe("recruitmentService", () => {
 
       const result = await recruitmentService.fetchApplications();
 
-      expect(mockApiFetch).toHaveBeenCalledWith("/applications/", {
+      expect(mockApiFetch).toHaveBeenCalledWith("/applicant-applications/", {
         requiresAuth: true,
       });
       expect(result.results).toHaveLength(mockApplications.results.length);
@@ -122,10 +122,10 @@ describe("recruitmentService", () => {
   describe("createApplicant", () => {
     it("should create a new applicant without authentication", async () => {
       const applicantData = {
-        first_name: "Jane",
-        last_name: "Doe",
+        full_name: "Jane Doe",
         email: "jane@example.com",
-        position: 1,
+        phone: "+251911223344",
+        position_id: 1,
       };
 
       const response = {
@@ -148,9 +148,10 @@ describe("recruitmentService", () => {
 
     it("should handle validation errors when creating applicant", async () => {
       const invalidData = {
-        first_name: "Jane",
+        full_name: "Jane",
         email: "invalid-email",
-        position: 1,
+        phone: "",
+        position_id: 1,
       };
 
       mockApiFetch.mockRejectedValue(
@@ -164,10 +165,10 @@ describe("recruitmentService", () => {
 
     it("should return applicant response with tracking code", async () => {
       const applicantData = {
-        first_name: "John",
-        last_name: "Smith",
+        full_name: "John Smith",
         email: "john@example.com",
-        position: 1,
+        phone: "+251911556677",
+        position_id: 1,
       };
 
       const response = {
@@ -190,7 +191,7 @@ describe("recruitmentService", () => {
       const applicationId = 1;
       const aiEvaluation = {
         application_id: applicationId,
-        score: 85,
+        matching_percentage: 85,
         status: "passed",
       };
 
@@ -199,10 +200,10 @@ describe("recruitmentService", () => {
       const result = await recruitmentService.triggerShortlist(applicationId);
 
       expect(mockApiFetch).toHaveBeenCalledWith(
-        `/applicant-applications/${applicationId}/shortlist/`,
+        `/applicant-applications/${applicationId}/toggle-shortlist/`,
         { method: "POST", requiresAuth: true },
       );
-      expect(result.score).toBe(85);
+      expect(result.matching_percentage).toBe(85);
     });
 
     it("should handle shortlist API failures", async () => {

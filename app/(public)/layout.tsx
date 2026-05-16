@@ -20,11 +20,11 @@ export default function PublicLayout({
             <Link href="/track" className="text-sm font-medium hover:text-blue-600">
               Track Application
             </Link>
-            <Link href="/login">
+            {/* <Link href="/login">
               <Button variant="outline" size="sm">
                 HR/Admin Login
               </Button>
-            </Link>
+            </Link> */}
           </nav>
         </div>
       </header>

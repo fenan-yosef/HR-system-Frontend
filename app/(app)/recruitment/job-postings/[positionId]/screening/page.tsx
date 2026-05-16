@@ -171,7 +171,7 @@ export default function ScreeningPage() {
     const showProgress = progress && (progress.status === "running" || progress.status === "pending" || progress.status === "failed" || progress.status === "error");
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 pb-12">
+        <div className="w-full max-w-[1600px] mx-auto space-y-8 pb-12">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="space-y-2">
                     <Link
@@ -205,9 +205,9 @@ export default function ScreeningPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-[420px_minmax(0,1fr)] gap-8 items-start">
                 {/* Configuration Sidebar */}
-                <div className="lg:col-span-1 space-y-6 lg:sticky lg:top-24">
+                <div className="space-y-6 lg:sticky lg:top-24">
                     <ScreeningSettings
                         job={job}
                         onStartScreening={handleStartScreening}
@@ -227,7 +227,7 @@ export default function ScreeningPage() {
                 </div>
 
                 {/* Main Content Area */}
-                <div className="lg:col-span-2 space-y-8">
+                <div className="space-y-8">
                     {showProgress ? (
                         <ScreeningProgressDisplay progress={progress} />
                     ) : results.length > 0 ? (

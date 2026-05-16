@@ -17,6 +17,9 @@ export const ROUTES = {
   ATTENDANCE: "/attendance",
   LEAVE_REQUESTS: "/leave-requests",
   LEAVE_APPROVALS: "/leave-approvals",
+  PAYROLL: "/payroll",
+  PERFORMANCE: "/performance",
+  LEARNING: "/learning",
 
   // Employee Letters
   EMPLOYEE_REQUEST_LETTER: "/employee/request-letter",

@@ -58,7 +58,7 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "Dashboard",
         href: ROUTES.DASHBOARD,
         icon: LayoutDashboard,
-        roles: ["ADMIN", "HR_CEO", "EMPLOYEE", "APPLICANT"],
+        roles: ["ADMIN", "HR_CEO", "HR_STAFF", "EMPLOYEE", "APPLICANT"],
       },
     ],
   },
@@ -110,12 +110,16 @@ const NAVIGATION_CONFIG: NavSection[] = [
   {
     section: "Growth",
     items: [
-      // {
-      //   label: "Academy",
-      //   href: ROUTES.LEARNING,
-      //   icon: GraduationCap,
-      //   roles: ["EMPLOYEE", "ADMIN", "HR_CEO"],
-      // },
+      {
+        label: "Requests",
+        icon: FileText,
+        roles: ["EMPLOYEE"],
+        subItems: [
+          { label: "Complaint", href: ROUTES.EMPLOYEE_REQUEST_COMPLAINT },
+          { label: "Letter Request", href: ROUTES.EMPLOYEE_REQUEST_LETTER },
+          { label: "Transfer Request", href: ROUTES.EMPLOYEE_REQUEST_TRANSFER },
+        ],
+      },
       {
         label: "Letter Requests",
         href: ROUTES.HR_LETTER_REQUESTS,
@@ -168,12 +172,6 @@ const NAVIGATION_CONFIG: NavSection[] = [
         label: "My Disciplinary",
         href: ROUTES.MY_DISCIPLINARY,
         icon: ShieldAlert,
-        roles: ["EMPLOYEE"],
-      },
-      {
-        label: "Submit Complaint",
-        href: ROUTES.EMPLOYEE_REQUEST_COMPLAINT,
-        icon: MessageSquareText,
         roles: ["EMPLOYEE"],
       },
     ],
@@ -392,10 +390,10 @@ export function Sidebar() {
         </motion.div>
         <div className="flex flex-col">
           <span className="text-xl font-black tracking-tight leading-none">
-            HR<span className="text-primary italic">Flow</span>
+            HR<span className="text-primary italic">System</span>
           </span>
           <span className="text-[9px] uppercase tracking-[0.3em] text-muted-foreground font-black mt-1">
-            Intelligence
+            AI integrated
           </span>
         </div>
       </div>
@@ -459,17 +457,6 @@ export function Sidebar() {
                   <ChevronRight className="size-3 opacity-50 group-hover/logout:translate-x-0.5 transition-transform" />
                 </button>
               </div>
-
-              <button
-                onClick={logout}
-                className="flex w-full items-center justify-between gap-2 rounded-xl bg-background px-3 py-2.5 text-xs font-semibold text-muted-foreground transition-all hover:bg-destructive/5 hover:text-destructive border border-border group"
-              >
-                <div className="flex items-center gap-2">
-                  <LogOut className="size-3.5 transition-transform group-hover:-translate-x-0.5" />
-                  Sign Out
-                </div>
-                <ChevronRight className="size-3 opacity-50 group-hover:translate-x-0.5 transition-transform" />
-              </button>
             </div>
           ) : (
             <p className="text-center text-xs text-muted-foreground">

@@ -2,16 +2,16 @@
 
 import React from "react";
 import { Input } from "@/components/ui/input";
-import { 
-  Search, 
-  X, 
-  Loader2, 
-  CalendarCheck, 
-  Filter, 
-  SlidersHorizontal, 
-  Trash2, 
-  Wand2, 
-  Download 
+import {
+  Search,
+  X,
+  Loader2,
+  CalendarCheck,
+  Filter,
+  SlidersHorizontal,
+  Trash2,
+  Wand2,
+  Download
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -96,7 +96,7 @@ export function ApplicationFilters({
           <div className="space-y-2">
             <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">AI Intelligence</Label>
             <Button
-              className="w-full h-11 rounded-xl font-bold flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all active:scale-95"
+              className="w-full h-11 px-4 rounded-xl font-black uppercase text-[10px] tracking-tight flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all active:scale-95"
               onClick={onBatchEvaluate}
               disabled={isBatchEvaluating}
             >
@@ -106,7 +106,6 @@ export function ApplicationFilters({
                 <Wand2 className="size-4" />
               )}
               {isBatchEvaluating ? "Loading..." : "Screen All Applicants"}
-
             </Button>
           </div>
         )}
@@ -197,7 +196,7 @@ export function ApplicationFilters({
               onChange={(e) => onMinScoreChange(parseInt(e.target.value))}
               className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
             />
-            <div className="flex justify-between text-[8px] font-black text-muted-foreground px-1">
+            <div className="justify-between text-[8px] font-black text-muted-foreground px-1 hidden md:flex">
               <span>0%</span>
               <span>50%</span>
               <span>100%</span>

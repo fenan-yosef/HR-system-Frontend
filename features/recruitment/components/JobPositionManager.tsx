@@ -1,16 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import {
   JobPosition,
   CreateJobPosition,
   Department,
   type JobStatus,
+  CustomApplicationField,
+  CustomFieldType,
+  RecruiterInstructionTemplate
 } from "@/types/recruitment";
 import {
   fetchJobPositions,
   createJobPosition,
   fetchDepartments,
+  suggestSkills,
+  fetchInstructionTemplates,
+  createInstructionTemplate,
+  deleteInstructionTemplate,
+  updateJobPosition,
+  updateCustomApplicationFields
 } from "@/services/recruitmentService";
 import { Card } from "@/components/ui/card";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,10 +32,20 @@ import {
   Building2,
   MoreVertical,
   Activity,
+  Wand2,
+  ChevronDown,
+  Trash2,
+  Save,
+  Loader2,
+  Layers,
+  Settings2,
+  BrainCircuit,
+  Share2,
+  Check,
+  Copy
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CustomApplicationField, CustomFieldType, RecruiterInstructionTemplate } from "@/types/recruitment";
 
 const FIELD_TYPES: { label: string; value: CustomFieldType }[] = [
   { label: "Short Text", value: "short_text" },
@@ -49,6 +69,31 @@ export function JobPositionManager() {
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<number | "all">("all");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // States for skill suggestions
+  const [suggestingSkills, setSuggestingSkills] = useState(false);
+  const [liveSuggestions, setLiveSuggestions] = useState<string[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const suggestionTimerRef = useRef<number | null>(null);
+
+  // Refs for auto-expanding textareas
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const instructionsRef = useRef<HTMLTextAreaElement>(null);
+
+  // States for instruction templates
+  const [templates, setTemplates] = useState<RecruiterInstructionTemplate[]>([]);
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+
+  // States for submission
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  // States for sharing
+  const [selectedJob, setSelectedJob] = useState<JobPosition | null>(null);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const getToday = () => new Date().toISOString().split("T")[0];
 
@@ -134,7 +179,7 @@ export function JobPositionManager() {
 
     // Clear previous timer
     if (suggestionTimerRef.current) {
-      window.clearTimeout(suggestionTimerRef.current as number);
+      window.clearTimeout(suggestionTimerRef.current);
     }
 
     suggestionTimerRef.current = window.setTimeout(async () => {
@@ -148,14 +193,27 @@ export function JobPositionManager() {
       } finally {
         setSuggestionsLoading(false);
       }
-    }, 500);
+    }, 500) as unknown as number;
 
     return () => {
       if (suggestionTimerRef.current) {
-        window.clearTimeout(suggestionTimerRef.current as number);
+        window.clearTimeout(suggestionTimerRef.current);
       }
     };
   }, [formData.description]);
+
+  // Auto-resize textareas
+  useEffect(() => {
+    const adjustHeight = (ref: React.RefObject<HTMLTextAreaElement>) => {
+      if (ref.current) {
+        ref.current.style.height = "auto";
+        ref.current.style.height = `${ref.current.scrollHeight}px`;
+      }
+    };
+
+    adjustHeight(descriptionRef);
+    adjustHeight(instructionsRef);
+  }, [formData.description, formData.recruiter_instructions, isModalOpen]);
 
   useEffect(() => {
     loadInitialData();
@@ -167,15 +225,18 @@ export function JobPositionManager() {
       const [posResponse, deptResponse, templateResponse] = await Promise.all([
         fetchJobPositions(),
         fetchDepartments(),
+        fetchInstructionTemplates().catch(() => ({ results: [] }))
       ]);
-      setPositions(posResponse.results);
-      setDepartments(deptResponse.results);
+      const deptList = Array.isArray(deptResponse) ? deptResponse : (deptResponse?.results || []);
+      setPositions(posResponse.results || []);
+      setDepartments(deptList);
+      setTemplates(templateResponse.results || []);
 
       // Set default department if none selected
-      if (deptResponse.results.length > 0) {
+      if (deptList.length > 0) {
         setFormData((prev) => ({
           ...prev,
-          department: deptResponse.results[0].department_id,
+          department: deptList[0].department_id,
         }));
       }
     } catch (error) {
@@ -198,7 +259,7 @@ export function JobPositionManager() {
   async function reloadDepartments() {
     try {
       const response = await fetchDepartments();
-      const list = response.results || [];
+      const list = Array.isArray(response) ? response : (response?.results || []);
       setDepartments(list);
 
       if (list.length > 0 && (!formData.department || formData.department <= 0)) {
@@ -471,7 +532,7 @@ export function JobPositionManager() {
               >
                 <Card className="group relative overflow-hidden flex items-center justify-between p-6 border-none shadow-sm hover:shadow-xl transition-all hover:-translate-y-1">
                   <div className="flex items-center gap-6">
-                    <div className="bg-linear-to-br from-primary/10 to-primary/5 p-4 rounded-2xl group-hover:from-primary group-hover:to-primary/80 group-hover:text-white transition-all duration-300">
+                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-4 rounded-2xl group-hover:from-primary group-hover:to-primary/80 group-hover:text-white transition-all duration-300">
                       <Briefcase className="size-6" />
                     </div>
                     <div>
@@ -517,11 +578,14 @@ export function JobPositionManager() {
                   </div>
 
                   <div className="flex items-center gap-5">
-                    <button className="hidden md:flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:underline">
-                      View details <MoreVertical className="size-3" />
+                    <button
+                      onClick={() => handleShare(pos)}
+                      className="hidden md:flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:underline"
+                    >
+                      Share <Share2 className="size-3" />
                     </button>
                     <Link
-                      href={`/hr/recruitment/job-postings/${pos.position_id}`}
+                      href={`/recruitment/job-postings/${pos.position_id}`}
                       className="flex-1 xl:flex-initial flex items-center justify-center gap-2 text-[10px] sm:text-xs font-black text-primary uppercase tracking-widest hover:underline px-4"
                     >
                       View details <MoreVertical className="size-3" />
@@ -568,7 +632,13 @@ export function JobPositionManager() {
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8 space-y-6">
+              <form onSubmit={handleSubmit} className="p-8 space-y-6 max-h-[80vh] overflow-y-auto">
+                {createError && (
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm font-bold flex items-center gap-2">
+                    <X className="size-4" /> {createError}
+                  </div>
+                )}
+
                 <div className="grid gap-6">
                   <div className="space-y-2">
                     <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
@@ -642,8 +712,9 @@ export function JobPositionManager() {
                       Description
                     </Label>
                     <textarea
+                      ref={descriptionRef}
                       placeholder="Describe the role responsibilities..."
-                      className="w-full rounded-xl border border-border/50 p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-30 text-base font-medium transition-all"
+                      className="w-full rounded-xl border border-border/50 p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[120px] text-base font-medium transition-all resize-none overflow-hidden"
                       value={formData.description}
                       onChange={(e) =>
                         setFormData({
@@ -654,14 +725,59 @@ export function JobPositionManager() {
                     />
                   </div>
 
+                  {/* Live Suggestion Chips */}
+                  {formData.description && formData.description.length >= 20 && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <BrainCircuit className="size-3.5 text-primary" />
+                          <div className="text-xs font-black uppercase tracking-widest text-muted-foreground">Suggested Skills</div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          {suggestionsLoading && <Loader2 className="size-3 animate-spin text-primary" />}
+                          <button
+                            type="button"
+                            onClick={handleSuggestSkills}
+                            disabled={suggestingSkills || suggestionsLoading}
+                            className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline disabled:opacity-50"
+                          >
+                            {suggestingSkills ? "Generating..." : "Refresh Suggestions"}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 p-3 rounded-2xl bg-primary/5 border border-primary/10">
+                        {suggestionsLoading && liveSuggestions.length === 0 ? (
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest animate-pulse">Analyzing description...</div>
+                        ) : liveSuggestions.length === 0 ? (
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Type more for AI suggestions</div>
+                        ) : (
+                          liveSuggestions.map(s => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => addSkill(s)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${formData.required_skills?.includes(s)
+                                ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
+                                : 'bg-background text-muted-foreground border border-border/50 hover:border-primary/30 hover:text-primary'
+                                } text-[10px] font-black uppercase tracking-wider`}
+                            >
+                              {s}
+                              {formData.required_skills?.includes(s) ? <Check className="size-3" /> : <Plus className="size-3" />}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* AI Custom Guidance (Optional) */}
                   <div className="space-y-4 p-6 rounded-3xl bg-primary/5 border border-primary/10">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Wand2 className="size-4 text-primary" />
-                        <h4 className="text-xs font-black uppercase tracking-widest text-primary">AI Custom Guidance (Optional)</h4>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-primary">AI Custom Guidance During Screening(Optional)</h4>
                       </div>
-                      
+
                       <div className="flex items-center gap-3">
                         {templates.length > 0 && (
                           <div className="relative group/templates">
@@ -696,7 +812,7 @@ export function JobPositionManager() {
                             </div>
                           </div>
                         )}
-                        
+
                         {!isCreatingTemplate ? (
                           <button
                             type="button"
@@ -723,64 +839,37 @@ export function JobPositionManager() {
                               {isSavingTemplate ? <Loader2 className="size-2 animate-spin" /> : "Save"}
                             </button>
                             <button
-                                type="button"
-                                onClick={() => setIsCreatingTemplate(false)}
-                                className="p-1 px-2 bg-muted text-muted-foreground rounded-lg text-[10px] font-black uppercase"
-                              >
-                                Cancel
-                              </button>
+                              type="button"
+                              onClick={() => setIsCreatingTemplate(false)}
+                              className="p-1 px-2 bg-muted text-muted-foreground rounded-lg text-[10px] font-black uppercase"
+                            >
+                              Cancel
+                            </button>
                           </div>
                         )}
                       </div>
                     </div>
-                    
+
                     <p className="text-[10px] text-muted-foreground leading-relaxed">
                       Influence the AI&apos;s qualitative scoring. Give it specific rules or priorities for this role.
-                      <br/>
+                      <br />
                       <em className="text-primary/70 italic">Example: &quot;Prioritize candidates with experience in large-scale cloud migrations over general DevOps.&quot;</em>
                     </p>
-                    
+
                     <textarea
+                      ref={instructionsRef}
                       placeholder="Enter custom instructions for the AI recruiter..."
-                      className="w-full rounded-2xl border border-primary/20 bg-background p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[80px] text-sm font-medium transition-all"
+                      className="w-full rounded-2xl border border-primary/20 bg-background p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[80px] text-sm font-medium transition-all resize-none overflow-hidden"
                       value={formData.recruiter_instructions}
                       onChange={e => setFormData({ ...formData, recruiter_instructions: e.target.value })}
                     />
                   </div>
 
-                  {/* Live Suggestion Chips */}
-                  {formData.description && formData.description.length >= 20 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs font-black uppercase tracking-widest text-muted-foreground">Suggested Skills</div>
-                        <div className="text-[10px] text-muted-foreground">Debounced live suggestions</div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {suggestionsLoading ? (
-                          <div className="text-sm text-muted-foreground">Loading suggestions...</div>
-                        ) : liveSuggestions.length === 0 ? (
-                          <div className="text-sm text-muted-foreground">No suggestions yet. Type more to get AI suggestions.</div>
-                        ) : (
-                          liveSuggestions.map(s => (
-                            <button
-                              key={s}
-                              type="button"
-                              onClick={() => addSkill(s)}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${formData.required_skills?.includes(s) ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted/20 text-muted-foreground border border-border/30'} text-[10px] font-black uppercase tracking-wider`}
-                            >
-                              {s}
-                              {!formData.required_skills?.includes(s) && <Plus className="size-3" />}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Screening Criteria Header */}
                   <div className="flex items-center gap-2 py-2 border-b border-border/50">
                     <Layers className="size-4 text-primary" />
-                    <h4 className="text-xs font-black uppercase tracking-widest">Screening Requirements</h4>
+                    <h4 className="text-xs font-black uppercase tracking-widest">Screening Requirements If Education Data Submitted</h4>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -902,7 +991,7 @@ export function JobPositionManager() {
                                 <Input
                                   value={field.label}
                                   onChange={e => updateCustomField(idx, { label: e.target.value })}
-                                  placeholder="e.g. Expected Salary"
+                                  placeholder="e.g. Additional Certifications"
                                   className="h-9 rounded-xl text-xs"
                                 />
                               </div>
@@ -973,9 +1062,11 @@ export function JobPositionManager() {
                   </button>
                   <button
                     type="submit"
-                    className="flex-2 rounded-xl bg-primary px-4 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-98 transition-all"
+                    disabled={isSubmitting}
+                    className="flex-2 rounded-xl bg-primary px-4 py-4 text-sm font-black uppercase tracking-widest text-primary-foreground shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-98 transition-all flex items-center justify-center gap-2"
                   >
-                    Confirm & Publish
+                    {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
+                    {isSubmitting ? "Publishing..." : "Confirm & Publish"}
                   </button>
                 </div>
               </form>

@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { ROUTES } from "@/constants/routes";
 import { motion, AnimatePresence, type HTMLMotionProps } from "framer-motion";
 import { AlertCircle, Lock, User } from "lucide-react";
+import { ApiError } from "@/services/apiClient";
 
 type LoginFormProps = Omit<HTMLMotionProps<"div">, "children">;
 
