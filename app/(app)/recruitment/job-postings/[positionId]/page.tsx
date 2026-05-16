@@ -193,7 +193,7 @@ export default function JobDetailsPage() {
     }
 
     return (
-        <div className="max-w-6xl mx-auto space-y-8 pb-12">
+        <div className="w-full max-w-[1600px] mx-auto space-y-8 pb-12">
             {/* Header Actions */}
             <div className="flex items-center justify-between">
                 <Link
