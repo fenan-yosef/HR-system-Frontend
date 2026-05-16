@@ -16,6 +16,7 @@ export const ROUTES = {
   OFFBOARDING: "/offboarding",
   ATTENDANCE: "/attendance",
   LEAVE_REQUESTS: "/leave-requests",
+  LEAVE_APPROVALS: "/leave-approvals",
   PAYROLL: "/payroll",
 
   // Employee Letters
@@ -48,6 +49,7 @@ export const ROUTES = {
   // System
   SETTINGS: "/settings",
   SECURITY: "/security",
+  ROLE_MANAGEMENT: "/admin/role-management",
 } as const;
 
 export type AppRouteKey = keyof typeof ROUTES;
