@@ -81,6 +81,7 @@ export interface JobPosition {
       ai: number;
     };
   };
+  skill_suggestions?: string[];
 }
 
 // Legacy alias used by some services/routes that still call /job-posts/
@@ -238,6 +239,9 @@ export interface Application {
   evaluation?: AiEvaluation;
   extracted_resume?: {
     has_json: boolean;
+    raw_text?: string;
+    extraction_model?: string;
+    extracted_at?: string;
     raw_llm_response: string;
     extracted_json: any;
   };

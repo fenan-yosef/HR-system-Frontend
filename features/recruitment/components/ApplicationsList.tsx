@@ -445,10 +445,10 @@ export function ApplicationsList({
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[360px_minmax(0,1fr)] gap-8">
         {/* Sidebar Column */}
         <aside
-          className={`lg:col-span-1 space-y-8 ${showFilters ? "block" : "hidden lg:block"}`}
+          className={`space-y-8 ${showFilters ? "block" : "hidden lg:block"}`}
         >
           <ApplicationFilters
             search={search}
@@ -504,7 +504,7 @@ export function ApplicationsList({
         </aside>
 
         {/* Main Content Column */}
-        <div className="lg:col-span-3 space-y-6">
+        <div className="space-y-6">
           {isLoading ? (
             /* Skeleton Loader */
             <div className="space-y-4">

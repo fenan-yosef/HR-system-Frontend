@@ -319,8 +319,9 @@ export function reEvaluate(positionId: number): Promise<any> {
 }
 
 export function getSkillSuggestions(positionId: number): Promise<{ skills: string[] }> {
-  return apiFetch<{ skills: string[] }>(`/job-positions/${positionId}/suggest-skills/`, {
+  return apiFetch<{ skills: string[] }>("/job-positions/suggest-skills/", {
     method: "POST",
+    body: JSON.stringify({ position_id: positionId }),
     requiresAuth: true,
   });
 }
