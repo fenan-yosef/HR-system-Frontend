@@ -9,12 +9,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, MessageSquareText, Search } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Loader2, MessageSquareText, Search, X } from "lucide-react";
 import { getAllComplaints } from "@/services/complaintService";
-import type { Complaint, ComplaintStatus } from "@/types/complaint";
+import type { Complaint } from "@/types/complaint";
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -31,16 +37,6 @@ function formatLabel(value?: string | null) {
     .replace(/\b\w/g, (match) => match.toUpperCase());
 }
 
-function getStatusBadgeClass(status: ComplaintStatus) {
-  if (status === "RESOLVED")
-    return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700";
-  if (status === "REJECTED")
-    return "border-red-500/20 bg-red-500/10 text-red-700";
-  if (status === "IN_REVIEW")
-    return "border-blue-500/20 bg-blue-500/10 text-blue-700";
-  return "border-amber-500/20 bg-amber-500/10 text-amber-700";
-}
-
 function getEmployeeName(complaint: Complaint) {
   if (complaint.employee_name) return complaint.employee_name;
   const first = complaint.employee?.first_name ?? "";
@@ -53,6 +49,9 @@ export default function HRComplaintsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(
+    null,
+  );
 
   const loadComplaints = async () => {
     try {
@@ -82,15 +81,11 @@ export default function HRComplaintsPage() {
       const category = formatLabel(
         complaint.category_label ?? complaint.category,
       ).toLowerCase();
-      const status = formatLabel(
-        complaint.status_label ?? complaint.status,
-      ).toLowerCase();
       return (
         employeeName.includes(term) ||
         subject.includes(term) ||
         details.includes(term) ||
-        category.includes(term) ||
-        status.includes(term)
+        category.includes(term)
       );
     });
   }, [complaints, search]);
@@ -132,7 +127,7 @@ export default function HRComplaintsPage() {
                 <Input
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search by employee, subject, category, or status"
+                  placeholder="Search by employee, subject, or category"
                   className="pl-9"
                 />
               </div>
@@ -172,20 +167,17 @@ export default function HRComplaintsPage() {
                         Subject
                       </th>
                       <th className="border-b px-4 py-3 font-semibold">
-                        Status
-                      </th>
-                      <th className="border-b px-4 py-3 font-semibold">
                         Submitted
                       </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredComplaints.map((complaint) => {
-                      const status = complaint.status;
                       return (
                         <tr
                           key={complaint.complaint_id}
-                          className="border-b last:border-b-0 align-top"
+                          className="border-b last:border-b-0 align-top cursor-pointer hover:bg-muted/50 transition-colors"
+                          onClick={() => setSelectedComplaint(complaint)}
                         >
                           <td className="px-4 py-4 text-sm font-medium text-foreground">
                             {getEmployeeName(complaint)}
@@ -214,15 +206,6 @@ export default function HRComplaintsPage() {
                               )}
                             </div>
                           </td>
-                          <td className="px-4 py-4">
-                            <span
-                              className={`inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${getStatusBadgeClass(status)}`}
-                            >
-                              {formatLabel(
-                                complaint.status_label ?? complaint.status,
-                              )}
-                            </span>
-                          </td>
                           <td className="px-4 py-4 text-sm text-muted-foreground">
                             {formatDate(complaint.requested_at)}
                           </td>
@@ -235,6 +218,133 @@ export default function HRComplaintsPage() {
             )}
           </CardContent>
         </Card>
+
+        <Dialog
+          open={selectedComplaint !== null}
+          onOpenChange={(open) => !open && setSelectedComplaint(null)}
+        >
+          <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] flex flex-col lg:w-[90vw]">
+            <DialogHeader>
+              <DialogTitle>Complaint Details</DialogTitle>
+              <DialogDescription>
+                Review the full complaint details and employee information.
+              </DialogDescription>
+            </DialogHeader>
+
+            {selectedComplaint && (
+              <div className="grid gap-6 overflow-y-auto pr-4">
+                {/* Employee Information */}
+                <div className="grid gap-4 border-b pb-4">
+                  <h3 className="font-semibold text-sm uppercase tracking-wide">
+                    Employee Information
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        Name
+                      </p>
+                      <p className="font-medium">
+                        {getEmployeeName(selectedComplaint)}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        Email
+                      </p>
+                      <p className="font-medium break-all">
+                        {selectedComplaint.employee_email ?? "-"}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        Department
+                      </p>
+                      <p className="font-medium">
+                        {selectedComplaint.employee_department_name ?? "-"}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        Submitted On
+                      </p>
+                      <p className="font-medium">
+                        {formatDate(selectedComplaint.requested_at)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Complaint Details */}
+                <div className="grid gap-4 border-b pb-4">
+                  <h3 className="font-semibold text-sm uppercase tracking-wide">
+                    Complaint Details
+                  </h3>
+                  <div className="space-y-4 text-sm">
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        Category
+                      </p>
+                      <p className="font-medium">
+                        {formatLabel(
+                          selectedComplaint.category_label ??
+                            selectedComplaint.category,
+                        )}
+                      </p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        Subject
+                      </p>
+                      <p className="font-medium">{selectedComplaint.subject}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                        Details
+                      </p>
+                      <p className="whitespace-pre-wrap break-words text-foreground">
+                        {selectedComplaint.details}
+                      </p>
+                    </div>
+                    {selectedComplaint.desired_resolution && (
+                      <div className="space-y-1">
+                        <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                          Desired Resolution
+                        </p>
+                        <p className="whitespace-pre-wrap break-words text-foreground">
+                          {selectedComplaint.desired_resolution}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* HR Comment Section */}
+                {selectedComplaint.hr_comment && (
+                  <div className="grid gap-4 border-b pb-4 bg-blue-50 p-4 rounded-lg">
+                    <h3 className="font-semibold text-sm uppercase tracking-wide">
+                      HR Comment
+                    </h3>
+                    <div className="space-y-2 text-sm">
+                      <p className="whitespace-pre-wrap break-words text-foreground">
+                        {selectedComplaint.hr_comment}
+                      </p>
+                      {selectedComplaint.reviewed_by_name && (
+                        <p className="text-xs text-muted-foreground">
+                          By: {selectedComplaint.reviewed_by_name}
+                        </p>
+                      )}
+                      {selectedComplaint.reviewed_at && (
+                        <p className="text-xs text-muted-foreground">
+                          On: {formatDate(selectedComplaint.reviewed_at)}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </section>
     </RoleGuard>
   );
