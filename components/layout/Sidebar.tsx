@@ -110,12 +110,16 @@ const NAVIGATION_CONFIG: NavSection[] = [
   {
     section: "Growth",
     items: [
-      // {
-      //   label: "Academy",
-      //   href: ROUTES.LEARNING,
-      //   icon: GraduationCap,
-      //   roles: ["EMPLOYEE", "ADMIN", "HR_CEO"],
-      // },
+      {
+        label: "Requests",
+        icon: FileText,
+        roles: ["EMPLOYEE"],
+        subItems: [
+          { label: "Complaint", href: ROUTES.EMPLOYEE_REQUEST_COMPLAINT },
+          { label: "Letter Request", href: ROUTES.EMPLOYEE_REQUEST_LETTER },
+          { label: "Transfer Request", href: ROUTES.EMPLOYEE_REQUEST_TRANSFER },
+        ],
+      },
       {
         label: "Letter Requests",
         href: ROUTES.HR_LETTER_REQUESTS,
@@ -164,12 +168,6 @@ const NAVIGATION_CONFIG: NavSection[] = [
         icon: ShieldAlert,
         roles: ["EMPLOYEE"],
       },
-      {
-        label: "Submit Complaint",
-        href: ROUTES.EMPLOYEE_REQUEST_COMPLAINT,
-        icon: MessageSquareText,
-        roles: ["EMPLOYEE"],
-      },
     ],
   },
 
@@ -182,12 +180,12 @@ const NAVIGATION_CONFIG: NavSection[] = [
         icon: UserCircle,
         roles: ["ADMIN", "HR_CEO", "EMPLOYEE", "APPLICANT"],
       },
-      {
-        label: "Documents",
-        href: ROUTES.MY_DOCUMENTS,
-        icon: FileText,
-        roles: ["ADMIN", "HR_CEO", "EMPLOYEE", "APPLICANT"],
-      },
+      // {
+      //   label: "Documents",
+      //   href: ROUTES.MY_DOCUMENTS,
+      //   icon: FileText,
+      //   roles: ["ADMIN", "HR_CEO", "EMPLOYEE", "APPLICANT"],
+      // },
     ],
   },
   {

@@ -22,6 +22,8 @@ export const ROUTES = {
   EMPLOYEE_REQUEST_LETTER: "/employee/request-letter",
   EMPLOYEE_MY_LETTERS: "/employee/my-letters",
   EMPLOYEE_REQUEST_TRANSFER: "/employee/request-transfer",
+  EMPLOYEE_COMPLAINTS: "/employee/request-complaint",
+
 
   
   // Self Service
