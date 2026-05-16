@@ -190,7 +190,10 @@ export function batchConfirmInterviews(applicationIds: number[]): Promise<any> {
   });
 }
 
-export function startScreening(positionId: number, options: { mode?: string } = {}): Promise<any> {
+export function startScreening(
+  positionId: number,
+  options: { mode?: string; application_ids?: number[] } = {},
+): Promise<any> {
   return apiFetch<any>(`/recruitment/screening/start/${positionId}/`, {
     method: "POST",
     body: JSON.stringify(options),
