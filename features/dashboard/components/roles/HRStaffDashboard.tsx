@@ -26,7 +26,7 @@ export function HRStaffDashboard({ metrics }: HRStaffDashboardProps) {
 
   return (
     <div className="space-y-8 pb-10">
-      <div className="flex items-center justify-between">
+      {/* <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-black tracking-tight text-emerald-600">
             Operations Hub
@@ -35,7 +35,7 @@ export function HRStaffDashboard({ metrics }: HRStaffDashboardProps) {
             Daily workflows and talent pipeline management.
           </p>
         </div>
-      </div>
+      </div> */}
 
       <div className="grid gap-6 md:grid-cols-2">
         {(metrics?.stats ?? []).map((stat: any, i: number) => (

@@ -25,8 +25,7 @@ export const ROUTES = {
   EMPLOYEE_REQUEST_LETTER: "/employee/request-letter",
   EMPLOYEE_MY_LETTERS: "/employee/my-letters",
   EMPLOYEE_REQUEST_TRANSFER: "/employee/request-transfer",
-  EMPLOYEE_COMPLAINTS: "/employee/request-complaint",
-
+  EMPLOYEE_PENSION_REGISTRATION: "/employee/pension-registration",
 
   
   // Self Service
@@ -38,6 +37,7 @@ export const ROUTES = {
   HR_ID_CARDS: "/hr/id-cards",
   HR_COMPLAINTS: "/hr/complaints",
   HR_BENEFICIARIES: "/hr/beneficiaries",
+  HR_PENSION_REGISTRATIONS: "/hr/pension-registrations",
 
   // Disciplinary Management
   HR_DISCIPLINARY: "/hr/disciplinary",
