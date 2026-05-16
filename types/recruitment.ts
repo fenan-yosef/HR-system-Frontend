@@ -81,6 +81,7 @@ export interface JobPosition {
       ai: number;
     };
   };
+  skill_suggestions?: string[];
 }
 
 // Legacy alias used by some services/routes that still call /job-posts/
