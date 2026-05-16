@@ -25,8 +25,9 @@ export function fetchJobPostings(): Promise<PaginatedResponse<JobPosting>> {
   });
 }
 
-export function fetchJobPositions(): Promise<PaginatedResponse<JobPosition>> {
-  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions/", {
+export function fetchJobPositions(params?: Record<string, string | number>): Promise<PaginatedResponse<JobPosition>> {
+  const query = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : "";
+  return apiFetch<PaginatedResponse<JobPosition>>(`/job-positions/${query}`, {
     requiresAuth: true,
   });
 }
