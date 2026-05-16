@@ -4,21 +4,32 @@ import { useEffect, useMemo, useState } from "react";
 import { RoleGuard } from "@/context/RoleGuard";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, MessageSquareText, Clock3 } from "lucide-react";
 import { createComplaint, getMyComplaints } from "@/services/complaintService";
-import type { Complaint, ComplaintCategory, ComplaintStatus } from "@/types/complaint";
+import type {
+  Complaint,
+  ComplaintCategory,
+  ComplaintStatus,
+} from "@/types/complaint";
 
-const COMPLAINT_CATEGORIES: Array<{ value: ComplaintCategory; label: string }> = [
-  { value: "WORKPLACE", label: "Workplace" },
-  { value: "PAYROLL", label: "Payroll" },
-  { value: "HARASSMENT", label: "Harassment" },
-  { value: "ATTENDANCE", label: "Attendance" },
-  { value: "OTHER", label: "Other" },
-];
+const COMPLAINT_CATEGORIES: Array<{ value: ComplaintCategory; label: string }> =
+  [
+    { value: "WORKPLACE", label: "Workplace" },
+    { value: "PAYROLL", label: "Payroll" },
+    { value: "HARASSMENT", label: "Harassment" },
+    { value: "ATTENDANCE", label: "Attendance" },
+    { value: "OTHER", label: "Other" },
+  ];
 
 function formatDate(value?: string | null) {
   if (!value) return "-";
@@ -36,9 +47,12 @@ function formatLabel(value?: string | null) {
 }
 
 function getStatusBadgeClass(status: ComplaintStatus) {
-  if (status === "RESOLVED") return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700";
-  if (status === "REJECTED") return "border-red-500/20 bg-red-500/10 text-red-700";
-  if (status === "IN_REVIEW") return "border-blue-500/20 bg-blue-500/10 text-blue-700";
+  if (status === "RESOLVED")
+    return "border-emerald-500/20 bg-emerald-500/10 text-emerald-700";
+  if (status === "REJECTED")
+    return "border-red-500/20 bg-red-500/10 text-red-700";
+  if (status === "IN_REVIEW")
+    return "border-blue-500/20 bg-blue-500/10 text-blue-700";
   return "border-amber-500/20 bg-amber-500/10 text-amber-700";
 }
 
@@ -75,7 +89,10 @@ export default function RequestComplaintPage() {
   }, []);
 
   const sortedComplaints = useMemo(
-    () => [...complaints].sort((a, b) => (b.requested_at ?? "").localeCompare(a.requested_at ?? "")),
+    () =>
+      [...complaints].sort((a, b) =>
+        (b.requested_at ?? "").localeCompare(a.requested_at ?? ""),
+      ),
     [complaints],
   );
 
@@ -126,9 +143,12 @@ export default function RequestComplaintPage() {
     <RoleGuard allowedRoles={["EMPLOYEE"]}>
       <section className="space-y-8">
         <div className="flex flex-col gap-2">
-          <h1 className="text-4xl font-extrabold tracking-tight">Submit Complaint</h1>
+          <h1 className="text-4xl font-extrabold tracking-tight">
+            Submit Complaint
+          </h1>
           <p className="text-muted-foreground">
-            Send a complaint to HR with the details they need to review it properly.
+            Send a complaint to HR with the details they need to review it
+            properly.
           </p>
         </div>
 
@@ -139,7 +159,8 @@ export default function RequestComplaintPage() {
               New Complaint
             </CardTitle>
             <CardDescription>
-              HR staff will receive this complaint and can review it from the HR dashboard.
+              HR staff will receive this complaint and can review it from the HR
+              dashboard.
             </CardDescription>
           </CardHeader>
 
@@ -150,7 +171,9 @@ export default function RequestComplaintPage() {
                 <select
                   id="category"
                   value={formData.category}
-                  onChange={(event) => handleChange("category", event.target.value)}
+                  onChange={(event) =>
+                    handleChange("category", event.target.value)
+                  }
                   className="h-9 w-full rounded-md border px-3 py-1 text-sm"
                 >
                   {COMPLAINT_CATEGORIES.map((category) => (
@@ -166,7 +189,9 @@ export default function RequestComplaintPage() {
                 <Input
                   id="subject"
                   value={formData.subject}
-                  onChange={(event) => handleChange("subject", event.target.value)}
+                  onChange={(event) =>
+                    handleChange("subject", event.target.value)
+                  }
                   placeholder="Short summary of the issue"
                   maxLength={200}
                 />
@@ -177,7 +202,9 @@ export default function RequestComplaintPage() {
                 <textarea
                   id="details"
                   value={formData.details}
-                  onChange={(event) => handleChange("details", event.target.value)}
+                  onChange={(event) =>
+                    handleChange("details", event.target.value)
+                  }
                   placeholder="Explain what happened, when it happened, and who was involved"
                   className="min-h-40 w-full rounded-md border px-3 py-2 text-sm"
                 />
@@ -185,12 +212,15 @@ export default function RequestComplaintPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="desired_resolution">
-                  Desired Resolution <span className="text-muted-foreground">(optional)</span>
+                  Desired Resolution{" "}
+                  <span className="text-muted-foreground">(optional)</span>
                 </Label>
                 <textarea
                   id="desired_resolution"
                   value={formData.desired_resolution}
-                  onChange={(event) => handleChange("desired_resolution", event.target.value)}
+                  onChange={(event) =>
+                    handleChange("desired_resolution", event.target.value)
+                  }
                   placeholder="What outcome would help resolve this complaint?"
                   className="min-h-28 w-full rounded-md border px-3 py-2 text-sm"
                 />
@@ -234,17 +264,29 @@ export default function RequestComplaintPage() {
             ) : sortedComplaints.length > 0 ? (
               <div className="space-y-4">
                 {sortedComplaints.map((complaint) => (
-                  <div key={complaint.complaint_id} className="rounded-xl border bg-background p-4 shadow-sm">
+                  <div
+                    key={complaint.complaint_id}
+                    className="rounded-xl border bg-background p-4 shadow-sm"
+                  >
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="text-base font-semibold">{complaint.subject}</h3>
-                          <Badge className={getStatusBadgeClass(complaint.status)}>
-                            {formatLabel(complaint.status_label ?? complaint.status)}
+                          <h3 className="text-base font-semibold">
+                            {complaint.subject}
+                          </h3>
+                          <Badge
+                            className={getStatusBadgeClass(complaint.status)}
+                          >
+                            {formatLabel(
+                              complaint.status_label ?? complaint.status,
+                            )}
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          Category: {formatLabel(complaint.category_label ?? complaint.category)}
+                          Category:{" "}
+                          {formatLabel(
+                            complaint.category_label ?? complaint.category,
+                          )}
                         </p>
                         <p className="text-sm text-muted-foreground">
                           Submitted: {formatDate(complaint.requested_at)}
@@ -252,14 +294,18 @@ export default function RequestComplaintPage() {
                       </div>
                       <div className="max-w-xl rounded-lg bg-muted/50 p-3 text-sm text-muted-foreground">
                         <p className="font-medium text-foreground">Details</p>
-                        <p className="mt-1 whitespace-pre-wrap">{complaint.details}</p>
+                        <p className="mt-1 whitespace-pre-wrap">
+                          {complaint.details}
+                        </p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No complaints submitted yet.</p>
+              <p className="text-sm text-muted-foreground">
+                No complaints submitted yet.
+              </p>
             )}
           </CardContent>
         </Card>
