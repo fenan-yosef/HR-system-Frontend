@@ -363,7 +363,7 @@ export function deleteInstructionTemplate(templateId: number): Promise<void> {
 export function fetchPublicJobPositions(): Promise<
   PaginatedResponse<JobPosition>
 > {
-  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions/", {
+  return apiFetch<PaginatedResponse<JobPosition>>("/job-positions-public/", {
     requiresAuth: false,
   });
 }
@@ -371,7 +371,7 @@ export function fetchPublicJobPositions(): Promise<
 export function fetchPublicJobPosition(
   positionId: number,
 ): Promise<JobPosition> {
-  return apiFetch<JobPosition>(`/job-positions/${positionId}/`, {
+  return apiFetch<JobPosition>(`/job-positions-public/${positionId}/`, {
     requiresAuth: false,
   });
 }

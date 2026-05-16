@@ -7,8 +7,8 @@ import {
   CreateJobPosition,
   Department,
   type JobStatus,
-  CustomApplicationField, 
-  CustomFieldType, 
+  CustomApplicationField,
+  CustomFieldType,
   RecruiterInstructionTemplate
 } from "@/types/recruitment";
 import {
@@ -69,12 +69,16 @@ export function JobPositionManager() {
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<number | "all">("all");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
+
   // States for skill suggestions
   const [suggestingSkills, setSuggestingSkills] = useState(false);
   const [liveSuggestions, setLiveSuggestions] = useState<string[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
   const suggestionTimerRef = useRef<number | null>(null);
+
+  // Refs for auto-expanding textareas
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
+  const instructionsRef = useRef<HTMLTextAreaElement>(null);
 
   // States for instruction templates
   const [templates, setTemplates] = useState<RecruiterInstructionTemplate[]>([]);
@@ -197,6 +201,19 @@ export function JobPositionManager() {
       }
     };
   }, [formData.description]);
+
+  // Auto-resize textareas
+  useEffect(() => {
+    const adjustHeight = (ref: React.RefObject<HTMLTextAreaElement>) => {
+      if (ref.current) {
+        ref.current.style.height = "auto";
+        ref.current.style.height = `${ref.current.scrollHeight}px`;
+      }
+    };
+
+    adjustHeight(descriptionRef);
+    adjustHeight(instructionsRef);
+  }, [formData.description, formData.recruiter_instructions, isModalOpen]);
 
   useEffect(() => {
     loadInitialData();
@@ -560,7 +577,7 @@ export function JobPositionManager() {
                   </div>
 
                   <div className="flex items-center gap-5">
-                    <button 
+                    <button
                       onClick={() => handleShare(pos)}
                       className="hidden md:flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:underline"
                     >
@@ -620,7 +637,7 @@ export function JobPositionManager() {
                     <X className="size-4" /> {createError}
                   </div>
                 )}
-                
+
                 <div className="grid gap-6">
                   <div className="space-y-2">
                     <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
@@ -694,8 +711,9 @@ export function JobPositionManager() {
                       Description
                     </Label>
                     <textarea
+                      ref={descriptionRef}
                       placeholder="Describe the role responsibilities..."
-                      className="w-full rounded-xl border border-border/50 p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[120px] text-base font-medium transition-all"
+                      className="w-full rounded-xl border border-border/50 p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[120px] text-base font-medium transition-all resize-none overflow-hidden"
                       value={formData.description}
                       onChange={(e) =>
                         setFormData({
@@ -706,14 +724,59 @@ export function JobPositionManager() {
                     />
                   </div>
 
+                  {/* Live Suggestion Chips */}
+                  {formData.description && formData.description.length >= 20 && (
+                    <div className="space-y-3 animate-in fade-in slide-in-from-top-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <BrainCircuit className="size-3.5 text-primary" />
+                          <div className="text-xs font-black uppercase tracking-widest text-muted-foreground">Suggested Skills</div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          {suggestionsLoading && <Loader2 className="size-3 animate-spin text-primary" />}
+                          <button
+                            type="button"
+                            onClick={handleSuggestSkills}
+                            disabled={suggestingSkills || suggestionsLoading}
+                            className="text-[10px] font-black uppercase tracking-widest text-primary hover:underline disabled:opacity-50"
+                          >
+                            {suggestingSkills ? "Generating..." : "Refresh Suggestions"}
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 p-3 rounded-2xl bg-primary/5 border border-primary/10">
+                        {suggestionsLoading && liveSuggestions.length === 0 ? (
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest animate-pulse">Analyzing description...</div>
+                        ) : liveSuggestions.length === 0 ? (
+                          <div className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">Type more for AI suggestions</div>
+                        ) : (
+                          liveSuggestions.map(s => (
+                            <button
+                              key={s}
+                              type="button"
+                              onClick={() => addSkill(s)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-all ${formData.required_skills?.includes(s)
+                                ? 'bg-emerald-500 text-white border-emerald-600 shadow-sm'
+                                : 'bg-background text-muted-foreground border border-border/50 hover:border-primary/30 hover:text-primary'
+                                } text-[10px] font-black uppercase tracking-wider`}
+                            >
+                              {s}
+                              {formData.required_skills?.includes(s) ? <Check className="size-3" /> : <Plus className="size-3" />}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
                   {/* AI Custom Guidance (Optional) */}
                   <div className="space-y-4 p-6 rounded-3xl bg-primary/5 border border-primary/10">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Wand2 className="size-4 text-primary" />
-                        <h4 className="text-xs font-black uppercase tracking-widest text-primary">AI Custom Guidance (Optional)</h4>
+                        <h4 className="text-xs font-black uppercase tracking-widest text-primary">AI Custom Guidance During Screening(Optional)</h4>
                       </div>
-                      
+
                       <div className="flex items-center gap-3">
                         {templates.length > 0 && (
                           <div className="relative group/templates">
@@ -748,7 +811,7 @@ export function JobPositionManager() {
                             </div>
                           </div>
                         )}
-                        
+
                         {!isCreatingTemplate ? (
                           <button
                             type="button"
@@ -775,64 +838,37 @@ export function JobPositionManager() {
                               {isSavingTemplate ? <Loader2 className="size-2 animate-spin" /> : "Save"}
                             </button>
                             <button
-                                type="button"
-                                onClick={() => setIsCreatingTemplate(false)}
-                                className="p-1 px-2 bg-muted text-muted-foreground rounded-lg text-[10px] font-black uppercase"
-                              >
-                                Cancel
-                              </button>
+                              type="button"
+                              onClick={() => setIsCreatingTemplate(false)}
+                              className="p-1 px-2 bg-muted text-muted-foreground rounded-lg text-[10px] font-black uppercase"
+                            >
+                              Cancel
+                            </button>
                           </div>
                         )}
                       </div>
                     </div>
-                    
+
                     <p className="text-[10px] text-muted-foreground leading-relaxed">
                       Influence the AI&apos;s qualitative scoring. Give it specific rules or priorities for this role.
-                      <br/>
+                      <br />
                       <em className="text-primary/70 italic">Example: &quot;Prioritize candidates with experience in large-scale cloud migrations over general DevOps.&quot;</em>
                     </p>
-                    
+
                     <textarea
+                      ref={instructionsRef}
                       placeholder="Enter custom instructions for the AI recruiter..."
-                      className="w-full rounded-2xl border border-primary/20 bg-background p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[80px] text-sm font-medium transition-all"
+                      className="w-full rounded-2xl border border-primary/20 bg-background p-4 focus:ring-2 focus:ring-primary/20 focus:outline-none min-h-[80px] text-sm font-medium transition-all resize-none overflow-hidden"
                       value={formData.recruiter_instructions}
                       onChange={e => setFormData({ ...formData, recruiter_instructions: e.target.value })}
                     />
                   </div>
 
-                  {/* Live Suggestion Chips */}
-                  {formData.description && formData.description.length >= 20 && (
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs font-black uppercase tracking-widest text-muted-foreground">Suggested Skills</div>
-                        <div className="text-[10px] text-muted-foreground">Debounced live suggestions</div>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {suggestionsLoading ? (
-                          <div className="text-sm text-muted-foreground">Loading suggestions...</div>
-                        ) : liveSuggestions.length === 0 ? (
-                          <div className="text-sm text-muted-foreground">No suggestions yet. Type more to get AI suggestions.</div>
-                        ) : (
-                          liveSuggestions.map(s => (
-                            <button
-                              key={s}
-                              type="button"
-                              onClick={() => addSkill(s)}
-                              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full ${formData.required_skills?.includes(s) ? 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20' : 'bg-muted/20 text-muted-foreground border border-border/30'} text-[10px] font-black uppercase tracking-wider`}
-                            >
-                              {s}
-                              {!formData.required_skills?.includes(s) && <Plus className="size-3" />}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    </div>
-                  )}
 
                   {/* Screening Criteria Header */}
                   <div className="flex items-center gap-2 py-2 border-b border-border/50">
                     <Layers className="size-4 text-primary" />
-                    <h4 className="text-xs font-black uppercase tracking-widest">Screening Requirements</h4>
+                    <h4 className="text-xs font-black uppercase tracking-widest">Screening Requirements If Education Data Submitted</h4>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -954,7 +990,7 @@ export function JobPositionManager() {
                                 <Input
                                   value={field.label}
                                   onChange={e => updateCustomField(idx, { label: e.target.value })}
-                                  placeholder="e.g. Expected Salary"
+                                  placeholder="e.g. Additional Certifications"
                                   className="h-9 rounded-xl text-xs"
                                 />
                               </div>
