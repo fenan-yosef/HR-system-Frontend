@@ -3,6 +3,7 @@
 import { ScreeningProgress } from "@/types/recruitment";
 import { Card } from "@/components/ui/card";
 import { BrainCircuit, Loader2, AlertCircle, CheckCircle2, WifiOff } from "lucide-react";
+import { Loading } from "@/components/ui/loading";
 
 interface ScreeningProgressDisplayProps {
     progress: ScreeningProgress;
@@ -38,7 +39,9 @@ export function ScreeningProgressDisplay({ progress }: ScreeningProgressDisplayP
                         )}
                     </div>
                     {isRunning && (
-                        <div className="absolute inset-0 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+                        <div className="absolute inset-0 flex items-center justify-center bg-background/40 backdrop-blur-xs rounded-full">
+                            <Loading size="lg" />
+                        </div>
                     )}
                 </div>
 
@@ -91,7 +94,7 @@ export function ScreeningProgressDisplay({ progress }: ScreeningProgressDisplayP
 
                 {isRunning && (
                     <div className="flex items-center gap-2 text-xs font-bold text-primary animate-pulse">
-                        <Loader2 className="size-3 animate-spin" />
+                        <Loading size="xs" />
                         POLLING ACTIVE &middot; REFRESHING EVERY 2s
                     </div>
                 )}

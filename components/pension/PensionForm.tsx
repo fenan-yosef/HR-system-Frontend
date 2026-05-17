@@ -87,7 +87,7 @@ export default function PensionForm() {
 
       <div style={{ borderTop: "1px solid #EEE", paddingTop: 8 }}>
         <h4>Service History</h4>
-        <ServiceHistoryTable items={data.service_history ?? []} onChange={(s) => setData({ ...data, service_history: s })} />
+        <ServiceHistoryTable items={(data.service_history ?? []) as any} onChange={(s) => setData({ ...data, service_history: s as any })} />
       </div>
 
       <div style={{ borderTop: "1px solid #EEE", paddingTop: 8 }}>
@@ -98,7 +98,7 @@ export default function PensionForm() {
           <label>Spouse DOB</label>
           <input type="date" value={data.spouse_date_of_birth ?? ""} onChange={(e) => setData({ ...data, spouse_date_of_birth: e.target.value })} />
         </div>
-        <ChildrenTable items={data.children ?? []} onChange={(c) => setData({ ...data, children: c })} />
+        <ChildrenTable items={(data.children ?? []) as any} onChange={(c) => setData({ ...data, children: c as any })} />
         <div>
           <label>Father Name</label>
           <input value={data.father_name ?? ""} onChange={(e) => setData({ ...data, father_name: e.target.value })} />

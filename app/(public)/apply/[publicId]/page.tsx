@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CheckCircle, UploadCloud, AlertCircle, FileText, Plus, Trash2, X, Paperclip, Image as ImageIcon } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { apiFetch } from "@/services/apiClient";
+import { Loading } from "@/components/ui/loading";
 
 // Helper to convert file to Base64 data URL for easy local testing
 const convertFileToBase64 = (file: File): Promise<string> => {
@@ -639,8 +640,8 @@ export default function PublicApplyPage() {
                                     disabled={isSubmitting}
                                 >
                                     {isSubmitting ? (
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-5 w-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                        <div className="flex items-center gap-3 justify-center">
+                                            <Loading size="xs" />
                                             <span>Submitting... {uploadProgress > 0 && uploadProgress < 100 ? `${uploadProgress}%` : ''}</span>
                                         </div>
                                     ) : "Submit Application"}

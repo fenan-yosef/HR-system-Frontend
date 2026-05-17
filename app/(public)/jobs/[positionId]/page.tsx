@@ -14,6 +14,8 @@ import {
 import { getJobApplyPath } from "@/lib/utils";
 import { motion } from "framer-motion";
 
+import { Loading } from "@/components/ui/loading";
+
 export default function JobDetailsPage() {
   const params = useParams();
   const positionId = Number(params.positionId);
@@ -66,9 +68,7 @@ export default function JobDetailsPage() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-24 space-y-4">
-        <div className="relative">
-          <div className="h-16 w-16 rounded-full border-4 border-primary/10 border-t-primary animate-spin" />
-        </div>
+        <Loading size="lg" />
         <p className="text-sm font-black text-muted-foreground uppercase tracking-widest animate-pulse">Loading Position...</p>
       </div>
     );

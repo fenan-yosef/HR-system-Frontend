@@ -76,20 +76,20 @@ export default function PositionAnalyticsPage() {
         ) as Application[];
 
         const flattened = rawResults.map((item: Application) => {
-          const applicant = item.applicant ?? {};
+          const applicant = (item.applicant ?? {}) as any;
           const position = item.position ?? {};
           const apiPositionId =
             (typeof position === "object"
-              ? (position.position_id ?? position.job_id)
+              ? ((position as any).position_id ?? (position as any).job_id)
               : position) ??
-            item.position_id ??
-            item.job_id;
+            (item as any).position_id ??
+            (item as any).job_id;
 
           return {
             ...item,
-            full_name: applicant.full_name ?? item.full_name ?? "Unknown Name",
-            email: applicant.email ?? item.email ?? "",
-            phone: applicant.phone ?? item.phone ?? "",
+            full_name: applicant.full_name ?? (item as any).full_name ?? "Unknown Name",
+            email: applicant.email ?? (item as any).email ?? "",
+            phone: applicant.phone ?? (item as any).phone ?? "",
             _derived_position_id: Number(apiPositionId),
           } as CandidateRecord;
         });

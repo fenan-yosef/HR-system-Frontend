@@ -53,28 +53,7 @@ export function HRStaffDashboard({ metrics }: HRStaffDashboardProps) {
       </div>
 
       {/* Row 2: Action items & Recent Applications */}
-      <div className="grid gap-4 md:grid-cols-3">
-        {/* Navigation Buttons Grid */}
-        <div className="md:col-span-1 grid gap-2">
-          <ActionButton
-            label="New Job Post"
-            icon={Briefcase}
-            variant="black"
-            onClick={() => router.push(ROUTES.RECRUITMENT_JOB_POSTINGS)}
-          />
-          <ActionButton
-            label="Shortlist Talent"
-            icon={Users}
-            variant="outline"
-            onClick={() => router.push(ROUTES.RECRUITMENT_SHORTLIST)}
-          />
-          <ActionButton
-            label="Approve Leaves"
-            icon={Calendar}
-            variant="outline"
-            onClick={() => router.push(ROUTES.LEAVE_APPROVALS)}
-          />
-        </div>
+      <div className="grid gap-4 md:grid-cols-2">
 
         {/* Recent Applications Card */}
         <Card className="p-4 border-none bg-card/50 backdrop-blur-sm shadow-md md:col-span-2">
@@ -138,7 +117,7 @@ export function HRStaffDashboard({ metrics }: HRStaffDashboardProps) {
               <div className="flex justify-center py-1">
                 <DonutChart data={reqData} centerLabel="Pending" />
               </div>
-              
+
               <div className="space-y-2">
                 {[
                   { label: "Leaves", value: metrics.pending_requests.leaves, icon: Calendar, color: "text-emerald-300 bg-emerald-500/20" },

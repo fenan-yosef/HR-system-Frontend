@@ -68,17 +68,17 @@ export function Header() {
           <motion.h2
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-lg font-bold tracking-tight "
+            className="text-sm font-bold tracking-tight"
           >
-            Management Portal
+            Welcome back, {user?.firstName || "Demeke"}.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="text-xs font-medium text-muted-foreground"
+            className="text-[10px] font-medium text-muted-foreground hidden md:block max-w-xl truncate"
           >
-            Monitor recruitment metrics and employee data
+            Unified command center for HR operations, talent acquisition, and organizational health.
           </motion.p>
         </div>
       </div>
