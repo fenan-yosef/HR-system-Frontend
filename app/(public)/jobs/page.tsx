@@ -52,7 +52,7 @@ export default function PublicJobsPage() {
   }, []);
 
   const getDeptName = (job: JobPosition) => {
-    if (job.department_name) return job.department_name;
+    if ((job as any).department_name) return (job as any).department_name;
     if (!job.department) return "General";
     return departments.find(d => d.department_id === job.department)?.name || "Department";
   };

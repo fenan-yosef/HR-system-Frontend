@@ -494,7 +494,7 @@ export function ApplicationsBoard() {
           key,
           title,
           positionId: Number(position?.position_id || 0),
-          requiredSkills: (position?.required_skills || []).slice(0, 6),
+          requiredSkills: ((position as any)?.required_skills || []).slice(0, 6),
           applications: [app],
         };
       }

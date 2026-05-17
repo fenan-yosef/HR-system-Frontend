@@ -104,15 +104,15 @@ export function ActionButton({ label, icon: Icon, onClick, variant = "primary" }
 
   return (
     <motion.button
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.01 }}
+      whileTap={{ scale: 0.99 }}
       onClick={onClick}
       className={cn(
-        "flex items-center justify-center gap-3 py-4 px-6 rounded-2xl font-black text-sm transition-all",
+        "flex items-center justify-center gap-2.5 py-2.5 px-4 rounded-xl font-bold text-xs transition-all",
         variants[variant]
       )}
     >
-      <Icon className="size-5" />
+      <Icon className="size-4" />
       {label}
     </motion.button>
   );

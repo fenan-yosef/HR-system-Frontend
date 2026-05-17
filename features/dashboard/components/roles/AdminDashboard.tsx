@@ -1,10 +1,11 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Shield, Zap, Users, UserCircle, Settings, Lock, Activity, Server, Database } from "lucide-react";
+import { Shield, Zap, Users, Lock, Activity, Server, Database, Settings, TrendingUp } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatCard } from "../widgets/StatCard";
-import { SimplePieChart, ActionButton } from "../widgets/AnalyticsWidgets";
+import { ActionButton } from "../widgets/AnalyticsWidgets";
+import { AreaChart, DonutChart } from "@/components/ui/charts";
 
 interface AdminDashboardProps {
   metrics: any;
@@ -16,59 +17,73 @@ export function AdminDashboard({ metrics }: AdminDashboardProps) {
   const roleData = (metrics.role_distribution || []).map((r: any, i: number) => ({
     label: r.role_name,
     value: r.user_count,
-    color: roleColors[i % roleColors.length]
+    color: roleColors[i % roleColors.length],
+  }));
+
+  // Format user registration growth for area chart
+  const growthData = (metrics.user_growth || []).map((g: any) => ({
+    label: new Date(g.month).toLocaleDateString("en-US", { month: "short", year: "2-digit" }),
+    value: g.count,
+  }));
+
+  // Format system API latency history for area chart
+  const latencyData = (metrics.latency_history || []).map((l: any) => ({
+    label: l.label,
+    value: l.value,
   }));
 
   return (
-    <div className="space-y-8 pb-10">
+    <div className="space-y-4 pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+          <h2 className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
             System Infrastructure
           </h2>
-          <p className="text-muted-foreground font-medium">Global system health and user access management.</p>
+          <p className="text-xs text-muted-foreground font-medium">Global system health and user access management.</p>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats Cards */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {metrics.stats.map((stat: any, i: number) => (
-          <StatCard key={i} {...stat} delay={i * 0.1} />
+          <StatCard key={i} {...stat} delay={i * 0.05} />
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* User Distribution */}
-        <Card className="p-6 border-none bg-card/50 backdrop-blur-sm shadow-xl flex flex-col">
-          <div className="flex items-center gap-4 mb-10">
-            <div className="p-3 bg-indigo-500/10 rounded-xl">
-              <Users className="size-6 text-indigo-500" />
+      {/* Row 2: User Distribution & Performance Monitor */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* User Distribution Donut */}
+        <Card className="p-4 border-none bg-card/50 backdrop-blur-sm shadow-md flex flex-col justify-between">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-indigo-500/10 rounded-lg">
+              <Users className="size-4.5 text-indigo-500" />
             </div>
-            <h3 className="text-lg font-black">User Distribution</h3>
+            <h3 className="text-sm font-bold">User Distribution</h3>
           </div>
-          <div className="flex-1 flex items-center justify-center">
-            <SimplePieChart data={roleData} />
+          <div className="flex-1 flex items-center justify-center py-2">
+            <DonutChart data={roleData} centerLabel="Users" />
           </div>
         </Card>
 
         {/* System Health Monitor */}
-        <Card className="p-6 border-none bg-zinc-900 text-zinc-100 shadow-xl overflow-hidden relative">
+        <Card className="p-4 border-none bg-zinc-900 text-zinc-100 shadow-md overflow-hidden relative flex flex-col justify-between">
           <div className="relative z-10">
-            <div className="flex items-center gap-4 mb-10">
-              <div className="p-3 bg-white/10 rounded-xl backdrop-blur-md">
-                <Activity className="size-6 text-emerald-400" />
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-white/10 rounded-lg backdrop-blur-md">
+                <Activity className="size-4.5 text-emerald-400" />
               </div>
-              <h3 className="text-lg font-black">Performance Monitor</h3>
+              <h3 className="text-sm font-bold">Performance Monitor</h3>
             </div>
             
-            <div className="space-y-6">
+            <div className="space-y-4">
               {[
                 { label: "Server Load", value: 45, icon: Server, color: "bg-emerald-500" },
                 { label: "Database Query", value: 12, icon: Database, color: "bg-blue-500" },
                 { label: "API Latency", value: 88, icon: Zap, color: "bg-amber-500" },
               ].map((perf, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="flex justify-between items-center text-xs font-black uppercase tracking-widest text-zinc-400">
-                    <div className="flex items-center gap-2">
+                <div key={i} className="space-y-1">
+                  <div className="flex justify-between items-center text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
+                    <div className="flex items-center gap-1.5">
                       <perf.icon className="size-3" />
                       {perf.label}
                     </div>
@@ -78,7 +93,7 @@ export function AdminDashboard({ metrics }: AdminDashboardProps) {
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${perf.value}%` }}
-                      transition={{ duration: 1.5, delay: i * 0.3 }}
+                      transition={{ duration: 1, delay: i * 0.2 }}
                       className={`h-full ${perf.color}`}
                     />
                   </div>
@@ -86,41 +101,94 @@ export function AdminDashboard({ metrics }: AdminDashboardProps) {
               ))}
             </div>
           </div>
-          <div className="absolute -bottom-10 -left-10 size-48 bg-emerald-500/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-10 -left-10 size-32 bg-emerald-500/10 rounded-full blur-2xl" />
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Security Logs */}
-        <Card className="p-6 border-none bg-card/50 backdrop-blur-sm shadow-xl">
-          <div className="flex items-center gap-4 mb-6">
-            <div className="p-3 bg-rose-500/10 rounded-xl">
-              <Shield className="size-6 text-rose-500" />
+      {/* Row 3: User Growth & API Latency Monitor (Dual Area Charts) */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {/* User Growth Area Chart */}
+        <Card className="p-4 border-none bg-card/50 backdrop-blur-sm shadow-md flex flex-col">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-violet-500/10 rounded-lg">
+              <TrendingUp className="size-4.5 text-violet-500" />
             </div>
-            <h3 className="text-lg font-black">Audit Trails</h3>
+            <h3 className="text-sm font-bold">User Growth (6 Months)</h3>
           </div>
-          <div className="space-y-4">
-            {metrics.recent_activity.map((log: any, i: number) => (
-              <div key={i} className="flex items-start gap-4 p-4 rounded-2xl bg-muted/20 hover:bg-muted/40 transition-all border border-transparent hover:border-border/50 group">
-                <div className="size-2 mt-2 rounded-full bg-rose-500 group-hover:scale-150 transition-transform" />
-                <div>
-                  <p className="text-sm font-black tracking-tight">{log.text}</p>
-                  <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest">{log.time}</p>
-                </div>
+          <div className="flex-1 min-h-[160px]">
+            {growthData.length > 0 ? (
+              <AreaChart
+                data={growthData}
+                height={160}
+                strokeColor="#8b5cf6"
+                gradientColors={["rgba(139, 92, 246, 0.3)", "rgba(139, 92, 246, 0.0)"]}
+                valueSuffix=" acct"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+                No growth data available.
               </div>
-            ))}
+            )}
+          </div>
+        </Card>
+
+        {/* API Latency Monitor Area Chart */}
+        <Card className="p-4 border-none bg-card/50 backdrop-blur-sm shadow-md flex flex-col">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="p-2 bg-emerald-500/10 rounded-lg">
+              <Zap className="size-4.5 text-emerald-500" />
+            </div>
+            <h3 className="text-sm font-bold">API Latency Monitor</h3>
+          </div>
+          <div className="flex-1 min-h-[160px]">
+            {latencyData.length > 0 ? (
+              <AreaChart
+                data={latencyData}
+                height={160}
+                strokeColor="#10b981"
+                gradientColors={["rgba(16, 185, 129, 0.3)", "rgba(16, 185, 129, 0.0)"]}
+                valueSuffix=" ms"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-full text-xs text-muted-foreground">
+                No latency history available.
+              </div>
+            )}
+          </div>
+        </Card>
+      </div>
+
+      {/* Row 4: Audit Trails & Console Actions */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* Security Logs */}
+        <Card className="p-4 border-none bg-card/50 backdrop-blur-sm shadow-md md:col-span-2 flex flex-col justify-between">
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-rose-500/10 rounded-lg">
+                <Shield className="size-4.5 text-rose-500" />
+              </div>
+              <h3 className="text-sm font-bold">Audit Trails</h3>
+            </div>
+            <div className="space-y-2">
+              {metrics.recent_activity.map((log: any, i: number) => (
+                <div key={i} className="flex items-start gap-3 p-2.5 rounded-xl bg-muted/20 hover:bg-muted/40 transition-all border border-transparent hover:border-border/50 group">
+                  <div className="size-1.5 mt-1.5 rounded-full bg-rose-500 group-hover:scale-125 transition-transform" />
+                  <div>
+                    <p className="text-xs font-semibold tracking-tight">{log.text}</p>
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{log.time}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </Card>
 
         {/* Console Actions */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-2 md:col-span-1">
           <ActionButton label="Role Config" icon={Lock} variant="black" />
           <ActionButton label="Backup Data" icon={Database} variant="outline" />
           <ActionButton label="Flush Cache" icon={Zap} variant="outline" />
-          <ActionButton label="Global Logs" icon={Activity} variant="outline" />
-          <div className="col-span-2">
-            <ActionButton label="Security Settings" icon={Settings} variant="primary" />
-          </div>
+          <ActionButton label="Settings" icon={Settings} variant="primary" />
         </div>
       </div>
     </div>

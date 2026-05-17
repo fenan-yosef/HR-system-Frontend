@@ -61,26 +61,26 @@ export function StatCard({ title, value, icon, color, delay = 0 }: StatCardProps
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay }}
     >
-      <Card className="group relative overflow-hidden border-none bg-card p-6 shadow-lg transition-all hover:shadow-2xl hover:-translate-y-1">
-        <div className="relative z-10 flex flex-col gap-4">
+      <Card className="group relative overflow-hidden border-none bg-card p-4 shadow-md transition-all hover:shadow-lg hover:-translate-y-0.5">
+        <div className="relative z-10 flex flex-col gap-2">
           <div className="flex items-center justify-between">
-            <div className={`rounded-2xl p-3 ${colorMap[color] || "bg-primary/10 text-primary"}`}>
-              <Icon className="size-6" />
+            <div className={`rounded-xl p-2 ${colorMap[color] || "bg-primary/10 text-primary"}`}>
+              <Icon className="size-5" />
             </div>
-            <TrendingUp className="size-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+            <TrendingUp className="size-3.5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
           </div>
 
           <div>
-            <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
               {title}
             </p>
-            <p className="mt-1 text-3xl font-black tracking-tight">
+            <p className="mt-0.5 text-xl font-bold tracking-tight">
               {value}
             </p>
           </div>
         </div>
 
-        <div className="absolute -right-6 -bottom-6 size-32 rounded-full bg-primary/5 blur-3xl transition-all group-hover:bg-primary/10" />
+        <div className="absolute -right-6 -bottom-6 size-24 rounded-full bg-primary/5 blur-2xl transition-all group-hover:bg-primary/10" />
       </Card>
     </motion.div>
   );

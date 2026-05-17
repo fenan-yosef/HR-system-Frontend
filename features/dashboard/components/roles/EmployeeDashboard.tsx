@@ -23,7 +23,7 @@ import {
   summarizeAttendanceLog,
 } from "@/services/attendanceService";
 import type { AttendanceEntry } from "@/types/attendance";
-import { SimpleBarChart } from "../widgets/AnalyticsWidgets";
+import { InteractiveBarChart } from "@/components/ui/charts";
 import { StatCard } from "../widgets/StatCard";
 
 interface DashboardStat {
@@ -349,23 +349,25 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
         </Card>
       </div>
 
-      <Card className="p-6 border-none bg-card/50 backdrop-blur-sm shadow-xl">
-        <div className="flex items-center gap-4 mb-8">
-          <div className="p-3 bg-primary/10 rounded-xl">
-            <TrendingUp className="size-6 text-primary" />
+      <Card className="p-4 border-none bg-card/50 backdrop-blur-sm shadow-md">
+        <div className="flex items-center gap-2.5 mb-4">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <TrendingUp className="size-4.5 text-primary" />
           </div>
-          <h3 className="text-lg font-black">Weekly Attendance Overview</h3>
+          <h3 className="text-sm font-bold">Weekly Attendance Overview</h3>
         </div>
-        <div className="h-64">
-          <SimpleBarChart
+        <div className="h-48">
+          <InteractiveBarChart
             data={weeklyData.map((d: { label: string; value: number }) => ({
               label: d.label,
               value: Math.round((d.value / 60) * 10) / 10,
             }))}
-            color="bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)] group-hover:bg-orange-400"
-            height={240}
+            color="from-orange-500 to-orange-600 shadow-[0_0_10px_rgba(249,115,22,0.15)]"
+            hoverColor="from-orange-400 to-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)]"
+            height={140}
+            valueSuffix="h"
           />
-          <p className="text-[10px] text-center font-bold text-muted-foreground mt-4 uppercase tracking-widest">
+          <p className="text-[9px] text-center font-bold text-muted-foreground mt-2 uppercase tracking-wider">
             Hours worked per day
           </p>
         </div>
