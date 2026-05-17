@@ -1,4 +1,4 @@
-import { apiFetch, getAccessTokenKey } from "@/services/apiClient";
+import { apiFetch, getAccessTokenKey, API_BASE_URL } from "@/services/apiClient";
 import type { AppNotification } from "@/lib/notifications";
 
 interface BackendNotification {
@@ -42,7 +42,16 @@ export function connectNotificationSocket(onMessage: (payload: BackendNotificati
   if (typeof window === "undefined") return null;
   const token = window.localStorage.getItem(getAccessTokenKey());
   const proto = window.location.protocol === "https:" ? "wss" : "ws";
-  const url = `${proto}://${window.location.host}/ws/notifications/?token=${token}`;
+  
+  let host = window.location.host;
+  try {
+    if (API_BASE_URL && (API_BASE_URL.startsWith("http://") || API_BASE_URL.startsWith("https://"))) {
+      const urlObj = new URL(API_BASE_URL);
+      host = urlObj.host;
+    }
+  } catch (e) {}
+
+  const url = `${proto}://${host}/ws/notifications/?token=${token}`;
   const ws = new WebSocket(url);
   ws.onmessage = (ev) => {
     try {
