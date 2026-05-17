@@ -42,7 +42,9 @@ import {
   BrainCircuit,
   Share2,
   Check,
-  Copy
+  Copy,
+  Grid,
+  List
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,6 +71,7 @@ export function JobPositionManager() {
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<number | "all">("all");
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
   // States for skill suggestions
   const [suggestingSkills, setSuggestingSkills] = useState(false);
@@ -471,129 +474,263 @@ export function JobPositionManager() {
     setFormData(prev => ({ ...prev, required_skills: (prev.required_skills || []).filter(s => s !== skill) }));
   };
 
+  const stats = {
+    total: positions.length,
+    open: positions.filter((p) => p.status === "open").length,
+    onHold: positions.filter((p) => p.status === "on_hold").length,
+    closed: positions.filter((p) => p.status === "closed").length,
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-2xl font-black tracking-tight flex items-center gap-2">
+        <h3 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
           <Activity className="size-6 text-primary" />
           Live Roles
         </h3>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:scale-105 active:scale-95"
+          className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/10 transition-all hover:opacity-90 active:scale-98"
         >
           <Plus className="size-4" />
           Create New Position
         </button>
       </div>
 
-      <Card className="border border-border/60 bg-card/60 p-4 rounded-2xl">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
-          <Label className="text-xs font-black uppercase tracking-widest text-muted-foreground">
-            Filter By Department
-          </Label>
-          <select
-            value={selectedDepartmentFilter}
-            onChange={(e) => {
-              const value = e.target.value;
-              setSelectedDepartmentFilter(value === "all" ? "all" : Number(value));
-            }}
-            className="h-11 w-full sm:max-w-xs rounded-xl border border-border bg-background px-4 text-sm font-semibold outline-none focus:ring-2 focus:ring-primary/20"
+      {/* Premium Mini Dashboard Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Total Roles", count: stats.total, color: "text-blue-500 bg-blue-500/10 border-blue-500/20" },
+          { label: "Open Roles", count: stats.open, color: "text-emerald-500 bg-emerald-500/10 border-emerald-500/20" },
+          { label: "On Hold", count: stats.onHold, color: "text-amber-500 bg-amber-500/10 border-amber-500/20" },
+          { label: "Closed/Archived", count: stats.closed, color: "text-red-500 bg-red-500/10 border-red-500/20" },
+        ].map((item, idx) => (
+          <Card key={idx} className="p-4 border border-border/40 bg-card/45 backdrop-blur-md rounded-2xl flex items-center justify-between shadow-sm">
+            <span className="text-xs font-semibold text-muted-foreground">{item.label}</span>
+            <span className={`text-lg font-bold px-3 py-1 rounded-xl border ${item.color}`}>{item.count}</span>
+          </Card>
+        ))}
+      </div>
+
+      {/* Sleek Filter & View Mode Controls */}
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-border/40 pb-4">
+        <div className="flex flex-wrap items-center gap-2 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => setSelectedDepartmentFilter("all")}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide border transition-all whitespace-nowrap ${
+              selectedDepartmentFilter === "all"
+                ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/10"
+                : "bg-card/45 hover:bg-muted text-muted-foreground border-border/40"
+            }`}
           >
-            <option value="all">All Departments</option>
-            {departments.map((dept) => (
-              <option key={dept.department_id} value={dept.department_id}>
-                {dept.name}
-              </option>
-            ))}
-          </select>
+            All Departments
+          </button>
+          {departments.map((dept) => (
+            <button
+              key={dept.department_id}
+              onClick={() => setSelectedDepartmentFilter(dept.department_id)}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-wide border transition-all whitespace-nowrap ${
+                selectedDepartmentFilter === dept.department_id
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm shadow-primary/10"
+                  : "bg-card/45 hover:bg-muted text-muted-foreground border-border/40"
+              }`}
+            >
+              {dept.name}
+            </button>
+          ))}
         </div>
-      </Card>
+
+        <div className="flex items-center gap-1 bg-muted/40 border border-border/40 p-1 rounded-xl self-start md:self-auto shadow-sm">
+          <button
+            onClick={() => setViewMode("grid")}
+            className={`p-2 rounded-lg transition-all ${
+              viewMode === "grid"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            title="Grid View"
+          >
+            <Grid className="size-4" />
+          </button>
+          <button
+            onClick={() => setViewMode("list")}
+            className={`p-2 rounded-lg transition-all ${
+              viewMode === "list"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+            title="List View"
+          >
+            <List className="size-4" />
+          </button>
+        </div>
+      </div>
 
       {loading ? (
         <div className="flex h-64 items-center justify-center text-muted-foreground font-medium italic">
           Fetching recruitment pipeline...
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div>
           {positions.length === 0 ? (
             <div className="text-center p-12 bg-muted/20 rounded-3xl border-2 border-dashed border-border/50">
               <p className="text-muted-foreground font-medium">
                 No job positions found. Start by creating one.
               </p>
             </div>
-          ) : (
-            filteredPositions.map((pos, i) => (
-              <motion.div
-                key={pos.position_id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05 }}
-              >
-                <Card className="group relative overflow-hidden flex items-center justify-between p-6 border-none shadow-sm hover:shadow-xl transition-all hover:-translate-y-1">
-                  <div className="flex items-center gap-6">
-                    <div className="bg-gradient-to-br from-primary/10 to-primary/5 p-4 rounded-2xl group-hover:from-primary group-hover:to-primary/80 group-hover:text-white transition-all duration-300">
-                      <Briefcase className="size-6" />
-                    </div>
+          ) : viewMode === "grid" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredPositions.map((pos, i) => (
+                <motion.div
+                  key={pos.position_id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Card className="group relative overflow-hidden flex flex-col justify-between p-5 border border-border/40 bg-card/45 backdrop-blur-md rounded-2xl h-[280px] shadow-sm hover:shadow-md hover:border-primary/20 hover:-translate-y-1 transition-all duration-300">
                     <div>
-                      <div className="flex items-center gap-3">
-                        <h4 className="font-black text-xl tracking-tight text-foreground transition-colors group-hover:text-primary">
-                          {pos.title}
-                        </h4>
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="bg-primary/5 text-primary p-2.5 rounded-xl group-hover:bg-primary group-hover:text-white transition-all duration-300">
+                          <Briefcase className="size-4" />
+                        </div>
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${getStatusColor(pos.status)}`}
+                          className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border ${getStatusColor(pos.status)}`}
                         >
-                          {pos.status
-                            .replace(/_/g, " ")
-                            .replace(/(^|\s)\S/g, (t) => t.toUpperCase())}
+                          {pos.status.replace(/_/g, " ")}
                         </span>
                       </div>
-                      <div className="flex items-center gap-6 mt-3">
-                        <span className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                          <Building2 className="size-3.5" />{" "}
-                          {departments.find(
-                            (d) => d.department_id === pos.department,
-                          )?.name || `Dept #${pos.department}`}
+                      
+                      <h4 className="font-semibold text-base text-foreground tracking-tight group-hover:text-primary transition-colors mt-4 line-clamp-1">
+                        {pos.title}
+                      </h4>
+                      
+                      <div className="flex items-center gap-4 mt-2 text-xs font-medium text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Building2 className="size-3.5" />
+                          {departments.find((d) => d.department_id === pos.department)?.name || `Dept #${pos.department}`}
                         </span>
-                        <span className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-widest">
-                          <Calendar className="size-3.5" /> Posted{" "}
+                        <span className="flex items-center gap-1">
+                          <Calendar className="size-3.5" />
                           {new Date(pos.posted_date).toLocaleDateString()}
                         </span>
                       </div>
+
                       {pos.required_skills && pos.required_skills.length > 0 && (
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          {pos.required_skills.slice(0, 8).map((s) => (
-                            <span key={s} className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[9px] sm:text-[10px] font-black uppercase tracking-wider border border-primary/20">{s}</span>
+                        <div className="mt-3.5 flex flex-wrap gap-1.5 line-clamp-1 overflow-hidden max-h-[22px]">
+                          {pos.required_skills.slice(0, 3).map((s) => (
+                            <span key={s} className="inline-flex items-center px-2 py-0.5 rounded bg-primary/5 text-primary text-[10px] font-medium border border-primary/10">
+                              {s}
+                            </span>
                           ))}
+                          {pos.required_skills.length > 3 && (
+                            <span className="text-[10px] text-muted-foreground font-medium self-center">
+                              +{pos.required_skills.length - 3} more
+                            </span>
+                          )}
                         </div>
                       )}
+                    </div>
 
-                      <div className="mt-3 text-[10px] sm:text-xs text-muted-foreground flex flex-wrap gap-x-4 gap-y-1">
-                        <span>Shortlist: <strong className="text-foreground">{pos.shortlist_size ?? '—'}</strong></span>
-                        {pos.min_years_experience ? <span>Min Exp: <strong className="text-foreground">{pos.min_years_experience} yrs</strong></span> : null}
-                        {pos.ai_config?.min_pass_score ? <span>Pass: <strong className="text-foreground">{pos.ai_config.min_pass_score}%</strong></span> : null}
-                        <span>V{pos.criteria_version}</span>
+                    <div className="pt-4 border-t border-border/40 flex items-center justify-between gap-3 mt-auto">
+                      <div className="text-[10px] text-muted-foreground space-x-2">
+                        {pos.min_years_experience ? <span>Min Exp: <strong className="text-foreground font-semibold">{pos.min_years_experience} yrs</strong></span> : null}
+                        <span>Pass: <strong className="text-foreground font-semibold">{pos.ai_config?.min_pass_score || 50}%</strong></span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleShare(pos)}
+                          className="p-2 text-muted-foreground hover:text-primary bg-muted/40 hover:bg-primary/10 rounded-lg transition-all"
+                          title="Share"
+                        >
+                          <Share2 className="size-3.5" />
+                        </button>
+                        <Link
+                          href={`/recruitment/job-postings/${pos.position_id}`}
+                          className="px-3 py-1.5 bg-primary/5 group-hover:bg-primary group-hover:text-white text-primary text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5"
+                        >
+                          View Details
+                          <ChevronDown className="size-3 -rotate-90" />
+                        </Link>
                       </div>
                     </div>
-                  </div>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {filteredPositions.map((pos, i) => (
+                <motion.div
+                  key={pos.position_id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                >
+                  <Card className="group relative flex flex-col md:flex-row md:items-center justify-between p-4 border border-border/40 bg-card/45 backdrop-blur-md rounded-xl shadow-sm hover:shadow-md hover:border-primary/20 transition-all duration-300 gap-4">
+                    <div className="flex items-center gap-4 flex-1">
+                      <div className="bg-primary/5 text-primary p-2.5 rounded-xl group-hover:bg-primary group-hover:text-white transition-all duration-300 shrink-0">
+                        <Briefcase className="size-4" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h4 className="font-semibold text-base text-foreground tracking-tight group-hover:text-primary transition-colors truncate">
+                            {pos.title}
+                          </h4>
+                          <span
+                            className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider border shrink-0 ${getStatusColor(pos.status)}`}
+                          >
+                            {pos.status.replace(/_/g, " ")}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1 text-xs font-medium text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Building2 className="size-3.5" />
+                            {departments.find((d) => d.department_id === pos.department)?.name || `Dept #${pos.department}`}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Calendar className="size-3.5" />
+                            Posted {new Date(pos.posted_date).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
 
-                  <div className="flex items-center gap-5">
-                    <button
-                      onClick={() => handleShare(pos)}
-                      className="hidden md:flex items-center gap-2 text-xs font-black text-primary uppercase tracking-widest hover:underline"
-                    >
-                      Share <Share2 className="size-3" />
-                    </button>
-                    <Link
-                      href={`/recruitment/job-postings/${pos.position_id}`}
-                      className="flex-1 xl:flex-initial flex items-center justify-center gap-2 text-[10px] sm:text-xs font-black text-primary uppercase tracking-widest hover:underline px-4"
-                    >
-                      View details <MoreVertical className="size-3" />
-                    </Link>
-                  </div>
-                </Card>
-              </motion.div>
-            ))
+                    <div className="flex flex-wrap items-center gap-4 md:gap-6 ml-12 md:ml-0">
+                      <div className="hidden lg:flex items-center gap-1.5">
+                        {pos.required_skills?.slice(0, 3).map((s) => (
+                          <span key={s} className="px-2 py-0.5 rounded bg-primary/5 text-primary text-[10px] font-medium border border-primary/10">
+                            {s}
+                          </span>
+                        ))}
+                      </div>
+
+                      <div className="text-[11px] text-muted-foreground space-x-3 shrink-0">
+                        <span>Shortlist: <strong className="text-foreground font-semibold">{pos.shortlist_size ?? '—'}</strong></span>
+                        {pos.min_years_experience ? <span>Min Exp: <strong className="text-foreground font-semibold">{pos.min_years_experience} yrs</strong></span> : null}
+                        <span>Pass: <strong className="text-foreground font-semibold">{pos.ai_config?.min_pass_score || 50}%</strong></span>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          onClick={() => handleShare(pos)}
+                          className="p-2 text-muted-foreground hover:text-primary bg-muted/40 hover:bg-primary/10 rounded-lg transition-all"
+                          title="Share"
+                        >
+                          <Share2 className="size-3.5" />
+                        </button>
+                        <Link
+                          href={`/recruitment/job-postings/${pos.position_id}`}
+                          className="px-3 py-1.5 bg-primary/5 group-hover:bg-primary group-hover:text-white text-primary text-xs font-semibold rounded-lg transition-all flex items-center gap-1"
+                        >
+                          View Details
+                          <ChevronDown className="size-3 -rotate-90" />
+                        </Link>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
           )}
         </div>
       )}
