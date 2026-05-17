@@ -1,6 +1,7 @@
 import { describe, expect, it, beforeEach, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { RoleGuard } from "@/context/RoleGuard";
+import "@testing-library/jest-dom/vitest";
 
 vi.mock("@/hooks/useRoleGuard", () => ({
   useRoleGuard: vi.fn(),
@@ -95,13 +96,13 @@ describe("RoleGuard", () => {
     });
 
     render(
-      <RoleGuard allowedRoles={["ADMIN", "HR_MANAGER"]}>
+      <RoleGuard allowedRoles={["ADMIN", "HR_STAFF"]}>
         <div>Content</div>
       </RoleGuard>,
     );
 
     expect(mockUseRoleGuard).toHaveBeenCalledWith({
-      allowedRoles: ["ADMIN", "HR_MANAGER"],
+      allowedRoles: ["ADMIN", "HR_STAFF"],
     });
   });
 
