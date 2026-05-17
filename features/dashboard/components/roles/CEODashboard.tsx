@@ -27,10 +27,10 @@ export function CEODashboard({ metrics }: CEODashboardProps) {
   }));
 
   return (
-    <div className="space-y-4 pb-6">
+    <div className="space-y-3 pb-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-zinc-950 via-zinc-700 to-zinc-500">
+          <h2 className="text-lg font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-zinc-950 via-zinc-700 to-zinc-500">
             Strategic Command Center
           </h2>
           <p className="text-xs text-muted-foreground font-medium">Global organizational insights and growth metrics.</p>
@@ -38,39 +38,39 @@ export function CEODashboard({ metrics }: CEODashboardProps) {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 grid-cols-3">
+      <div className="grid gap-3 grid-cols-3">
         {metrics.stats.map((stat: any, i: number) => (
           <StatCard key={i} {...stat} delay={i * 0.05} />
         ))}
       </div>
 
       {/* Row 2: Hiring Funnel & Application Velocity Area Chart */}
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3">
         {/* Recruitment Funnel - Premium Black & Silver Theme */}
-        <Card className="p-4 border-none bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-800 text-zinc-100 shadow-md relative overflow-hidden lg:col-span-1 ring-1 ring-white/10 flex flex-col justify-between">
+        <Card className="p-3.5 border-none bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-800 text-zinc-100 shadow-md relative overflow-hidden lg:col-span-1 ring-1 ring-white/10 flex flex-col justify-between">
           <div className="relative z-10">
-            <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
+            <h3 className="text-xs font-bold mb-2.5 flex items-center gap-2">
               <div className="p-1.5 bg-white/10 rounded-lg backdrop-blur-md">
-                <Target className="size-4 text-zinc-300" />
+                <Target className="size-3.5 text-zinc-300" />
               </div>
               Hiring Funnel
             </h3>
-            <div className="space-y-4">
+            <div className="space-y-2">
               {[
                 { label: "Applicants", value: metrics.recruitment_funnel.applied, color: "bg-zinc-700" },
                 { label: "Shortlisted", value: metrics.recruitment_funnel.shortlisted, color: "bg-zinc-400 shadow-[0_0_10px_rgba(255,255,255,0.15)]" },
                 { label: "Hired", value: metrics.recruitment_funnel.hired, color: "bg-white shadow-[0_0_15px_rgba(255,255,255,0.3)]" },
               ].map((stage, i) => (
-                <div key={i} className="space-y-1.5">
+                <div key={i} className="space-y-1">
                   <div className="flex justify-between items-end">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400">{stage.label}</span>
-                    <span className="text-lg font-bold">{stage.value}</span>
+                    <span className="text-[9px] font-semibold uppercase tracking-wider text-zinc-400">{stage.label}</span>
+                    <span className="text-base font-bold">{stage.value}</span>
                   </div>
                   <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden border border-white/5">
                     <motion.div 
                       initial={{ width: 0 }}
                       animate={{ width: `${(stage.value / (metrics.recruitment_funnel.applied || 1)) * 100}%` }}
-                      transition={{ duration: 1, delay: i * 0.15, ease: "circOut" }}
+                      transition={{ duration: 1, delay: i * 0.1, ease: "circOut" }}
                       className={`h-full ${stage.color}`}
                     />
                   </div>
@@ -79,22 +79,22 @@ export function CEODashboard({ metrics }: CEODashboardProps) {
             </div>
           </div>
           {/* Decorative silver glow */}
-          <div className="absolute -bottom-20 -left-20 size-48 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+          <div className="absolute -bottom-20 -left-20 size-36 bg-white/5 rounded-full blur-2xl pointer-events-none" />
         </Card>
 
         {/* Application Velocity Area Chart */}
-        <Card className="p-4 border-none bg-card/50 backdrop-blur-sm shadow-md lg:col-span-2 flex flex-col">
-          <div className="flex items-center gap-2.5 mb-2">
-            <div className="p-2 bg-indigo-500/10 rounded-lg">
-              <TrendingUp className="size-4.5 text-indigo-500" />
+        <Card className="p-3.5 border-none bg-card/50 backdrop-blur-sm shadow-md lg:col-span-2 flex flex-col">
+          <div className="flex items-center gap-2.5 mb-1.5">
+            <div className="p-1.5 bg-indigo-500/10 rounded-lg">
+              <TrendingUp className="size-4 text-indigo-500" />
             </div>
-            <h3 className="text-sm font-bold">Application Velocity</h3>
+            <h3 className="text-xs font-bold">Application Velocity</h3>
           </div>
-          <div className="flex-1 min-h-[160px]">
+          <div className="flex-1 min-h-[120px]">
             {trendData.length > 0 ? (
               <AreaChart
                 data={trendData}
-                height={160}
+                height={120}
                 strokeColor="#06b6d4"
                 gradientColors={["rgba(6, 182, 212, 0.3)", "rgba(6, 182, 212, 0.0)"]}
                 valueSuffix=" apps"
@@ -109,39 +109,39 @@ export function CEODashboard({ metrics }: CEODashboardProps) {
       </div>
 
       {/* Row 3: Department Headcount breakdown with Donut Chart */}
-      <Card className="p-4 border-none bg-card/50 backdrop-blur-sm shadow-md">
-        <div className="flex items-center gap-2.5 mb-2">
-          <div className="p-2 bg-amber-500/10 rounded-lg">
-            <PieChart className="size-4.5 text-amber-500" />
+      <Card className="p-3.5 border-none bg-card/50 backdrop-blur-sm shadow-md">
+        <div className="flex items-center gap-2.5 mb-1.5">
+          <div className="p-1.5 bg-amber-500/10 rounded-lg">
+            <PieChart className="size-4 text-amber-500" />
           </div>
-          <h3 className="text-sm font-bold">Headcount by Dept</h3>
+          <h3 className="text-xs font-bold">Headcount by Dept</h3>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
           {/* Donut chart view */}
-          <div className="md:col-span-1 flex justify-center border-r border-border/40 pr-0 md:pr-6">
+          <div className="md:col-span-1 flex justify-center border-r border-border/40 pr-0 md:pr-4">
             <DonutChart data={deptData} centerLabel="Headcount" />
           </div>
 
           {/* Cards list grid */}
-          <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="md:col-span-2 grid grid-cols-2 sm:grid-cols-3 gap-2">
             {metrics.department_headcount.map((dept: any, i: number) => (
               <div
                 key={i}
-                className="group p-2.5 rounded-2xl bg-muted/20 hover:bg-muted/40 transition-all border border-transparent hover:border-border/50 text-center relative overflow-hidden"
+                className="group p-2 rounded-xl bg-muted/20 hover:bg-muted/40 transition-all border border-transparent hover:border-border/50 text-center relative overflow-hidden"
               >
                 <div className="relative z-10">
                   <span
-                    className="text-xl font-bold block mb-0.5"
+                    className="text-base font-bold block"
                     style={{ color: deptColors[i % deptColors.length] }}
                   >
                     {dept.value}
                   </span>
-                  <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wider truncate block">
+                  <span className="text-[8px] font-semibold text-muted-foreground uppercase tracking-wider truncate block">
                     {dept.department__name || "General"}
                   </span>
                 </div>
                 <div
-                  className="absolute -bottom-2 -right-2 size-8 rounded-full blur-lg opacity-10 group-hover:opacity-20 transition-colors pointer-events-none"
+                  className="absolute -bottom-2 -right-2 size-6 rounded-full blur-md opacity-10 group-hover:opacity-20 transition-colors pointer-events-none"
                   style={{ backgroundColor: deptColors[i % deptColors.length] }}
                 />
               </div>
@@ -151,7 +151,7 @@ export function CEODashboard({ metrics }: CEODashboardProps) {
       </Card>
 
       {/* Strategic Actions */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         <ActionButton label="Review Strategy" icon={Zap} variant="black" />
         <ActionButton label="Expansion Plan" icon={ArrowUpRight} variant="outline" />
         <ActionButton label="Budget Report" icon={PieChart} variant="outline" />

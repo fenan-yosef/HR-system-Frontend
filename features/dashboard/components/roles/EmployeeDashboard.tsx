@@ -184,33 +184,33 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 pb-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight text-orange-600">
+          <h2 className="text-lg font-bold tracking-tight text-orange-600">
             Welcome Back!
           </h2>
-          <p className="text-muted-foreground">
+          <p className="text-xs text-muted-foreground font-medium">
             Here is an overview of your work status.
           </p>
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {stats.map((stat, i) => (
-          <StatCard key={i} {...stat} delay={i * 0.1} />
+          <StatCard key={i} {...stat} delay={i * 0.05} />
         ))}
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        <Card className="p-6 border-none bg-white shadow-xl flex flex-col justify-between group overflow-hidden relative">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card className="p-4 border-none bg-white shadow-md flex flex-col justify-between group overflow-hidden relative">
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-8">
-              <div className="p-3 bg-orange-500/10 rounded-xl">
-                <Clock className="size-6 text-orange-500" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-2 bg-orange-500/10 rounded-lg">
+                <Clock className="size-4.5 text-orange-500" />
               </div>
               <span
-                className={`text-xs font-black uppercase px-2 py-1 rounded-full ${
+                className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${
                   statusIsActive
                     ? "bg-green-100 text-green-600"
                     : "bg-orange-100 text-orange-600"
@@ -219,8 +219,8 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
                 {loadingAttendance ? "Loading..." : attendanceLabel}
               </span>
             </div>
-            <h3 className="text-2xl font-bold mb-2">Punch Card</h3>
-            <p className="text-muted-foreground text-sm mb-2">
+            <h3 className="text-sm font-bold mb-1">Punch Card</h3>
+            <p className="text-muted-foreground text-xs mb-2">
               {activeEntry
                 ? `Checked in at ${activeEntry.checkIn}`
                 : latestEntry
@@ -228,7 +228,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
                   : "Remember to clock out when you finish."}
             </p>
             {attendanceError && (
-              <p className="text-xs font-medium text-rose-600">
+              <p className="text-[10px] font-medium text-rose-600">
                 {attendanceError}
               </p>
             )}
@@ -236,7 +236,7 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
           <button
             onClick={handleAttendanceAction}
             disabled={loadingAttendance || Boolean(actionState)}
-            className="relative z-10 w-full py-4 bg-orange-500 text-white rounded-2xl font-black text-sm hover:bg-orange-600 transition-all active:scale-95 shadow-lg shadow-orange-500/20 disabled:cursor-not-allowed disabled:opacity-60"
+            className="relative z-10 w-full py-2.5 bg-orange-500 text-white rounded-xl font-bold text-xs hover:bg-orange-600 transition-all active:scale-95 shadow-md shadow-orange-500/20 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {actionState === "check-in"
               ? "Clocking In..."
@@ -246,17 +246,17 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
                   ? "Clock Out Now"
                   : "Clock In Now"}
           </button>
-          <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-2xl group-hover:bg-orange-500/10 transition-colors" />
+          <div className="absolute top-0 right-0 w-24 h-24 bg-orange-500/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl group-hover:bg-orange-500/10 transition-colors pointer-events-none" />
         </Card>
 
-        <Card className="p-6 border-none bg-card/50 backdrop-blur-sm shadow-xl lg:col-span-1">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="p-3 bg-blue-500/10 rounded-xl">
-              <Zap className="size-6 text-blue-500" />
+        <Card className="p-4 border-none bg-card/50 backdrop-blur-sm shadow-md lg:col-span-1">
+          <div className="flex items-center gap-2.5 mb-4">
+            <div className="p-2 bg-blue-500/10 rounded-lg">
+              <Zap className="size-4.5 text-blue-500" />
             </div>
-            <h3 className="text-lg font-bold">Quick Services</h3>
+            <h3 className="text-sm font-bold">Quick Services</h3>
           </div>
-          <div className="space-y-3">
+          <div className="space-y-2">
             {(
               [
                 {
@@ -289,74 +289,74 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
                 <Link
                   href={service.href}
                   key={i}
-                  className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/50 hover:bg-white transition-all group"
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/50 hover:bg-white transition-all group"
                 >
-                  <div className="flex items-center gap-4">
-                    <service.icon className={`size-5 ${service.color}`} />
-                    <span className="text-sm font-bold">{service.label}</span>
+                  <div className="flex items-center gap-3">
+                    <service.icon className={`size-4 ${service.color}`} />
+                    <span className="text-xs font-bold">{service.label}</span>
                   </div>
-                  <ChevronRight className="size-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                  <ChevronRight className="size-3.5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
                 </Link>
               ) : (
                 <button
                   key={i}
                   type="button"
-                  className="w-full flex items-center justify-between p-4 rounded-2xl bg-white/50 hover:bg-white transition-all group"
+                  className="w-full flex items-center justify-between p-2.5 rounded-xl bg-white/50 hover:bg-white transition-all group"
                 >
-                  <div className="flex items-center gap-4">
-                    <service.icon className={`size-5 ${service.color}`} />
-                    <span className="text-sm font-bold">{service.label}</span>
+                  <div className="flex items-center gap-3">
+                    <service.icon className={`size-4 ${service.color}`} />
+                    <span className="text-xs font-bold">{service.label}</span>
                   </div>
-                  <ChevronRight className="size-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+                  <ChevronRight className="size-3.5 text-muted-foreground group-hover:translate-x-1 transition-transform" />
                 </button>
               ),
             )}
           </div>
         </Card>
 
-        <Card className="p-6 border-none bg-indigo-900 text-white shadow-xl relative overflow-hidden">
-          <div className="relative z-10 flex flex-col h-full">
-            <h3 className="text-lg font-bold mb-4">Onboarding Progress</h3>
-            <div className="flex-1 flex flex-col justify-center items-center py-4">
-              <div className="size-24 rounded-full border-4 border-white/20 flex items-center justify-center relative">
-                <span className="text-2xl font-black">
+        <Card className="p-4 border-none bg-indigo-900 text-white shadow-md relative overflow-hidden flex flex-col justify-between">
+          <div className="relative z-10 flex flex-col h-full justify-between">
+            <h3 className="text-sm font-bold mb-2">Onboarding Progress</h3>
+            <div className="flex-1 flex flex-col justify-center items-center py-2">
+              <div className="size-16 rounded-full border-4 border-white/20 flex items-center justify-center relative">
+                <span className="text-sm font-bold">
                   {personal.profile_completion}%
                 </span>
                 <svg className="absolute inset-0 size-full -rotate-90">
                   <circle
-                    cx="48"
-                    cy="48"
-                    r="44"
+                    cx="32"
+                    cy="32"
+                    r="28"
                     fill="none"
                     stroke="white"
                     strokeWidth="4"
-                    strokeDasharray="276"
+                    strokeDasharray="176"
                     strokeDashoffset={
-                      276 - (276 * personal.profile_completion) / 100
+                      176 - (176 * personal.profile_completion) / 100
                     }
                     className="transition-all duration-1000"
                   />
                 </svg>
               </div>
             </div>
-            <p className="text-indigo-200 text-xs text-center">
+            <p className="text-indigo-200 text-[10px] text-center mt-2 font-medium">
               {personal.profile_completion === 100
                 ? "Perfect! All steps completed."
-                : "Almost there! Complete your profile to unlock all features."}
+                : "Complete your profile to unlock all features."}
             </p>
           </div>
-          <div className="absolute top-0 left-0 size-32 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-2xl" />
+          <div className="absolute top-0 left-0 size-24 bg-white/5 rounded-full -translate-x-1/2 -translate-y-1/2 blur-xl pointer-events-none" />
         </Card>
       </div>
 
       <Card className="p-4 border-none bg-card/50 backdrop-blur-sm shadow-md">
-        <div className="flex items-center gap-2.5 mb-4">
+        <div className="flex items-center gap-2.5 mb-2">
           <div className="p-2 bg-primary/10 rounded-lg">
             <TrendingUp className="size-4.5 text-primary" />
           </div>
           <h3 className="text-sm font-bold">Weekly Attendance Overview</h3>
         </div>
-        <div className="h-48">
+        <div className="h-44">
           <InteractiveBarChart
             data={weeklyData.map((d: { label: string; value: number }) => ({
               label: d.label,
@@ -364,10 +364,10 @@ export function EmployeeDashboard({ metrics }: EmployeeDashboardProps) {
             }))}
             color="from-orange-500 to-orange-600 shadow-[0_0_10px_rgba(249,115,22,0.15)]"
             hoverColor="from-orange-400 to-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.3)]"
-            height={140}
+            height={120}
             valueSuffix="h"
           />
-          <p className="text-[9px] text-center font-bold text-muted-foreground mt-2 uppercase tracking-wider">
+          <p className="text-[8px] text-center font-bold text-muted-foreground mt-1 uppercase tracking-wider">
             Hours worked per day
           </p>
         </div>

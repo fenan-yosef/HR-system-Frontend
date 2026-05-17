@@ -1,7 +1,7 @@
-import { getAccessTokenKey } from "./apiClient";
+import { getAccessTokenKey, API_BASE_URL } from "./apiClient";
 
 export async function downloadSingleIdCard(employeeId: number): Promise<string> {
-  const url = `/id-cards/${employeeId}/`;
+  const url = `${API_BASE_URL}id-cards/${employeeId}/`;
   const token = typeof window !== "undefined" ? window.localStorage.getItem(getAccessTokenKey()) : null;
 
   const headers: Record<string, string> = {};
@@ -18,7 +18,7 @@ export async function downloadBulkIdCards(employeeIds: number[]): Promise<string
     throw new Error("employeeIds must be a non-empty array");
   }
 
-  const url = `/id-cards/bulk/`;
+  const url = `${API_BASE_URL}id-cards/bulk/`;
   const token = typeof window !== "undefined" ? window.localStorage.getItem(getAccessTokenKey()) : null;
 
   const headers: Record<string, string> = { "Content-Type": "application/json" };

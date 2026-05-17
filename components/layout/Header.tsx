@@ -58,7 +58,7 @@ export function Header() {
   return (
     <header className="sticky text-black top-0 z-10 flex h-16 lg:h-20 items-center justify-between border-b border-border/50 bg-background/80 px-4 sm:px-6 lg:px-8 backdrop-blur-xl">
       <div className="flex items-center gap-2 sm:gap-4">
-        <button 
+        <button
           onClick={toggleSidebar}
           className="lg:hidden p-2 hover:bg-muted rounded-lg transition-colors"
         >
@@ -70,7 +70,7 @@ export function Header() {
             animate={{ opacity: 1, y: 0 }}
             className="text-sm font-bold tracking-tight"
           >
-            Welcome back, {user?.firstName || "Demeke"}.
+            Welcome back, {user?.firstName || "User"}.
           </motion.h2>
           <motion.p
             initial={{ opacity: 0, y: -10 }}
@@ -119,53 +119,53 @@ export function Header() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                  <button
-                    onClick={clearAllHandler}
-                    className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:underline"
-                  >
-                    Clear
-                  </button>
-                  <button
-                    onClick={markAllAsReadHandler}
-                    className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
-                  >
-                    Mark all read
-                  </button>
+                    <button
+                      onClick={clearAllHandler}
+                      className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground hover:underline"
+                    >
+                      Clear
+                    </button>
+                    <button
+                      onClick={markAllAsReadHandler}
+                      className="text-[10px] font-bold uppercase tracking-wider text-primary hover:underline"
+                    >
+                      Mark all read
+                    </button>
                   </div>
                 </div>
 
                 <div className="max-h-96 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <p className="px-4 py-6 text-sm text-muted-foreground">
-                        No notifications available.
-                      </p>
-                    ) : (
-                      notifications.map((notification) => (
-                        <button
-                          key={notification.id}
-                          onClick={() => markSingleAsReadHandler(notification.id)}
-                          className={`block w-full border-b border-border/40 px-4 py-3 text-left transition-colors hover:bg-muted/40 ${notification.read ? "bg-background" : "bg-primary/5"}`}
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-sm font-semibold text-foreground">
-                                {notification.title}
-                              </p>
-                              <p className="mt-1 text-xs text-muted-foreground">
-                                {notification.description}
-                              </p>
-                            </div>
-                            {!notification.read && (
-                              <span className="mt-1 size-2 rounded-full bg-primary" />
-                            )}
+                  {notifications.length === 0 ? (
+                    <p className="px-4 py-6 text-sm text-muted-foreground">
+                      No notifications available.
+                    </p>
+                  ) : (
+                    notifications.map((notification) => (
+                      <button
+                        key={notification.id}
+                        onClick={() => markSingleAsReadHandler(notification.id)}
+                        className={`block w-full border-b border-border/40 px-4 py-3 text-left transition-colors hover:bg-muted/40 ${notification.read ? "bg-background" : "bg-primary/5"}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">
+                              {notification.title}
+                            </p>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              {notification.description}
+                            </p>
                           </div>
-                          <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                            {new Date(notification.createdAt).toLocaleString()}
-                          </p>
-                        </button>
-                      ))
-                    )}
-                  </div>
+                          {!notification.read && (
+                            <span className="mt-1 size-2 rounded-full bg-primary" />
+                          )}
+                        </div>
+                        <p className="mt-2 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
+                      </button>
+                    ))
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -10,7 +10,7 @@ function normalizeApiBaseUrl(baseUrl: string) {
   return `${trimmed}/api`;
 }
 
-const API_BASE_URL = `${normalizeApiBaseUrl(RAW_API_BASE_URL)}/`;
+export const API_BASE_URL = `${normalizeApiBaseUrl(RAW_API_BASE_URL)}/`;
 
 // Utility to resolve media URLs (CVs, profile pics, etc)
 // Files are now served from the database via the /api/media/ route.
