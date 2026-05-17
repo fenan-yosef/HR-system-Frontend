@@ -14,7 +14,6 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Search, Clock, AlertCircle } from "lucide-react";
-import { Loading } from "@/components/ui/loading";
 
 export default function TrackApplicationPage() {
   const [trackingCode, setTrackingCode] = useState("");
@@ -109,7 +108,7 @@ export default function TrackApplicationPage() {
                 disabled={loading}
             >
               {loading ? (
-                <Loading size="xs" />
+                <Clock className="h-5 w-5 animate-spin" />
               ) : (
                 <>
                    <Search className="h-5 w-5" />

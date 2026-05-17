@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Loading } from "@/components/ui/loading";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -234,7 +233,7 @@ export default function ApplicationDetailPage() {
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center h-[70vh] gap-4">
-        <Loading size="lg" />
+        <div className="size-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
         <p className="text-muted-foreground font-black uppercase tracking-widest text-xs">Fetching Candidate Intel...</p>
       </div>
     );
@@ -779,7 +778,7 @@ export default function ApplicationDetailPage() {
                       </>
                     ) : (
                       <div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-                        <Loading size="lg" />
+                        <Loader2 className="size-10 text-primary/30 animate-spin" />
                         <p className="text-muted-foreground font-medium uppercase tracking-widest text-[10px]">Processing resume content via AI...</p>
                       </div>
                     )}

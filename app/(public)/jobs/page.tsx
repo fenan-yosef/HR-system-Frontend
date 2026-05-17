@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loading } from "@/components/ui/loading";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -68,7 +67,7 @@ export default function PublicJobsPage() {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-24">
-        <Loading size="lg" />
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }

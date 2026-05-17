@@ -15,7 +15,6 @@ import {
     fetchCustomApplicationFields,
 } from "@/services/recruitmentService";
 import { getMediaUrl, apiDownload } from "@/services/apiClient";
-import { Loading } from "@/components/ui/loading";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CustomFieldsSettings } from "@/components/recruitment/CustomFieldsSettings";
@@ -413,7 +412,7 @@ export default function JobDetailsPage() {
                                                 className="flex-1 sm:flex-initial flex justify-center items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap disabled:opacity-50"
                                             >
                                                 {cvLoading === app.application_id ? (
-                                                    <Loading size="xs" />
+                                                    <div className="size-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                                                 ) : <FileText className="size-4" />}
                                                 {cvLoading === app.application_id ? "Loading..." : "View CV"}
                                             </button>

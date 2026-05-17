@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { Loading } from "@/components/ui/loading";
 import {
   AlertCircle,
   AlertTriangle,
@@ -713,7 +712,12 @@ export function ApplicationsBoard() {
   if (!isMounted) {
     return (
       <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-        <Loading size="lg" />
+        <div className="relative">
+          <div className="size-14 animate-spin rounded-full border-4 border-primary/10 border-t-primary/40" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <BrainCircuit className="size-5 animate-pulse text-primary/50" />
+          </div>
+        </div>
         <p className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60">
           Loading applications workspace
         </p>

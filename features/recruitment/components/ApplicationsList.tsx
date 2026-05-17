@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loading } from "@/components/ui/loading";
 
 import {
   Search,
@@ -420,7 +419,12 @@ export function ApplicationsList({
   if (!isMounted) {
     return (
       <div className="space-y-6 min-h-[60vh] flex flex-col items-center justify-center">
-        <Loading size="lg" />
+        <div className="relative">
+          <div className="size-16 border-4 border-primary/10 border-t-primary/40 rounded-full animate-spin" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <Brain className="size-6 text-primary/40 animate-pulse" />
+          </div>
+        </div>
         <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/50 animate-pulse">
           Initializing Interface...
         </p>
