@@ -127,6 +127,12 @@ const NAVIGATION_CONFIG: NavSection[] = [
         roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
       },
       {
+        label: "Pension Registrations",
+        href: ROUTES.HR_PENSION_REGISTRATIONS,
+        icon: FileText,
+        roles: ["ADMIN", "HR_STAFF", "HR_CEO"],
+      },
+      {
         label: "Complaints",
         href: ROUTES.HR_COMPLAINTS,
         icon: MessageSquareText,
@@ -180,12 +186,18 @@ const NAVIGATION_CONFIG: NavSection[] = [
         icon: UserCircle,
         roles: ["ADMIN", "HR_CEO", "EMPLOYEE", "APPLICANT"],
       },
-      // {
-      //   label: "Documents",
-      //   href: ROUTES.MY_DOCUMENTS,
-      //   icon: FileText,
-      //   roles: ["ADMIN", "HR_CEO", "EMPLOYEE", "APPLICANT"],
-      // },
+      {
+        label: "Documents",
+        href: ROUTES.MY_DOCUMENTS,
+        icon: FileText,
+        roles: ["ADMIN", "HR_CEO", "EMPLOYEE", "APPLICANT"],
+      },
+      {
+        label: "Pension Registration",
+        href: ROUTES.EMPLOYEE_PENSION_REGISTRATION,
+        icon: FileText,
+        roles: ["EMPLOYEE"],
+      },
     ],
   },
   {
